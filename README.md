@@ -31,7 +31,7 @@ Download the application and extract it:
 	wget https://link_to_the_app -O /tmp/emsm.tar.bz2
 	tar -xjf /tmp/emsm.tar.bz2
       
-Copy the :file:`bin_script` in the :file:`/usr/build` directory:
+Copy the *bin_script* in the */usr/build* directory:
    
 	cp emsm/bin_script /usr/bin/minecraft
 
