@@ -14,16 +14,16 @@ Please read the [online documentation](http://emsm.benediktschmitt.de) for a ful
 
 The **EMSM** requires *Python 3.2* or higher and *screen*. Furthermore, we need *java* to run the minecraft server, *tar* to extract the **EMSM** archive and *wget* to download it.
 
-	$ apt-get update 
-	$ apt-get install screen openjdk-7-jre-headless python3.2 tar wget
+	$ sudo apt-get update 
+	$ sudo apt-get install screen openjdk-7-jre-headless python3.2 tar wget
 
 Create the user that should run the application:
 
-	$ adduser minecraft --disabled-password --shell=/bin/false
+	$ sudo adduser minecraft --disabled-password --shell=/bin/false
       
 Switch to the user and its home directory:
 
-   	$ su minecraft
+   	$ sudo su minecraft
    	$ cd ~/
    
 Download the application and extract it in the home directory of *minecraft*:
@@ -37,11 +37,11 @@ The **EMSM** and its subdirectories are now in the home directory of *minecraft*
 
 Copy the *bin_script* into the */usr/build* directory:
    
-	$ cp emsm/bin_script /usr/bin/minecraft
+	$ sudo cp emsm/bin_script /usr/bin/minecraft
 
 Well, that's all. For the first run, type:
 
-	$ minecraft
+	$ sudo minecraft
 
 This will create the other subdirectories and the configuration files. If the *bin-script* does not work, take a look at the [documentation](http://emsm.benediktschmitt.de/how_to/index.html).
 
