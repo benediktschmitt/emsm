@@ -39,7 +39,7 @@ Well, that's all. For the first run, type:
 
 	minecraft
 
-This will created the other subdirectories and the configuration files. If the *bin-script* does not work, take a look at the [documentation](http://emsm.benediktschmitt.de/how_to/index.html).
+This will create the other subdirectories and the configuration files. If the *bin-script* does not work, take a look at the [documentation](http://emsm.benediktschmitt.de/how_to/index.html).
 
 
 ## Configuration
@@ -68,11 +68,11 @@ server = vanilla_1.6
    
 ## First run
 
-To perfom a dry-run, type::
+To perfom a dry-run, type:
 
 	minecraft
    
-If you need more help, use the **--help** argument::
+If you need more help, use the **--help** argument:
 
 	minecraft -h
 	minecraft -h -p worlds
