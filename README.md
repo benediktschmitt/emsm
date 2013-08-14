@@ -64,9 +64,15 @@ worlds.conf:
 port = 25565
 server = vanilla_1.6
 ```   
+
+To start the world *foo*, use the command:
+	
+	minecraft -p worlds -w foo --start
+
+If the minecraft server has not been downloaded yet, it will be downloaded now. So don't worry if the script runs longer than expected.
+
    
-   
-## First run
+## Commands
 
 To perfom a dry-run, type:
 
