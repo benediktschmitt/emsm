@@ -91,6 +91,11 @@ If you need more help, use the **--help** argument:
 	$ minecraft -h -p backups
 	$ minecraft -h -p ...
   
+
+# Core plugins
+
+Please take also a look at the my **EMSM** plugins repository: https://github.com/benediktschmitt/emsm_plugins
+
   
 # Versioning
 
