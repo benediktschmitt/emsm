@@ -39,6 +39,8 @@ Well, that's all. For the first run, type:
 
 	minecraft
 
+This will created the other subdirectories and the configuration files. If the *bin-script* does not work, take a look at the [documentation](http://emsm.benediktschmitt.de/how_to/index.html).
+
 
 ## Configuration
 
