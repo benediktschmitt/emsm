@@ -36,8 +36,8 @@ nosetests.xml
 .pydevproject
 
 # EMSM
-configuration/*
-worlds/*
-server/*
-plugins_data/*
+configuration/
+worlds/
+server/
+plugins_data/
 emsm/errors.txt
