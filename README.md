@@ -23,7 +23,7 @@ Create the user that should run the application:
       
 Switch to the home directory of *minecraft*:
 
-   	$ cd ~/minecraft
+   	$ cd /home/minecraft
    
 Download the application and extract it in the home directory of *minecraft*:
 
@@ -31,7 +31,7 @@ Download the application and extract it in the home directory of *minecraft*:
 	$ tar -xzf master.tar.gz
 	$ mv emsm-master/* ./
 	$ rm -r emsm-master master.tar.gz
-	$ chown -R minecraft:minecraft ~/minecraft
+	$ chown -R minecraft:minecraft /home/minecraft
       
 The **EMSM** and its subdirectories are now in the home directory of *minecraft*.
 
