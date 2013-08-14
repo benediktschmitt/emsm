@@ -28,10 +28,12 @@ Switch to the user and its home directory:
    
 Download the application and extract it in the home directory of *minecraft*:
 
-	$ wget https://github.com/benediktschmitt/emsm/archive/master.tar.gz -O /tmp/emsm.tar.gz
-	$ tar -xzf /tmp/emsm.tar.gz -C /tmp/
-	$ mv /tmp/emsm-master/* /home/minecraft/
+	$ wget https://github.com/benediktschmitt/emsm/archive/master.tar.gz
+	$ tar -xzf /tmp/emsm.tar.gz
+	$ mv emsm-master/* ./
+	$ rm -r emsm-master master.tar.gz
       
+The **EMSM** and its subdirectories are now in the home directory of *minecraft*.
 Copy the *bin_script* into the */usr/build* directory:
    
 	$ cp emsm/bin_script /usr/bin/minecraft
