@@ -12,32 +12,33 @@ Please read the [online documentation](http://emsm.benediktschmitt.de) for a ful
 
 ## Environment
 
-The **EMSM** requires *Python 3.2* or higher and *screen*. The minecraft server needs *java*:
+The **EMSM** requires *Python 3.2* or higher and *screen*. Furthermore, we need *java* to run the minecraft server, *tar* to extract the **EMSM** archive and *wget* to download it.
 
-	apt-get update 
-	apt-get install screen openjdk-7-jre-headless python3.2
+	$ apt-get update 
+	$ apt-get install screen openjdk-7-jre-headless python3.2 tar wget
 
 Create the user that should run the application:
 
-	adduser minecraft --disabled-password --shell=/bin/false
+	$ adduser minecraft --disabled-password --shell=/bin/false
       
 Switch to the user and its home directory:
 
-   	su minecraft
-   	cd ~/
+   	$ su minecraft
+   	$ cd ~/
    
-Download the application and extract it:
+Download the application and extract it in the home directory of *minecraft*:
 
-	wget https://link_to_the_app -O /tmp/emsm.tar.bz2
-	tar -xjf /tmp/emsm.tar.bz2
+	$ wget https://github.com/benediktschmitt/emsm/archive/master.tar.gz -O /tmp/emsm.tar.gz
+	$ tar -xzf /tmp/emsm.tar.gz -C /tmp/
+	$ mv /tmp/emsm-master/* /home/minecraft/
       
-Copy the *bin_script* in the */usr/build* directory:
+Copy the *bin_script* into the */usr/build* directory:
    
-	cp emsm/bin_script /usr/bin/minecraft
+	$ cp emsm/bin_script /usr/bin/minecraft
 
 Well, that's all. For the first run, type:
 
-	minecraft
+	$ minecraft
 
 This will create the other subdirectories and the configuration files. If the *bin-script* does not work, take a look at the [documentation](http://emsm.benediktschmitt.de/how_to/index.html).
 
@@ -67,7 +68,7 @@ server = vanilla_1.6
 
 To start the world *foo*, use the command:
 	
-	minecraft -p worlds -w foo --start
+	$ minecraft -p worlds -w foo --start
 
 If the minecraft server has not been downloaded yet, it will be downloaded now. So don't worry if the script runs longer than expected.
 
@@ -76,15 +77,15 @@ If the minecraft server has not been downloaded yet, it will be downloaded now. 
 
 To perfom a dry-run, type:
 
-	minecraft
+	$ minecraft
    
 If you need more help, use the **--help** argument:
 
-	minecraft -h
-	minecraft -h -p worlds
-	minecraft -h -p server
-	minecraft -h -p backups
-	minecraft -h -p ...
+	$ minecraft -h
+	$ minecraft -h -p worlds
+	$ minecraft -h -p server
+	$ minecraft -h -p backups
+	$ minecraft -h -p ...
   
   
 # Versioning
