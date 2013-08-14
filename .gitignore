@@ -17,10 +17,7 @@ develop-eggs
 .installed.cfg
 lib
 lib64
-<<<<<<< HEAD
 __pycache__
-=======
->>>>>>> 51f8000dc51a9714a07a9171a7b7da9c09bc6fb1
 
 # Installer logs
 pip-log.txt
@@ -37,13 +34,10 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
-<<<<<<< HEAD
 
 # EMSM
-configuration
-worlds
-server
-plugins_data
+configuration/*
+worlds/*
+server/*
+plugins_data/*
 emsm/errors.txt
-=======
->>>>>>> 51f8000dc51a9714a07a9171a7b7da9c09bc6fb1
