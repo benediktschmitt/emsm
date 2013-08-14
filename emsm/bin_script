@@ -9,4 +9,4 @@ LOCATION=/home/$USER
 
 # Change nothing below this line.
 # -----------------------------------------------
-eval "su -c 'cd $LOCATION && python3 emsm/application.py $@' $USER"
+eval "su -s=/bin/bash -c 'cd $LOCATION && python3 emsm/application.py $@' $USER"
