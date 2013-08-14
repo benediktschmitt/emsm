@@ -34,6 +34,7 @@ Download the application and extract it in the home directory of *minecraft*:
 	$ rm -r emsm-master master.tar.gz
       
 The **EMSM** and its subdirectories are now in the home directory of *minecraft*.
+
 Copy the *bin_script* into the */usr/build* directory:
    
 	$ cp emsm/bin_script /usr/bin/minecraft
