@@ -1,6 +1,6 @@
 # EMSM
 
-The **Extendable Minecraft Server Manager** (EMSM) is a minecraft server wrapper that is able to handle multiple minecraft worlds and server versions.
+The **Extendable Minecraft Server Manager** (EMSM) is a minecraft server wrapper, which is able to handle multiple minecraft worlds and server versions. The application is completly written in Python.
 
 The **EMSM** itself provides only a simple but sufficient **API** to manage the worlds. The rest of the work is done by the plugins.
 
@@ -90,7 +90,17 @@ If you need more help, use the **--help** argument:
 	$ minecraft -h -p server
 	$ minecraft -h -p backups
 	$ minecraft -h -p ...
-  
+	
+	
+# Directory structure
+
+The **EMSM** comes with the following directories:
+* *configuration*: contains all configuration files
+* *emsm*: contains the source code of the **EMSM**
+* *plugins*: contains the source code of the installed plugins
+* *plugins_data*: contains the data of the plugins (primary location of the *backups*)
+* *world*: contains the minecraft worlds
+
 
 # Core plugins
 
