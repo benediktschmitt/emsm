@@ -1,4 +1,4 @@
-# EMSM
+# ![emsm_logo](http://emsm.benediktschmitt.de/_static/logo/emsm_48x48.png) EMSM
 
 The **Extendable Minecraft Server Manager** (EMSM) is a minecraft server wrapper, which is able to handle multiple minecraft worlds and server versions. The application is completly written in Python.
 
