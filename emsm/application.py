@@ -166,10 +166,10 @@ class Application(object):
 if __name__ == "__main__":
     # I think it's convenient to handle the
     # locking meachnism and the exceptions this way.
-##    try:
+    try:
         with Application() as app:
             app.setup()
             app.run()
             app.finish()
-##    except:
-##        pass
+    except:
+        pass
