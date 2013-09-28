@@ -59,7 +59,7 @@ server.conf:
 ```ini
 [vanilla_1.6]
 server = minecraft_server_1.6.jar
-url = https://s3.amazonaws.com/Minecraft.Download/versions/1.6.2/minecraft_server.1.6.2.exe
+url = https://s3.amazonaws.com/Minecraft.Download/versions/1.6.4/minecraft_server.1.6.4.jar
 start_args = nogui.
 ```
 
