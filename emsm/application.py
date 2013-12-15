@@ -167,10 +167,10 @@ class Application(object):
 if __name__ == "__main__":
     # The application will log all errors and controll
     # the work flow. Any traceback output will be surpressed and logged.
-##    try:
+    try:
         with Application() as app:
             app.setup()
             app.run()
             app.finish()
-##    except:
-##        pass
+    except:
+        pass
