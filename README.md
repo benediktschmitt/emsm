@@ -57,7 +57,7 @@ it in less than 10 minutes.
 
 			$ cp emsm/initd_script /etc/init.d/minecraft
 			$ chmod +x /etc/init.d/minecraft
-			$ update-rc.d minecraft
+			$ update-rc.d minecraft defaults
 
 7. Well, that's all. For the first run, type:
 
