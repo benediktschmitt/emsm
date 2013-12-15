@@ -1,19 +1,44 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
+# Benedikt Schmitt <benedikt@benediktschmitt.de>
+
+
+"""
+About
+=====
+This plugin provides a user interface for the server wrapper. It can handle
+the server files and their configuration parameters easily.
+
+
+Configuration
+=============
+[server]
+update_message = The server is going down for an update.
+
+Where
+-----
+* update_message
+    Is a string, printed before stopping a world for an update.
+
+
+Arguments
+=========
+* --configuration
+* --update
+* --force-update
+* --uninstall
+"""
 
 
 # Modules
 # ------------------------------------------------
-import threading
-import urllib.parse
 import os
 
-# local (from the application)
+# local
 import world_wrapper
 import server_wrapper
 from base_plugin import BasePlugin
-
-# local
-from _common_lib import downloadreporthook, userinput
+from app_lib import downloadreporthook
+from app_lib import userinput
 
 
 # Data
@@ -28,8 +53,8 @@ class MyServer(object):
     Wraps an application server wrapper. :)
     """
 
-    def __init__(self, application, server):
-        self.application = application
+    def __init__(self, app, server):
+        self.app = app
         self.server = server
         return None
 
@@ -38,10 +63,8 @@ class MyServer(object):
         Prints the configuration of the server.
         """
         print("{} - configuration:".format(self.server.name))
-
-        configuration = self.server.conf
-        for option in configuration:
-            print("\t", option, "=", configuration[option])
+        for option in self.server.conf:
+            print("\t", option, "=", self.server.conf[option])
         return None
 
     def update(self, force_stop=True, stop_message=str()):
@@ -54,10 +77,8 @@ class MyServer(object):
         print("{} - update: ...".format(self.server.name))
         
         # Get all worlds, that are currently running the server.
-        world_filter = lambda w: w.server_wrapper is self.server \
-                       and w.is_online()
-        world_manager = self.application.world_manager
-        worlds = world_manager.get_filtered_worlds(world_filter)
+        worlds = self.app.worlds.get_by_pred(
+            lambda w: w.server is self.server and w.is_online())
 
         # Stop those worlds.
         try:
@@ -65,16 +86,16 @@ class MyServer(object):
                 print("{} - update: Stopping the world '{}' ..."\
                       .format(self.server.name, world.name))
                 world.send_command("say {}".format(stop_message))
-                world.stop(force_stop)                
+                world.stop(force_stop)
         # Do not continue if a world could not be stopped.
         except world_wrapper.WorldStopFailed as error:
             print("{} - update: failure: The world '{}' could not be stopped."\
-                  .format(self.server.name, error.world.name))            
+                  .format(self.server.name, error.world.name))
         # Continue with the server update if all worlds are offline.
         else:
             reporthook = downloadreporthook.Reporthook(
-                url = self.server.url,
-                to_file = self.server.server
+                url=self.server.url,
+                target=self.server.server
                 )
             print("{} - update: Downloading the server ..."\
                   .format(self.server.name))
@@ -105,20 +126,17 @@ class MyServer(object):
         """
         Uninstalls the server.
 
-        Before the server will be uninstalled, there will be some
-        checks to make sure the  server can be uninstalled without
-        any side effects.
+        Before the server will be uninstalled, there will be some checks to
+        make sure the server can be uninstalled without any side effects.
         """
-        server_manager = self.application.server_manager
-        
         # We need a server that could replace this one.
-        available_server = server_manager.get_available_server()  
-        available_server.pop( available_server.index(self.server.name) )
+        avlb_server = self.app.server.get_names()
+        avlb_server.pop( avlb_server.index(self.server.name) )
 
         # Break if there is no other server available.
-        if not available_server:
+        if not avlb_server:
             print("{} - uninstall: failure: There's no other server that "\
-                  "replace this one.".format(self.server.name))
+                  "could replace this one.".format(self.server.name))
             return None
         
         # Make sure, that the server should be removed.
@@ -128,111 +146,90 @@ class MyServer(object):
             return None
         
         # Get the name of the server that should replace this one.
-        prompt = "{} - uninstall: Which server should replace this one?\n\t"\
-                 "(Chose from: {}) ".format(self.server.name, available_server)
-        check_func = lambda server: server in available_server
-        replace_with = userinput.get_value(prompt, check_func=check_func)
-        replace_with = server_manager.get_server(replace_with)
+        replacement = userinput.get_value(
+            prompt=("{} - uninstall: Which server should replace this one?\n\t"
+                    "(Chose from: {}) ".format(self.server.name, avlb_server)),
+            check_func=lambda server: server in avlb_server,
+            )
+        replacement = self.app.server.get(replacement)        
         
         # Remove the server.
         try:
-            self.server.uninstall(replace_with)
+            self.server.uninstall(replacement)
         except server_wrapper.ServerIsOnlineError as error:
-            print("{} - uninstall: The server is still running:"\
+            print("{} - uninstall: The server is still running. ",
                   "\n\t'{}'".format(self.server.name, error))
         return None
 
     
 class Server(BasePlugin):
     """
-    Public interface for the server wrapper.
-    
+    Public interface for the server wrapper.    
     """
 
-    version = "1.0.0"
-    
-    allow_force_stop = False
-    update_message = "The server is going down for an update."
+    version = "2.0.0"
     
     def __init__(self, application, name):
         BasePlugin.__init__(self, application, name)
 
-        self.allow_force_stop = self.conf.getboolean(
-            "allow_force_stop", self.allow_force_stop)
+        self.setup_conf()
+        self.setup_argparser()
+        return None
+
+    def setup_conf(self):
         self.update_message = self.conf.get(
-            "update_message", self.update_message)
+            "update_message", "The server is going down for an update.")
 
-        self.conf["allow_force_stop"] = "yes" if self.allow_force_stop else "no"
         self.conf["update_message"] = self.update_message
-        return None    
+        return None
 
-    def setup_argparser_argument_group(self, group):
-        group.title = self.name
-        group.description = "This plugin provides methods to manage the "\
-                            "server files and the server configuration."
-        
-        # Which server?
-        server_manager = self.application.server_manager
-        available_server = server_manager.get_available_server()
-
-        group.add_argument(
-            "--server",
-            action = "append",
-            choices = available_server,
-            metavar = "SERVER",
-            dest = "server",
-            default = list(),
-            help = "Selects a server."
-            )
-        group.add_argument(
-            "--all-server",
-            action = "store_const",
-            dest = "all_server",
-            default = False,
-            const = True,
-            help = "Selects all server."
-            )        
-        
-        # Method?
-        group.add_argument(
-            "--print-configuration",
+    def setup_argparser(self):
+        self.argparser.description = (
+            "This plugin provides methods to manage the server files "
+            "and the server configuration.")
+                
+        self.argparser.add_argument(
+            "--configuration",
             action = "count",
-            dest = "print_server_conf",
-            help = "Prints the configuration section of the server."
+            dest = "conf",
+            help = "Prints the configuration of the server."
             )
-        group.add_argument(
+
+        update_group = self.argparser.add_mutually_exclusive_group()
+        update_group.add_argument(
             "--update",
             action = "count",
-            dest = "update_server",
+            dest = "update",
             help = "Updates the selected server."
             )
-        group.add_argument(
+        update_group.add_argument(
+            "--force-update",
+            action = "count",
+            dest = "force_update",
+            help = "Forces the stop of a world before the update begins."
+            )
+        
+        self.argparser.add_argument(
             "--uninstall",
             action = "count",
-            dest = "uninstall_server",
+            dest = "uninstall",
             help = "Removes the server."
             )
         return None
 
     def run(self, args):
-        # Get the selected server.
-        server_manager = self.application.server_manager
-        if args.all_server:
-            server = server_manager.get_all_server()
-        else:
-            server = [server_manager.get_server(s) for s in args.server]
+        server = self.app.server.get_selected()
+        for s in server:            
+            s = MyServer(self.app, s)
             
-        # And action:
-        for s in server:
-            
-            s = MyServer(self.application, s)
-            
-            if args.print_server_conf:
+            if args.conf:
                 s.print_configuration()
+
+            if args.update:
+                s.update(False, self.update_message)
+            elif args.force_update:
+                s.update(True, self.update_message)
                 
-            if args.update_server:
-                s.update(self.allow_force_stop, self.update_message)
-                
-            if args.uninstall_server:
+            if args.uninstall:
                 s.uninstall()
         return None

@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
+# Benedikt Schmitt <benedikt@benediktschmitt.de>
 
 
 # Modules
@@ -23,12 +24,12 @@ __all__ = ["Pathsystem"]
 # ------------------------------------------------
 class Pathsystem(object):
     """
-    Manages the paths to the diffrent files and directories
-    of the application.
+    Manages the paths to the different files and directories of the
+    application.
     """
 
-    # Usually, the root directory of the wrapper is the
-    # parent directory of this script.
+    # Usually, the root directory of the wrapper is the parent directory of
+    # this script.
     DEFAULT_ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 
     def __init__(self, root_dir=None):
@@ -50,14 +51,14 @@ class Pathsystem(object):
         self._dirs["server"] = os.path.join(self._root_dir, "server")
         self._dirs["worlds"] = os.path.join(self._root_dir, "worlds")
         self._dirs["emsm"] = os.path.join(self._root_dir, "emsm")
-
+        
         # Make sure that the base hierarchy exists.
         self.create()
         return None
 
     def create(self):
         """
-        Creates the directory structure used by the application.
+        Creates the basic directory structure used by the application.
         """
         for path in self._dirs.values():
             try:
@@ -66,22 +67,24 @@ class Pathsystem(object):
                 pass
         return None
 
-    # paths to the subdirectories
+    # paths to the main subdirectories
     # --------------------------------------------
 
-    configuration_dir = property(lambda self: self._dirs["conf"])
+    root_dir = property(lambda self: self._root_dir)
+
+    conf_dir = property(lambda self: self._dirs["conf"])
 
     server_dir = property(lambda self: self._dirs["server"])
 
     worlds_dir = property(lambda self: self._dirs["worlds"])
 
-    plugins_source_dir = property(lambda self: self._dirs["plugins_src"])
+    plugins_src_dir = property(lambda self: self._dirs["plugins_src"])
 
     plugins_data_dir = property(lambda self: self._dirs["plugins_data"])
 
-    emsm_source_dir = property(lambda self: self._dirs["emsm"])
+    emsm_dir = property(lambda self: self._dirs["emsm"])
 
-    # ...
+    # paths to topic specific subdirectories
     # --------------------------------------------
 
     def get_plugin_data_dir(self, plugin):

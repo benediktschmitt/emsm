@@ -1,118 +1,152 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
+# Benedikt Schmitt <benedikt@benediktschmitt.de>
 
 
-# Modules
-# --------------------------------------------------
-import os
-import shutil
-import tempfile
-import collections
+"""
+About
+=====
+This is a package manager for the EMSM plugins. Uninstall and install plugins
+with this plugin.
 
-# local (from the application)
-import plugin_manager
-from base_plugin import BasePlugin
+EMSM Context
+============
+Means, that this module is loaded as plugin in the EMSM.
 
-# local
-from _common_lib import userinput
+Package structure
+-----------------
+The archive that contains the plugin should have the following structure:
 
-
-# Data
-# --------------------------------------------------
-PLUGIN = "Plugins"
-
-
-# Exceptions
-# --------------------------------------------------
-class InstallError(Exception):
-    """
-    Raised from the BaseInstaller.
-    """
-
-    def __init__(self, msg):
-        self.msg = msg
-        return None
-    
-    def __str__(self):
-        return self.msg
-    
-    
-# Classes
-# --------------------------------------------------
-class BaseUnInstaller(object):
-    """
-    The base un-/installer.
-    """
-
-    def __init__(self, application, plugin):
-        self.application = application
-        self.plugin = plugin
-        return None
-    
-    def get_plugin_related_paths(self):
-        """
-        Returns a dictionary that contains the paths of the plugin
-        that are used in the application.
-
-        type/purpose => path
-        """
-        pathsystem = self.application.pathsystem
-        
-        paths = collections.OrderedDict()        
-        paths["plugin"] = os.path.join(
-            pathsystem.plugins_source_dir, self.plugin + ".py")
-        paths["library"] = os.path.join(
-            pathsystem.plugins_source_dir, self.plugin + "_lib")
-        paths["data"] = os.path.join(
-            pathsystem.plugins_data_dir, self.plugin)
-        return paths
-    
-    
-class BaseInstaller(BaseUnInstaller):
-    """
-    Plugin installer.
-
-    The archive that contains the plugin should have
-    the following structure:
-    
     \foo.tar.bz2
         \plugin.py
-        \readme.txt
-        \library
-            \bar.py
-            \bar1.py
-            \...
         \data
             \bar.txt
             \bar.csv
             \...
 
-    The filenames will be adapted to the application
-    filenames:
-    \app
+During the installation, the path names will be changed to:
+
+    \
         \plugins_src
-            \foo.py <= plugin.py
-            \foo_lib <= library
+            \foo.py    <= plugin.py
         \plugins_data
-            \foo <= data
+            \foo       <= data
+                \bar.txt
+                \bar.csv
+                \...
+
+If the plugin contains a docstring like this one, it will be printed after
+the installation.
+
+Arguments
+---------
+* --install ARCHIVE, -i ARCHIV
+    Installs an new plugin from the archive. If a plugin with the same name
+    already exists, the installation will fail.
+* --remove PLUGIN, -r PLUGIN
+    Removes the plugin from the emsm. Please make sure, that no other plugin
+    depends on this one.
+* --doc PLUGIN, -d PLUGIN
+    Prints the documentation of the selected plugin.
+
+Indepentent run
+===============
+If you run this plugin without the emsm, it provides a frienfly package
+creator.
+
+Arguments
+---------
+* --create TARGET, -c TARGET
+* --source SRC_FILE, -s SRC_FILE
+* --data DATA_DIR, -d DATA_DIR
+
+E.g.
+^^^^
+plugin.py -c build/foo -s dev/foo.py -d dev/foo_data
+"""
+
+
+# Modules
+# --------------------------------------------------
+import os
+import ast
+import shutil
+import tempfile
+import logging
+import argparse
+import urllib.request
+
+# local
+try:
+    import plugin_manager
+    from base_plugin import BasePlugin
+    from app_lib import userinput
+    emsm_context = True
+except ImportError:
+    # Not nice, but if I define this dummy class, I can avoid an ugly
+    # *if* structure.
+    class BasePlugin(object):
+        pass
+    emsm_context = False
+
+
+# Backward compatibility
+# ------------------------------------------------
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = OSError
+
+
+# Data and "shortcuts"
+# --------------------------------------------------
+PLUGIN = "Plugins"
+log = logging.getLogger(__name__)
+
+
+# Exceptions
+# --------------------------------------------------
+class PluginManagerError(Exception):
+    """Base class for all other Exceptions in this module."""
+
+
+class InstallError(PluginManagerError):
+    """Raised if an error occures during the installation."""
+    
+    
+# Data
+# --------------------------------------------------
+class PluginPackage(object):
+    """
+    Mangages the installation progess of a new plugin.
     """
 
-    def __init__(self, application, archive):
-        # The path to the archive that contains the new plugin.
-        self.archive = archive
+    def __init__(self, app, package):
+        self.app = app
 
-        # The name of the new plugin.
-        plugin = archive[:archive.find(".")]        
-        BaseUnInstaller.__init__(self, application, plugin)
-        return None    
+        # Plugin name
+        name = os.path.basename(package)
+        name = name[:name.find(".")]
+        self.name = name
+        
+        # Path to the package file
+        self.package = package
+        
+        # Docstring of the package. Available after *install*.
+        self.doc = None
+        
+        self.paths = dict()
+        self.paths["plugin"] = os.path.join(
+            self.app.paths.plugins_src_dir, self.name) + ".py"
+        self.paths["data"] = os.path.join(
+            self.app.paths.plugins_data_dir, self.name)
 
-    def print_readme(self, readme):
-        """
-        Prints the content of the readme file.
-        """
-        with open(readme) as file:
-            print(file.read())
+        self._installed = False
         return None
-    
+
+    @property
+    def installed(self):
+        return self._installed
+
     def install(self):
         """
         Unpacks the archive with the plugin and moves the files and
@@ -120,25 +154,28 @@ class BaseInstaller(BaseUnInstaller):
 
         Raises: InstallError
         """
-        app_paths = self.get_plugin_related_paths()
+        if self._installed:
+            return None
 
+        log.info("Installing the plugin: {}".format(self.name))
+        
         # Check if the plugin already exists.
-        if self.application.plugin_manager.plugin_is_available(self.plugin):
-            msg = "a plugin with the same name has already been "\
-                  "installed."
+        if self.app.plugins.plugin_is_available(self.name):
+            msg = "A plugin with the same name has already been installed."
+            log.error(msg)
             raise InstallError(msg)
 
         # Extract the plugin in a temporary directory so that the plugin will
         # not mess up the application's directories if it's not valid.
         with tempfile.TemporaryDirectory() as temp_dir:
-            
             try:
                 shutil.unpack_archive(
-                    filename = self.archive,
+                    filename = self.package,
                     extract_dir = temp_dir
                     )
-            except ValueError as error:
-                msg = "the archive could not be unpacked: {}".format(error)
+            except (ValueError, shutil.ReadError, FileNotFoundError) as error:
+                msg = "The archive could not be unpacked: {}".format(error)
+                log.error(msg)
                 raise InstallError(msg)
 
             # Check the files and directories in the temporary directory.
@@ -146,182 +183,190 @@ class BaseInstaller(BaseUnInstaller):
                              for filename in os.listdir(temp_dir)}
             
             if "plugin.py" not in package_paths:
-                msg = "the package does not contain the 'plugin.py' file."
+                msg = "The package does not contain the 'plugin.py' file."
+                log.error(msg)
                 raise InstallError(msg)
-
+            
             if not os.path.isfile(package_paths["plugin.py"]):
                 msg = "'plugin.py' is not a file."
+                log.error(msg)
                 raise InstallError(msg)
 
             if "data" in package_paths \
                and not os.path.isdir(package_paths["data"]):
                 msg = "'data' is not a directory."
-                raise InstallError(msg)
-
-            if "library" in package_paths \
-               and not os.path.isdir(package_paths["library"]):
-                msg = "'library' is not a directory."
-                raise InstallError(msg)
-
-            if "readme.txt" in package_paths \
-               and not os.path.isfile(package_paths["readme.txt"]):
-                msg = "'readme.txt' is not a file."
+                log.error(msg)
                 raise InstallError(msg)
 
             # Move the files.
-            shutil.move(package_paths["plugin.py"], app_paths["plugin"])
-            if "library" in package_paths:
-                shutil.move(package_paths["library"], app_paths["library"])
+            shutil.move(package_paths["plugin.py"], self.paths["plugin"])
             if "data" in package_paths:
-                shutil.move(package_paths["data"], app_paths["data"])
+                shutil.move(package_paths["data"], self.paths["data"])
 
-            # Show the readme.
-            if "readme.txt" in package_paths:
-                self.print_readme(package_paths["readme.txt"])
+        # Extract the docstring from the plugin.
+        with open(self.paths["plugin"]) as file:
+            ast_node = ast.parse(file.read())
+            try:
+                self.doc = ast.get_docstring(ast_node)
+            except TypeError:
+                pass
+            
+        log.info("Installation complete.")
+        self._installed = True
         return None
 
-                            
-class Installer(BaseInstaller):
-    """
-    A friendly installer.
-
-    Catches the InstallError exceptions that could occure while the
-    installation.
-    """
-
-    def print_readme(self, readme):
-        print("{} - install: readme:".format(self.plugin))
-        print("-"*50)
-        BaseInstaller.print_readme(self, readme)
-        print("-"*50)
+    def print_doc(self):
+        """Prints the documentation of the plugin if available."""
+        if self.doc is not None:
+            print(self.doc)
+        else:
+            print("<Doc not available>")
         return None
 
-    def install(self):
-        print("{} - install: ...".format(self.plugin))
+    def load_plugin(self):
+        """Loads the plugin."""
+        if self._installed:
+            try:
+                self.app.plugins.import_plugin(self.paths["plugin"])
+            except plugin_manager.PluginException as err:
+                log.error(err)
+                raise
+        return None
+
+    def ui_install(self):
+        """
+        Provides a user interface for the installation.
+        """
+        print("Installing {} ...".format(self.name))
         
         try:
-            BaseInstaller.install(self)
-        except InstallError as error:
-            print("{} - install: failure: {}".format(self.plugin, error))
+            self.install()
+        except InstallError as err:
+            print("> An error occured during the installation.")
+            print("> {}".format(err))
         else:
-            print("{} - install: Done.".format(self.plugin))
+            if userinput.ask("Do you want to read the documentation?", True):
+                self.print_doc()
+
+            if userinput.ask("Do you want to load the plugin now?", False):
+                try:
+                    self.load_plugin()
+                except plugin_manager.PluginException as err:
+                    print("> An error occured while loading the plugin:")
+                    print("> {}".format(err))
+
+            print("Installation complete.")
         return None
 
-    
-class Uninstaller(BaseUnInstaller):
-    """
-    Note: This uninstaller can only remove the *known* paths of the plugin.
-    """
-    
-    def uninstall_directories(self):
-        """
-        Opens a command line dialog where the user can select which
-        paths should be removed and removes them.
-        """
-        print("{} - uninstall: "\
-              "\n\t This script can only remove the paths of the plugin"\
-              "\n\t managed by the application. If the plugin used other"\
-              "\n\t paths, you'll have to remove them manually."\
-              .format(self.plugin))
-
-        # Make for each path sure that it should be removed.
-        paths = self.get_plugin_related_paths()
-        for type_ in paths:
-            path = paths[type_]
-            if not os.path.exists(path):
-                continue
-            # Make sure, that the path should be # removed.
-            question = "{} - uninstall: do you want to remove the {}? "\
-                       .format(self.plugin, type_)
-            if not userinput.ask(question):
-                continue
-            # Remove the path.
-            try:
-                if os.path.isdir(path):
-                    shutil.rmtree(path)
-                else:
-                    os.remove(path)
-            except (OSError, PermissionError) as error:
-                print("{} - uninstall: failure: the {} could not be removed: {}"\
-                      .format(self.plugin, type_, error))
-            else:
-                print("{} - uninstall: the {} has been removed."\
-                      .format(self.plugin, type_))
-
-        # Call the uninstall method of the plugin if its loaded and
-        # notify the user that the plugin might generate data at the
-        # finish phase.
-        plugin_manager = self.application.plugin_manager
-        if plugin_manager.plugin_is_available(self.plugin):
-            plugin_obj = plugin_manager.get_plugin(self.plugin)
-            plugin_obj.uninstall()
-            print("{} - remove: "\
-                  "\n\t The plugin is loaded, therefore it is possible,"\
-                  "\n\t that it creates data at the finish-phase of this "\
-                  "\n\t application. To make sure that all paths have been"\
-                  "\n\t removed, call this plugin again."\
-                  .format(self.plugin))
-        return None
-
-    def uninstall_configuration(self):
-        """
-        Removes the configuration of the plugin.
-        """
-        conf = self.application.configuration.main
-        question = "{} - uninstall: Do you want to remove the configuration?"\
-                   .format(self.plugin)
-        if self.plugin in conf and userinput.ask(question):
-            conf.remove_section(self.plugin)
-        return None
-
-    def uninstall(self):
-        """
-        Removes the whole plugin.
-        """
-        self.uninstall_directories()
-        self.uninstall_configuration()
-        return None
-    
     
 class Plugins(BasePlugin):
     """
     Provides methods to install or remove plugins for this application.
     """
 
-    version = "1.0.0"
+    version = "2.0.0"
     
-    def __init__(self, application, name):
-        BasePlugin.__init__(self, application, name)
-        return None
+    def __init__(self, app, name):
+        BasePlugin.__init__(self, app, name)
 
-    def setup_argparser_argument_group(self, group):
-        group.title = self.name
-        group.description = "This plugin provides methods to install or "\
-                            "remove plugins of this application."
+        # Argparser
+        self.argparser.description = (
+            "This plugin provides methods to install or remove plugins from "
+            "this application.")
         
-        group.add_argument(
-            "--install",
+        self.argparser.add_argument(
+            "-i", "--install",
             action = "store",
             dest = "install",
             metavar = "ARCHIVE",
             help = "Installs the plugin from the archive."
             )
-        group.add_argument(
-            "--uninstall",
+        self.argparser.add_argument(
+            "-r", "--remove",
             action = "store",
-            dest = "uninstall",
+            dest = "remove",
             metavar = "PLUGIN",
-            help = "Opens a dialog to remove the files and directories "\
-            "of the plugin."
+            choices = self.app.plugins.get_plugin_names(),            
+            help = "Removes the plugin from the EMSM."
+            )
+
+##        self.argparser.add_argument(
+##            "-u", "--update",
+##            action = "append",
+##            dest = "update",
+##            metavar = "PLUGIN",
+##            choices = self.app.plugins.get_plugin_names(),
+##            help = "Tries to update the plugin, if a new version is available."
+##            )
+##        self.argparser.add_argument(
+##            "-U", "--update-all",
+##            action = "count",
+##            dest = "update_all",
+##            help = "Updates all plugins."
+##            )
+        
+        self.argparser.add_argument(
+            "-d", "--doc",
+            action = "store",
+            dest = "print_doc",
+            metavar = "PLUGIN",
+            choices = self.app.plugins.get_plugin_names(),
+            help = "Prints the docstring of the plugin."
             )
         return None
 
     def run(self, args):
+        # I did not like the installation progress coded in the plugin_manager,
+        # so we need this handler.
         if args.install:
-            installer = Installer(self.application, args.install)
-            installer.install()
-            
-        if args.uninstall:
-            uninstaller = Uninstaller(self.application, args.uninstall)
-            uninstaller.uninstall()
+            package = PluginPackage(self.app, args.install)
+            package.ui_install()
+
+        # We have nothing to do here. The EMSM performs a clean uninstallation
+        # itself.
+        if args.remove:
+            self.app.plugins.uninstall(args.remove)
+
+        if args.print_doc:
+            plugin_module = self.app.plugins.get_module(args.print_doc)
+            if plugin_module:
+                print("{} - documentation:".format(args.print_doc))
+                print(plugin_module.__doc__)
+
+##        # Update plugins if possible.
+##        if args.update or args.update_all:
+##            if args.update_all:
+##                plugins = self.app.plugins.get_all_plugins()
+##            else:
+##                plugins = [self.app.plugins.get_plugin(p)\
+##                           for p in args.update]
+##            
+##            for p in plugins:
+##                p.update()
         return None
+
+
+# Main
+# ------------------------------------------------
+if __name__ == "__main__":
+    # Parse the command line args.
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--create", required=True,
+                        help="The target of the plugin package.")
+    parser.add_argument("-s", "--source", required=True,
+                        help="The source file of the plugin.")
+    parser.add_argument("-d", "--data",
+                        help="The data directory, that should be included.")
+    args = parser.parse_args()
+
+    # Create the archive
+    with tempfile.TemporaryDirectory() as temp_dir:
+        print("copying the plugin")
+        shutil.copy(args.source, os.path.join(temp_dir, "plugin.py"))
+        if args.data:
+            print("copying the data folder")
+            shutil.copytree(args.data, os.path.join(temp_dir, "data"))
+
+        archive = shutil.make_archive(
+            args.create[:args.create.find(".")], "bztar", temp_dir, "./")
+        print("packed in:", archive)

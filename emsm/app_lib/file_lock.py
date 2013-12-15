@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 # Benedikt Schmitt <benedikt@benediktschmitt.de>
 
 
@@ -24,7 +24,7 @@ except ImportError:
 __all__ = ["Timeout", "FileLock"]
 
 
-# Exception
+# Exceptions
 # ------------------------------------------------
 class Timeout(Exception):
     """
@@ -37,7 +37,7 @@ class Timeout(Exception):
         return None
 
     def __str__(self):
-        temp = "The file base lock '{}' could not be acquired."\
+        temp = "The file lock '{}' could not be acquired."\
                .format(self.lock_file)
         return temp
 
@@ -52,7 +52,7 @@ class BaseFileLock(object):
     >>> with BaseFileLock("afile"):
             pass
             
-    or better:
+    or if you need to specify a timeout:
     
     >>> with BaseFileLock("afile").acquire(5):
             pass
@@ -106,12 +106,12 @@ class BaseFileLock(object):
         
         while not self.is_locked(): 
             self._acquire()
-            
+
             if timeout is not None and time.time() - start_time > timeout:
                 raise Timeout(self._lock_file)
             else:
                 time.sleep(poll_intervall)
-        return self
+        return self    
 
     def release(self):
         """
@@ -140,19 +140,19 @@ if msvcrt:
         
         def _acquire(self):
             open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
-            temp = os.open(self._lock_file, open_mode)
+            fd = os.open(self._lock_file, open_mode)
 
             try:
-                msvcrt.locking(temp, msvcrt.LK_NBLCK, 1)
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
             except OSError:
-                pass
+                os.close(fd)
             else: 
-                self._lock_file_fd = temp
+                self._lock_file_fd = fd
             return None
                 
         def _release(self):
             msvcrt.locking(self._lock_file_fd, msvcrt.LK_UNLCK, 1)        
-            os.close(self._lock_file_fd)        
+            os.close(self._lock_file_fd)     
             self._lock_file_fd = None
             
             try:
@@ -169,14 +169,14 @@ elif fcntl:
         
         def _acquire(self):
             open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
-            temp = os.open(self._lock_file, open_mode)
+            fd = os.open(self._lock_file, open_mode)
 
             try:
-                fcntl.flock(temp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except (IOError, OSError):
-                pass
+                os.close(fd)
             else: 
-                self._lock_file_fd = temp
+                self._lock_file_fd = fd
             return None
             
         def _release(self):
@@ -191,14 +191,19 @@ elif fcntl:
             except OSError:
                 pass
             return None
+
+# Lock is not available
+else:
+    raise ImportError("The file lock is not available for your OS")
         
     
 # Main
 # ------------------------------------------------
 if __name__ == "__main__":
+    # Run multiple instances of this script to test it.
     lock = FileLock("lock")
     print("entering")
-    with lock.acquire(10):
+    with lock.acquire():
         print("entered")
         time.sleep(5)
     print("left")

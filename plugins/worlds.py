@@ -1,17 +1,70 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
+# Benedikt Schmitt <benedikt@benediktschmitt.de>
+
+
+"""
+About
+=====
+This plugin provides a user interface for the server wrapper. It handles
+the server files and their configuration parameters easily.
+
+
+Configuration
+=============
+[worlds]
+default_log_start = 0
+default_log_limit = 10
+open_console_delay = 1
+send_command_timeout = 10
+
+Where
+-----
+* default_log_start
+    Is the first line of the log, that is printed. Can be overwritten by a
+    command line argument.
+* default_log_limit
+    Is the default number of log lines, that is printed at once. This
+    value can be overwritten by a command line argument too.
+* open_console_delay
+    Time between printing the WARNING and opening the console.
+* send_command_timeout
+    Maximum time, that is waited for the response of the minecraft server,
+    if the *--verbose-send* command is used.
+
+
+Arguments
+=========
+* --configuration
+* --properties
+* --log
+* --log-start
+* --log-limit
+* --pid
+* --status
+* --send CMD
+* --verbose-send CMD
+* --console
+* --start
+* --stop
+* --force-stop
+* --kill
+* --restart
+* --force-restart
+* --uninstall
+"""
 
 
 # Modules
 # --------------------------------------------------
-import time
 import os
-
-# local (from the application)
-import world_wrapper
-from base_plugin import BasePlugin
+import sys
+import time
 
 # local
-from _common_lib import userinput, pprinttable
+import world_wrapper
+from base_plugin import BasePlugin
+from app_lib import userinput
+from app_lib import pprinttable
 
 
 # Data
@@ -23,12 +76,11 @@ PLUGIN = "Worlds"
 # --------------------------------------------------
 class MyWorld(object):
     """
-    Wraps an application world wrapper :)
-    
+    Wraps an application world wrapper :)    
     """    
 
-    def __init__(self, application, world):
-        self.application = application
+    def __init__(self, app, world):
+        self.app = app
         self.world = world
         return None
 
@@ -36,17 +88,9 @@ class MyWorld(object):
         """
         Prints the application's world configuration.
         """
-        conf = self.world.conf
-        body = [[option, conf[option]] for option in conf]
-        body.sort()
-
-        table = pprinttable.table_string(
-            body=body,
-            header=["option", "value"],
-            alignment = "^")
-        
         print("{} - configuration:".format(self.world.name))
-        print(table)
+        for option in sorted(self.world.conf):
+            print("\t", option, "=", self.world.conf[option])
         return None    
     
     def print_properties(self):
@@ -54,22 +98,20 @@ class MyWorld(object):
         Prints the content of the server.properties file.
         """
         properties = self.world.get_properties()
-        properties = list(properties.items())
-        properties.sort()
-
-        table = pprinttable.table_string(
-            body = properties,
-            header = ["property", "value"],
-            alignment = "^")
-            
+        
         print("{} - server.properties:".format(self.world.name))
-        print(table)
+        for option in sorted(properties):
+            print("\t", option, "=", properties[option])
         return None
 
-    def print_log(self, start = 0, limit = 20):
+    def print_log(self, start=0, limit=20):
+        """
+        Prints the log. Starting with line number *start* and restricts the
+        number of printed lines to *limit*.
+        """
         log = self.world.get_log()
         log = log.split("\n")
-
+        
         # Make sure that the limits are valid.
         # 0 <= start <= size
         # limit <= size - start
@@ -87,12 +129,11 @@ class MyWorld(object):
 
     def print_pids(self):
         pids = self.world.get_pids()
-        pids = ", ".join(pids)
-
+        pids = ", ".join(str(pid) for pid in pids)
         print("{} - pids: {}".format(self.world.name, pids))
         return None
 
-    def print_status(self, status = None):
+    def print_status(self, status=None):
         if self.world.is_online():
             temp = "{} - status: online"
         else:
@@ -110,7 +151,7 @@ class MyWorld(object):
         else:
             print("{} - send-command: The command '{}' has been sended."\
                   .format(self.world.name, cmd))
-        return None    
+        return None
     
     def verbose_send_command(self, cmd, timeout):
         """
@@ -120,8 +161,7 @@ class MyWorld(object):
             output = self.world.send_command_get_output(cmd, timeout)
         except world_wrapper.WorldIsOfflineError:
             print("{} - verbose-send-command: failure: "\
-                  "The world is offline."\
-                  .format(self.world.name))
+                  "The world is offline.".format(self.world.name))
         except world_wrapper.WorldCommandTimeout:
             print("{} - verbose-send-command: failure: "\
                   "the world did not react in {}s"\
@@ -131,12 +171,12 @@ class MyWorld(object):
             print(output)
         return None
 
-    
     def open_console(self, delay=1):
-        print("Press [ctrl + a + d] to detach from the screen session.")
-        print("!!! STOPPING THE WORLD IN THE CONSOLE CAN "\
-              "CAUSE UNEXPECTED BEHAVIOUR OF THIS APPLICATION !!!")
-        time.sleep(delay)
+        if self.world.is_online():
+            print("Press [ctrl + a + d] to detach from the session.")
+            print("!!! STOPPING THE WORLD IN THE CONSOLE CAN "\
+                  "CAUSE UNEXPECTED BEHAVIOUR OF THIS APPLICATION !!!")
+            time.sleep(delay)
         try:
             self.world.open_console()
         except world_wrapper.WorldIsOfflineError:
@@ -227,22 +267,26 @@ class MyWorld(object):
         question = "Do you really want to remove the world '{}'?"\
                    .format(self.world.name)
         if userinput.ask(question):
-            self.world.uninstall()        
+            self.world.uninstall()
         return None
 
     
 class Worlds(BasePlugin):
     """
     Public interface for the world wrapper.
-
     """
 
-    version = "1.0.0"
+    version = "2.0.0"
 
     def __init__(self, application, name):
         BasePlugin.__init__(self, application, name)
 
-        # Some configuration stuff
+        # Argumentparser
+        self.setup_conf()
+        self.setup_argparser()
+        return None
+
+    def setup_conf(self):
         self.default_log_start = self.conf.getint(
             "default_log_start", 0)
         self.default_log_limit = self.conf.getint(
@@ -252,62 +296,59 @@ class Worlds(BasePlugin):
         self.default_send_command_timeout = self.conf.getint(
             "send_command_timeout", 10)
 
-        # Let's init the configuration section.
         self.conf["default_log_start"] = str(self.default_log_start)
         self.conf["default_log_limit"] = str(self.default_log_limit)
         self.conf["open_console_delay"] = str(self.default_open_console_delay)
         self.conf["send_command_timeout"] = str(self.default_send_command_timeout)
         return None
 
-    def setup_argparser_argument_group(self, group):
-        group.title = self.name
-        group.description = "This plugin provides methods to "\
-                            "manage the worlds."
+    def setup_argparser(self):
+        self.argparser.description = "This plugin provides methods to "\
+                                     "manage the worlds."
 
         # Information about the world.
-        group.add_argument(
+        self.argparser.add_argument(
             "--configuration",
             action = "count",
             dest = "configuration",
             help = "Prints the configuration section."
             )
-        group.add_argument(
+        self.argparser.add_argument(
             "--properties",
             action = "count",
             dest = "properties",
             help = "Prints the content of the server.properties file."
             )
         
-        group.add_argument(
+        self.argparser.add_argument(
             "--log",
             action = "count",
             dest = "log",
             help = "Prints the log."
             )
-        group.add_argument(
+        self.argparser.add_argument(
             "--log-start",
             action = "store",
             dest = "log_start",
-            type = lambda v: int(v.replace("r", "-")),
-            help = "The first line of the log that will be printed. "\
-            "If r10, the 10th last lines will be the first line that will "\
-            "be printed."
+            type = int,
+            help = "First printed line of the log. "\
+            "('-2' starts with the 2nd last line)"
             )
-        group.add_argument(
+        self.argparser.add_argument(
             "--log-limit",
             action = "store",
             dest = "log_limit",
             type = int,
             help = "The number of lines that will be printed."
             )
-        
-        group.add_argument(
+
+        self.argparser.add_argument(
             "--pid",
             action = "count",
             dest = "pid",
             help = "Prints the pid of the server that runs the world."
             )
-        group.add_argument(
+        self.argparser.add_argument(
             "--status",
             action = "count",
             dest = "status",
@@ -316,32 +357,30 @@ class Worlds(BasePlugin):
         
         # XXX: I need a name for those group
         # of arguments.
-        group.add_argument(
+        con_iface_group = self.argparser.add_mutually_exclusive_group()
+        con_iface_group.add_argument(
             "--send",
             action = "store",
-            nargs = "*",
             dest = "send",
-            metavar = "CMD",
-            help = "Sends the command to the world."
+            metavar = "COMMAND",
+            help = "Sends the command to the world. E.g.: 'say Hello'"
             )
-        group.add_argument(
+        con_iface_group.add_argument(
             "--verbose-send",
             action = "store",
-            nargs = "*",
             dest = "verbose_send",
-            metavar = "CMD",
-            help = "Sends the command to the world and "\
-            "and prints the log echo."
+            metavar = "COMMAND",
+            help = "Sends the command to the world prints the log echo."
             )
-        group.add_argument(
-            "--open-console",
+        con_iface_group.add_argument(
+            "--console",
             action = "count",
-            dest = "open_console",
+            dest = "console",
             help = "Opens the server console of the world."
             )
         
         # Status changes
-        group_status_change = group.add_mutually_exclusive_group()
+        group_status_change = self.argparser.add_mutually_exclusive_group()
         group_status_change.add_argument(
             "--start",
             action = "count",
@@ -362,11 +401,12 @@ class Worlds(BasePlugin):
             "if the smooth stop fails."
             )
         group_status_change.add_argument(
-            "--kill-processes",
+            "--kill",
             action = "count",
-            dest = "kill_processes",
+            dest = "kill",
             help = "Kills the processes of the world. I recommend to use "\
-            "the force-stop method if you can."
+            "the force-stop method if you can. force-stop saves the world, "\
+            "before it kills the process."
             )
         group_status_change.add_argument(
             "--restart",
@@ -384,23 +424,18 @@ class Worlds(BasePlugin):
             )
         
         # Setup
-        group.add_argument(
+        self.argparser.add_argument(
             "--uninstall",
             action = "count",
             dest = "uninstall",
-            help = "Uninstalls the worlds."
+            help = "Uninstalls the world."
             )
         return None    
 
     def run(self, args):
-        """ run """
-        # Get the selected worlds
-        worlds = self.application.world_manager.get_selected_worlds()
-
-        # And action:
+        worlds = self.app.worlds.get_selected()
         for world in worlds:
-
-            world = MyWorld(self.application, world)
+            world = MyWorld(self.app, world)
 
             # Information about the world.
             if args.configuration:
@@ -422,37 +457,34 @@ class Worlds(BasePlugin):
             if args.status:
                 world.print_status()
                 
-            # XXX: I need a name for those group
-            # of arguments.
+            # XXX: I need a name for this group of arguments.
             if args.send:
-                cmd = " ".join(args.send)
-                world.send_command(cmd)
+                world.send_command(args.send)
 
-            if args.verbose_send:
-                cmd = " ".join(args.verbose_send)
+            elif args.verbose_send:
                 world.verbose_send_command(
-                    cmd, self.default_send_command_timeout)
+                    args.verbose_send, self.default_send_command_timeout)
 
-            if args.open_console:
+            elif args.console:
                 world.open_console(self.default_open_console_delay)
 
             # Status changes
             if args.start:
                 world.start()
 
-            if args.stop:
+            elif args.stop:
                 world.stop()
 
-            if args.force_stop:
+            elif args.force_stop:
                 world.stop(force_stop=True)
 
-            if args.kill_processes:
+            elif args.kill:
                 world.kill_processes()
 
-            if args.restart:
+            elif args.restart:
                 world.restart()
 
-            if args.force_restart:
+            elif args.force_restart:
                 world.restart(force_restart=True)
 
             # Setup

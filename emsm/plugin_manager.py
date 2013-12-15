@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
+# Benedikt Schmitt <benedikt@benediktschmitt.de>
 
 
 # Modules
 # ------------------------------------------------
 import os
 import sys
+import logging
 import importlib.machinery
-import hashlib
 
 # local
 from base_plugin import BasePlugin
@@ -27,8 +28,11 @@ else:
 # Data
 # ------------------------------------------------
 __all__ = ["PluginException", "PluginUnavailableError",
-           "PluginImplementationError", "PluginManager",
+           "PluginImplementationError", "PluginOutdatedError",
+           "PluginManager",
            ]
+
+log = logging.getLogger("emsm")
 
 
 # Exceptions
@@ -94,11 +98,10 @@ class PluginOutdatedError(PluginException):
 # ------------------------------------------------
 class PluginManager(object):
     """
-    Manages and contains all plugins. Works also as dispatcher
-    for the plugins.
+    Manages and contains all plugins. Works also as dispatcher for the plugins.
 
-    Read the documentation at the base_plugin module for further
-    information or take a look at the hello_dolly plugin.
+    Read the documentation at the base_plugin module for further information or
+    take a look at the hello_dolly plugin.
 
     The following methods make use of the application attributes:
         - import_from_default_directory()
@@ -106,12 +109,15 @@ class PluginManager(object):
         - run()
     """
 
-    def __init__(self, application):
-        self._application = application
+    def __init__(self, app):
+        self._app = app
 
+        # Maps the module names to the module object.
+        self._modules = dict()
+        
         # Maps the module name to the plugin class.
         self._plugin_types = dict()
-
+        
         # Maps the module name to the plugin instance.
         self._plugins = dict()
         return None
@@ -119,42 +125,54 @@ class PluginManager(object):
     # get
     # --------------------------------------------
 
+    def get_module(self, plugin):
+        """Returns the module, that contains the plugin."""
+        return self._modules.get(plugin)
+    
     def get_plugin_type(self, plugin):
-        return self._plugin_types[plugin]
-
-    def get_plugin(self, plugin):
-        return self._plugins[plugin]
-
+        """Returns the plugin class."""
+        return self._plugin_types.get(plugin)
+    
     def plugin_is_available(self, plugin):
-        return plugin in self._plugin_types
+        """Returns true, if the plugin is initialised."""
+        return plugin in self._modules
 
-    def get_available_plugins(self):
-        return list(self._plugin_types)
+    def get_plugin_names(self):
+        """Returns the names of all available plugins."""
+        return list(self._modules.keys())
+    
+    def get_plugin(self, plugin):
+        """Returns the plugin instance, used by the emsm."""
+        return self._plugins.get(plugin)
+
+    def get_all_plugins(self):
+        """Returns all currently loaded plugin instaces."""
+        return self._plugins.values()
 
     # import
     # --------------------------------------------
 
     def _plugin_is_outdated(self, plugin):
         """
-        Returns true if the plugin is outdated.
-        """
-        app_version = self._application.version.split(".")
-        plugin_version = plugin.version.split(".")
+        Returns true if the plugin is outdated or if the version string is
+        invalid.
 
+        This check follows the proposal of <semver.org>.
+        """        
+        app_version = self._app.version.split(".")
+        plugin_version = plugin.version.split(".")
         if len(plugin_version) < 2:
             return True
         elif app_version[0] != plugin_version[0]:
-            return True
-        elif app_version[1] != plugin_version[1]:
             return True
         else:
             return False
 
     def import_plugin(self, path, ignore_outdated=True):
         """
-        Imports the plugin from the path.
+        Imports the module from the path. The module should contain a plugin.
 
-        if not ignore_outdated, an PluginOutdatedError is raised
+        if not *ignore_outdated*, a PluginOutdatedError is raised
         if a plugin is outdated.
         """
         # The module name is the name of the plugin.
@@ -164,7 +182,7 @@ class PluginManager(object):
         # Needed to prevent ImportErrors with the local
         # libraries of the plugin.
         if os.path.dirname(path) not in sys.path:
-            sys.path.insert(1, os.path.dirname(path))
+            sys.path.append(os.path.dirname(path))
 
         try:
             module = _import_module(name, path)
@@ -192,10 +210,12 @@ class PluginManager(object):
         # And has to be compatible with the current emsm version.
         if self._plugin_is_outdated(plugin):
             if ignore_outdated:
+                log.warning("The plugin '{}' is outdated.".format(path))
                 return None
             else:
                 raise PluginOutdatedError(name)
 
+        self._modules[name] = module
         self._plugin_types[name] = plugin
         return None
 
@@ -220,9 +240,8 @@ class PluginManager(object):
 
         for filename in os.listdir(directory):
             path = os.path.join(directory, filename)
-            if not file_is_plugin(path):
-                continue
-            self.import_plugin(path)
+            if file_is_plugin(path):
+                self.import_plugin(path)
         return None
 
     def import_from_app_plugin_dir(self):
@@ -230,13 +249,45 @@ class PluginManager(object):
         Imports the plugins from the application's default
         plugins directory.
         """
-        directory = self._application.pathsystem.plugins_source_dir
+        directory = self._app.paths.plugins_src_dir
         self.import_from_directory(directory)
         return None
 
-    # init
-    # --------------------------------------------
+    def unload(self, plugin, call_finish=False):
+        """
+        Unloads the plugin. If *call_finish*, the *finish* method of the plugin
+        is called before it's unloaded.
+        """
+        plugin_obj = self._plugins.get(plugin, None)
+        if plugin_obj is None:
+            return None
+        
+        if call_finish:
+            plugin_obj.finish()
+        del self._plugins[plugin]
+        del self._plugin_types[plugin]
+        del self._modules[plugin]
+        
+        log.debug("Unloaded the plugin: '{}'".format(plugin))
+        return None
 
+    def uninstall(self, plugin):
+        """
+        Performs a clean uninstallation of the plugin and removes it.
+        """
+        plugin_obj = self._plugins.get(plugin)
+        if plugin_obj:
+            try:
+                plugin_obj.uninstall()
+            except KeyboardInterrupt:
+                pass
+            else:                
+                self.unload(plugin, False)
+        return None
+
+    # EMSM runlevel
+    # --------------------------------------------
+    
     def init_plugins(self):
         """
         Initialises the plugins by passing a reference of the
@@ -247,48 +298,25 @@ class PluginManager(object):
         that have not been initialised yet, will be initialised.
         """
         init_queue = self._plugin_types.items()
-        init_queue = sorted(init_queue, key=lambda e: e[1].init_priority)
-        
+        init_queue = sorted(init_queue, key=lambda e: e[1].init_priority)        
         for name, plugin_type in init_queue:
             if name in self._plugins:
                 continue
-            plugin_obj = plugin_type(self._application, name)
+            plugin_obj = plugin_type(self._app, name)
             self._plugins[name] = plugin_obj
         return None
-
-    # run
-    # --------------------------------------------
-
-    def prepare_run(self):
-        """
-        Sets the argparser plugin group up.
-        """
-        arg_parser = self._application.argparser
-        arg_group = arg_parser.plugin_group
-        invoked_plugin = arg_parser.args.plugin
-
-        if invoked_plugin is not None:
-            plugin = self._plugins[invoked_plugin]
-            plugin.setup_argparser_argument_group(arg_group)
-        return None
-
-
+    
     def run(self):
         """
         Calls the run method of the invoked plugin.
         """
-        arg_parser = self._application.argparser
-        args = arg_parser.args
-        invoked_plugin = arg_parser.args.plugin
-
+        args = self._app.argparser.args
+        invoked_plugin = args.plugin
         if invoked_plugin is not None:
             plugin = self._plugins[invoked_plugin]
             plugin.run(args)
         return None
 
-    # finish
-    # --------------------------------------------
-    
     def finish(self):
         """
         Calls the finish method for each plugin.

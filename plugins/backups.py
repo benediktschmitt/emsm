@@ -1,22 +1,76 @@
 #!/usr/bin/python3
+# Benedikt Schmitt <benedikt@benediktschmitt.de>
+
+
+"""
+About
+=====
+Extends the EMSM by a backup manager.
+
+
+Configuration
+=============
+[backups]
+archive_format = bztar
+restore_message = This world is about to be ressetted to an earlier state.
+restore_delay = 5
+max_storage_size = 30
+auto_sync = yes
+mirrors =
+
+Where
+-----
+* archive_format
+    Is the name of the archive format that should be used to create a
+    backup. This string has to be listed in *shutil.get_archive_formats()*.
+    Usually, there should be at least *zip* or *tar* available.
+* restore_message
+    Is send to the world's chat before restoring the world.
+* restore_delay
+    Seconds between sending the *restore_message* to the chat and starting
+    the restore.
+* max_storage_size
+    Maximum number of backups in the storage folder, before older backups
+    will be removed.
+* auto_sync
+    If yes, the backup mirrors will be sync each time the EMSM runs.
+* mirrors
+    Comma (,) separated list of the backup directories.
+
+
+Arguments
+=========
+The functions are applied to all selected worlds.
+
+* --list
+    Lists all available backups.
+* --sync
+    Synchronises all backups mirrors.
+* --create
+    Creates a new backup.
+* --restore PATH
+    Restores the worlds with the backup from the given path.
+* --restore-latest
+    Restores, if available, the latest backup of the world.
+* --restore-menu
+    Opens a menu, where the user can select which backup he wants to restore.
+"""
 
 
 # Modules
 # ------------------------------------------------
 import os
+import time
 import shutil
 import datetime
 import tempfile
-import time
 
-# local (from the wrapper folder)
+# local
 import world_wrapper
 import configuration
 from base_plugin import BasePlugin
-
-# local
-from _common_lib import pprinttable
-from _common_lib import userinput
+from app_lib import pprinttable
+from app_lib import userinput
 
 
 # Backward compatibility
@@ -30,7 +84,8 @@ except NameError:
 # Data
 # ------------------------------------------------
 PLUGIN = "BackupManager"
-AVAILABLE_ARCHIVE_FORMATS = [name for name, desc in shutil.get_archive_formats()]
+AVLB_ARCHIVE_FORMATS = [name for name, desc in shutil.get_archive_formats()]
+
 
 
 # Classes
@@ -40,23 +95,18 @@ class WorldBackupManager(object):
     Wraps a world to manage the backups of the world.
     """
     
-    def __init__(self,
-                 application,
-                 world,
-                 backup_directories,
-                 archive_format,
-                 max_storage_size
-                 ):
-        self.application = application
+    def __init__(self, app, world,
+                 backup_dirs, archive_format, max_storage_size):
+        self.app = app
         self.world = world
 
         # I assume that the BackupManager checked those values.
-        self.backup_directories = backup_directories 
+        self.backup_dirs = backup_dirs 
         self.archive_format = archive_format
         self.max_storage_size = max_storage_size
 
         # Create the backup directories if they don't exist.
-        for path in self.backup_directories:
+        for path in self.backup_dirs:
             try:
                 os.makedirs(path)
             except FileExistsError:
@@ -65,12 +115,15 @@ class WorldBackupManager(object):
     
     # about the filenames
     # --------------------------------------------
+
+    # This backup manager uses the filenames to store the timestamp of the
+    # backup.
+    # If a filename endswith ".tmp" it is considered as a temporary file.
     
     def get_filename_format(self):
         """
         Returns a string that can be formatted with the datetime method
         strftime.
-            
         The filename has no extension.
         """
         filename_format = "%Y_%m_%d-%H_%M_%S-{}".format(self.world.name)
@@ -86,7 +139,7 @@ class WorldBackupManager(object):
         temp = os.path.splitext(temp)
         while temp[1]:
             temp = os.path.splitext(temp[0])
-        return temp[0]        
+        return temp[0]
         
     def get_date_from_filename(self, filename):
         """
@@ -94,7 +147,7 @@ class WorldBackupManager(object):
         if successful, else None.
         """
         filename = self.extract_filename(filename)
-        filename_format = self.get_filename_format()        
+        filename_format = self.get_filename_format()
         try:
             return datetime.datetime.strptime(filename, filename_format)
         except ValueError:
@@ -109,7 +162,7 @@ class WorldBackupManager(object):
         """
         if datetime_obj is None:
             datetime_obj = datetime.datetime.now()
-        filename_format = self.get_filename_format()          
+        filename_format = self.get_filename_format() 
         filename = datetime_obj.strftime(filename_format)
         return filename
     
@@ -123,11 +176,16 @@ class WorldBackupManager(object):
         """
         backups = dict()
         for filename in os.listdir(directory):
-            date = self.get_date_from_filename(filename)            
-            if date is None:
-                continue            
             path = os.path.join(directory, filename)
-            backups[date] = path        
+            if not os.path.isfile(path):
+                continue
+            if path.endswith(".tmp"):
+                continue
+            
+            date = self.get_date_from_filename(filename)            
+            if date is not None:
+                path = os.path.join(directory, filename)
+                backups[date] = path
         return backups
 
     def get_backups(self):
@@ -138,7 +196,7 @@ class WorldBackupManager(object):
         # In reversed range, backups that exist in the less prior
         # directories will be overwritten by the backups in the storages
         # with an higher priority.
-        for directory in reversed(self.backup_directories):
+        for directory in reversed(self.backup_dirs):
             temp_backups = self.get_backups_in_directory(directory)
             backups.update(temp_backups)
         return backups
@@ -167,23 +225,30 @@ class WorldBackupManager(object):
 
         # Get the max_storage_size latest backups.
         to_remain = list(all_backups.keys())
-        to_remain.sort(reverse = True)
+        to_remain.sort(reverse=True)
         to_remain = to_remain[:self.max_storage_size]        
         remaining_backups = {date: all_backups[date] for date in to_remain}
         
         # Synchronise the directories and save the changes.
         changes = dict()
-        for directory in self.backup_directories:
+        for directory in self.backup_dirs:
             backups_in_directory = self.get_backups_in_directory(directory)
 
             changes[directory] = dict()
             changes[directory]["added"] = list()
             changes[directory]["removed"] = list()
             
-            # Copy new backups.
+            # Copy new backups. Copy the backup into a temporary file
+            # and rename it, if the copy procedure was successful.
             for date in remaining_backups:
                 if date not in backups_in_directory:
-                    shutil.copy(remaining_backups[date], directory)
+                    src = remaining_backups[date]
+                    dst = os.path.join(
+                        directory, os.path.basename(remaining_backups[date]))
+                    tmp_dst = dst + ".tmp"
+                    
+                    shutil.copy(src, tmp_dst)
+                    os.rename(tmp_dst, dst)
                     changes[directory]["added"].append(date)
                     
             # Remove old backups.
@@ -192,6 +257,12 @@ class WorldBackupManager(object):
                     path = backups_in_directory[date]
                     os.remove(path)
                     changes[directory]["removed"].append(date)
+
+            # Remove temporary files from unsuccessful syncs.
+            for filename in os.listdir(directory):
+                path = os.path.join(directory, filename)
+                if path.endswith(".tmp") and os.path.isfile(path):
+                    os.remove(path)
         return changes
 
     # create / restore
@@ -202,15 +273,16 @@ class WorldBackupManager(object):
         Creates a backup of the world and returns the name of the created
         backup.
         """
-        # We need to disable the auto-save for the backup.
-        if self.world.is_online():
-            self.world.send_command("say {}".format(pre_backup_message))
-            self.world.send_command("save-all")
-            self.world.send_command("save-off")
-
         backup_filename = self.get_filename()
-        backup_directory = self.backup_directories[0]
+        backup_directory = self.backup_dirs[0]
         try:
+            # We need to disable the auto-save for the backup. I'm paranoid,
+            # so I'disable auto-save in this try-catch construct.
+            if self.world.is_online():
+                self.world.send_command("say {}".format(pre_backup_message))
+                self.world.send_command("save-all")
+                self.world.send_command("save-off")
+                
             with tempfile.TemporaryDirectory() as temp_dir:                
                 backup = shutil.make_archive(
                     base_name = os.path.join(temp_dir, backup_filename),
@@ -218,7 +290,13 @@ class WorldBackupManager(object):
                     root_dir = self.world.directory,
                     base_dir = "./"
                 )
-                shutil.move(backup, backup_directory)                
+
+                # Save move
+                dst = os.path.join(backup_directory, os.path.basename(backup))
+                tmp_dst = dst + ".tmp"
+                shutil.move(backup, tmp_dst)
+                os.rename(tmp_dst, dst)
+                
         # Make sure, that auto save is enabled.
         finally:
             if self.world.is_online():
@@ -245,34 +323,24 @@ class WorldBackupManager(object):
             if was_online:
                 self.world.send_command("say {}".format(message))
                 time.sleep(delay)
-                self.world.kill_processes()                
+                self.world.kill_processes()
+
+            # Delete the world and restore the backup.
+            for i in range(5):
                 # XXX: Fixes an error with server.log.lck
                 # and shutil.rmtree(...).
-                time.sleep(0.05)
-
-            # Restore the world.
-            shutil.rmtree(self.world.directory)
+                try:
+                    shutil.rmtree(self.world.directory)
+                    break
+                except OSError:
+                    time.sleep(0.05)
             shutil.copytree(temp_dir, self.world.directory)
             
         if was_online:
             self.world.start()
         return None
 
-    # remove
-    # --------------------------------------------------
-    
-    @staticmethod
-    def remove_relicts(backup_directories):
-        """
-        Removes the backup directories. Can be used to remove the backup
-        directories of a world that's no longer in the application's
-        configuration.
-        """
-        for path in filter(os.path.exists, backup_directories):
-            shutil.rmtree(path, ignore_errors=True)
-        return None
-    
-    
+
 class VerboseWorldBackupManager(WorldBackupManager):
     """
     Extends the WorldBackupManager for the command line interface.
@@ -288,14 +356,13 @@ class VerboseWorldBackupManager(WorldBackupManager):
         backups = self.get_backups()
 
         if backups:
-            table = pprinttable.table_string(
-                body = list(backups.items()),
-                header = ["date", "path"],
-                index_name = "Nr.",
-                alignment = "<"
-                )
+            printer = pprinttable.TablePrinter("Nr.", "<")
+            body = [(date.ctime(), path) for date, path in backups.items()]
+            body.sort()
+            head = ["date", "path"]
+            
             print("{} - list-backups:".format(self.world.name))
-            print(table)
+            printer.print(body, head)
         else:
             print("{} - list-backups: There is no backup available."\
                   .format(self.world.name))
@@ -313,22 +380,21 @@ class VerboseWorldBackupManager(WorldBackupManager):
 
         # Prints the changes in an hierarchy.
         print("{} - sync:".format(self.world.name))
-        
         for directory in changes:
             added = changes[directory]["added"]
             removed = changes[directory]["removed"]
             
-            print(4 * " ", "o", directory)        
+            print(4*" ", "o", directory)        
             if not (added or removed):
-                print(8 * " ", "->", "no changes")
+                print(8*" ", "->", "no changes")
             if added:
-                print(8* " ", "o", "added:")
+                print(8*" ", "o", "added:")
                 for e in added:
-                    print(12 * " ", "o", e)
+                    print(12*" ", "o", e)
             if removed:
-                print(8 * " ", "o", "removed:")
+                print(8*" ", "o", "removed:")
                 for e in removed:
-                    print(12 * " ",  "o", e)
+                    print(12*" ",  "o", e)
         return None
     
     # create / restore
@@ -350,7 +416,7 @@ class VerboseWorldBackupManager(WorldBackupManager):
         question = "Do you really want to restore the world '{}'? "\
                    "The current world will be removed! "\
                    .format(self.world.name)
-        return userinput.ask(question)
+        return userinput.ask(question, default=False)
                 
     def restore(self, backup_file, message, delay, ask=True):
         # Verify the restore command.
@@ -370,6 +436,7 @@ class VerboseWorldBackupManager(WorldBackupManager):
         except Exception as error:
             print("{} - restore: failure: An unexpected error occured: {}"\
                   .format(self.world.name, error))
+            raise
         else:
             print("{} - restore: Restore is complete."\
                   .format(self.world.name))
@@ -407,17 +474,16 @@ class VerboseWorldBackupManager(WorldBackupManager):
                   .format(self.world.name))
             return None
 
-        # Continue with the restore.        
-        table = pprinttable.table_string(
-            body = [[date] for date, path in backups],
-            header = ["date"],
-            index_name = "Nr.",
-            alignment = "<"
-            )
+        # Continue with the restore.
+        body = [[date.ctime()] for date, path in backups]
+        head = ["date"]
+        table_printer = pprinttable.TablePrinter("Nr.", "<")
+        table_printer.print(body, head)
+        
         backup = userinput.get_value(
-            prompt = "{}\nSelect the backup that you want to restore: ".format(table),
-            conv_func = lambda s: int(s.strip()),
-            check_func = lambda s: s in range(len(backups))
+            prompt="Select the backup that you want to restore: ",
+            conv_func=lambda s: int(s.strip()),
+            check_func=lambda s: s in range(len(backups))
             )
         date, backup = backups[backup]
         return self.restore(backup, message, delay)
@@ -426,109 +492,68 @@ class VerboseWorldBackupManager(WorldBackupManager):
 class BackupManager(BasePlugin):
     """
     Provides methods to create backups of the worlds and to restore them.
-
     """
     
-    version = "1.0.0"
-
-    default_archive_format = "bztar"    
-    default_max_storage_time = 10
-    default_auto_sync = False    
-    default_restore_message = "This world will be resetted to an earlier state."
-    default_restore_delay = 5    
-
+    version = "2.0.0"
     
     def __init__(self, application, name):
         BasePlugin.__init__(self, application, name)
         
-        # Some configurable stuff
-        self.max_storage_size = self.conf.getint(
-            "max_storage_size", self.default_max_storage_time)
-        if self.max_storage_size < 1:
-            self.max_storage_size = self.default_max_storage_time
-        
-        self.auto_sync = self.conf.getboolean(
-            "auto_sync", self.default_auto_sync)
+        self.setup_conf()
+        self.setup_argparser()
+        return None
+
+    def setup_conf(self):
+        # Some configurable stuff        
+        self.archive_format = self.conf.get("archive_format", "bztar")
+        if not self.archive_format in AVLB_ARCHIVE_FORMATS:
+            self.archive_format = "tar"
 
         self.restore_message = self.conf.get(
-            "restore_message", self.default_restore_message)
-
-        self.restore_delay = self.conf.get(
-            "restore_delay", self.default_restore_delay)
+            "restore_message",
+            "This world is about to be ressetted to an earlier state.")
         
-        self.archive_format = self.conf.get(
-            "archive_format", self.default_archive_format)
-        if not self.archive_format in AVAILABLE_ARCHIVE_FORMATS:
-            self.archive_format = self.default_archive_format
-            
+        self.restore_delay = self.conf.getint("restore_delay", 5)
+        self.restore_delay = max(0, self.restore_delay)
+        
+        self.auto_sync = self.conf.getboolean("auto_sync", True)
+
+        self.max_storage_size = self.conf.getint("max_storage_size", 30)        
+        self.max_storage_size = max(1, self.max_storage_size)
+        
         # We need rw access in the backup directories.
         self.mirrors = list()
         for path in self.conf.get("mirrors", "").split(","):
             path = path.strip()
             if not path:
-                continue
-            
+                continue            
             path = os.path.expanduser(path)
             if not os.access(path.strip(), os.F_OK | os.W_OK | os.R_OK):
-                message = "the backup mirror '{}' does not exist or this "\
-                          "script has no access to the directory."\
+                message = "The backup mirror '{}' does not exist or this "\
+                          "script has not sufficient rights in the directory."\
                           .format(path)
                 raise configuration.ValueError_("mirrors", self.name, "", message)
             self.mirrors.append(path)
 
         # Let's init the configuration section.
-        self.conf["max_storage_size"] = str(self.max_storage_size)
-        self.conf["auto_sync"] = "yes" if self.auto_sync else "no"
         self.conf["archive_format"] = str(self.archive_format)
-        self.conf["mirrors"] = ",\n\t".join(self.mirrors)        
+        self.conf["restore_message"] = str(self.restore_message)
+        self.conf["restore_delay"] = str(self.restore_delay)  
+        self.conf["auto_sync"] = "yes" if self.auto_sync else "no"
+        self.conf["max_storage_size"] = str(self.max_storage_size)
+        self.conf["mirrors"] = ",\n\t".join(self.mirrors)
 
         # Some other vars.
-        self.backup_directories = [self.data_dir] + self.mirrors
+        self.backup_dirs = [self.data_dir] + self.mirrors
         return None
-
-    def uninstall(self):
-        question = "{} - Do you want to remove the mirror directories?"\
-                   .format(self.name)
-        if userinput.ask(question):
-            for path in self.mirrors:
-                shutil.rmtree(path)
-        return None
-
-    # backup manager
-    # --------------------------------------------------
     
-    def get_world_backup_directories(self, worldname):
-        """
-        Returns the backup directories for the world.
-        """
-        temp = [os.path.join(path, worldname) \
-                for path in self.backup_directories]
-        return temp
-
-    
-    def get_world_backup_manager(self, world):
-        """
-        Returns an initialised backup manager for the world.
-        """
-        world = VerboseWorldBackupManager(
-            self.application,
-            world,
-            self.get_world_backup_directories(world.name),
-            self.archive_format,
-            self.max_storage_size
+    def setup_argparser(self):
+        self.argparser.description = (
+            "This plugin provides methods to manage the backups of the worlds."
             )
-        return world
-
-    # plugin
-    # --------------------------------------------------
-    
-    def setup_argparser_argument_group(self, group):
-        group.title = self.name
-        group.description = "This plugin provides methods to "\
-                            "manage the backups of the worlds."
         
         # We want to allow only one action per run.
-        me_group = group.add_mutually_exclusive_group()
+        me_group = self.argparser.add_mutually_exclusive_group()
 
         # Storage
         me_group.add_argument(
@@ -557,7 +582,7 @@ class BackupManager(BasePlugin):
             "--restore",
             action = "store",
             dest = "restore",
-            metavar = "BACKUP_PATH",
+            metavar = "PATH",
             help = "Restores the world from the given backup path."
             )
         me_group.add_argument(
@@ -574,33 +599,57 @@ class BackupManager(BasePlugin):
             "can be selected and restores the backup."
             )
         return None
+    
+    def uninstall(self):
+        super().uninstall()
+        
+        question = "{} - Do you want to remove the mirror directories?"\
+                   .format(self.name)
+        if userinput.ask(question, False):
+            for path in self.mirrors:
+                shutil.rmtree(path)
+        return None
+
+    # backup manager
+    # --------------------------------------------------
+    
+    def get_backup_manager(self, world):
+        """
+        Returns an initialised backup manager for the world.
+        """
+        backup_dirs = [os.path.join(path, world.name) \
+                       for path in self.backup_dirs]
+        
+        world = VerboseWorldBackupManager(
+            self.app, world, backup_dirs,
+            self.archive_format, self.max_storage_size)
+        return world
+
+    # plugin
+    # -------------------------------------------------- 
 
     def run(self, args):
-        # Get the selected worlds.
-        worlds = self.application.world_manager.get_selected_worlds()
-        
-        # And action:
+        worlds = self.app.worlds.get_selected()
         for world in worlds:
-
-            world = self.get_world_backup_manager(world)
+            world = self.get_backup_manager(world)
 
             if args.list:
                 world.list_backups()
-
-            if args.sync:
-                world.sync(show_changes = True)
-
-            if args.create:
+                
+            elif args.sync:
+                world.sync(show_changes=True)
+                
+            elif args.create:
                 world.create()
-
-            if args.restore:
+                
+            elif args.restore:
                 backup = args.restore
                 world.restore(backup, self.restore_message, self.restore_delay)
-
-            if args.restore_latest:
+                
+            elif args.restore_latest:
                 world.restore_latest(self.restore_message, self.restore_delay)
 
-            if args.restore_menu:
+            elif args.restore_menu:
                 world.restore_menu(self.restore_message, self.restore_delay)
         return None
 
@@ -612,8 +661,8 @@ class BackupManager(BasePlugin):
         if not self.auto_sync:
             return None
 
-        worlds = self.application.world_manager.get_all_worlds()
-        for world in worlds:            
-            world = self.get_world_backup_manager(world)            
+        worlds = self.app.worlds.get_all()
+        for world in worlds:
+            world = self.get_backup_manager(world)            
             world.sync()
         return None

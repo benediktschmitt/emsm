@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
+# Benedikt Schmitt <benedikt@benediktschmitt.de>
 
 
 """
@@ -42,7 +43,7 @@ class ConfigurationError(Exception):
 
 
 class MissingOptionError(ConfigurationError, KeyError,
-                         configparser.NoOptionError):
+                              configparser.NoOptionError):
     """
     Raised if a required option is not defined in a section.
     """
@@ -60,7 +61,7 @@ class MissingOptionError(ConfigurationError, KeyError,
         return temp
 
 
-class ValueError_(ConfigurationError, ValueError):
+class OptionValueError(ConfigurationError, ValueError):
     """
     Raised if the value of an option is not valid.
     """
@@ -91,6 +92,9 @@ class BaseConfigurationFile(object):
     # before the configuration.
     epilog = list()
 
+    # Default values
+    defaults = None
+
     def __init__(self, file):
         """
         file is the path to the configuration file.
@@ -99,12 +103,12 @@ class BaseConfigurationFile(object):
         self.conf = self._get_parser()
         return None
 
-
     def _get_parser(self):
         """
         Returns a configparser.ConfigParser.
-        """
+        """                
         parser = configparser.ConfigParser(
+            defaults=self.defaults,
             allow_no_value=False,
             strict=True,
             empty_lines_in_values=False,
@@ -124,13 +128,12 @@ class BaseConfigurationFile(object):
         """
         return None
 
-
     def _validate(self):
         """
         Validates the whole configuration.
 
         Calls self._validate_section(...) for each section in
-        he configuration.
+        the configuration.
 
         Can be overwritten.
         """
@@ -144,20 +147,18 @@ class BaseConfigurationFile(object):
 
     def _complete_section(self, section_name, section):
         """
-        Should check the values in the section an complete
+        Should check the values in the section and complete
         them if neccessairy.
 
         This method can be overwritten.
         """
         return None
 
-
     def _complete(self):
         """
-        Calls _complete_section for all sections in the configuration
-        excluding the default section.
+        Calls _complete_section for each section in the configuratioin.
         """
-        for section_name in self.conf.sections():
+        for section_name in self.conf:
             section = self.conf[section_name]
             self._complete_section(section_name, section)
         return None
@@ -178,7 +179,6 @@ class BaseConfigurationFile(object):
         self._complete()
         self._validate()
         return None
-
 
     def write(self):
         self._complete()
@@ -201,19 +201,22 @@ class MainConfiguration(BaseConfigurationFile):
     """
     Handles the main.conf configuration file.
 
-    This configuration includes the parameters for core application
+    This configuration includes the parameters for the core application
     and the plugins.
     """
 
-    epilog = ("This file contains the settings for the core application",
-              "and the plugins.",
-              "",
-              "The section of the core application is:",
-              "[emsm]",
-              "",
-              "The configuration section of the plugin is titled",
-              "with the plugins name.",
-              )
+    epilog = (
+        "This file contains the settings for the core application and the",
+        "plugins.",
+        "The section of the core application is:",
+        "",
+        "[emsm]",
+        "user = minecraft",
+        "loglevel = WARNING",
+        "",
+        "The configuration section of each plugin is titled with the plugins ",
+        "name."
+        )
 
     def _get_parser(self):
         # We use the default parser configuration and add the
@@ -222,7 +225,20 @@ class MainConfiguration(BaseConfigurationFile):
 
         parser.add_section("emsm")
         parser["emsm"]["user"] = "minecraft"
+        parser["emsm"]["loglevel"] = "WARNING"
+        parser["emsm"]["logfile"] = "emsm.log"
         return parser
+
+    def _validate_section(self, section_name, section):
+        if section_name != "emsm":
+            return None
+
+        # Log
+        section["loglevel"] = section["loglevel"].upper()
+        if section["loglevel"] not in ("NOTSET", "DEBUG", "INFO", "WARNING",
+                                       "ERROR", "CRITICAL"):
+            raise OptionValueError("loglevel", section_name, self.file)
+        return None
 
 
 class ServerConfiguration(BaseConfigurationFile):
@@ -232,18 +248,36 @@ class ServerConfiguration(BaseConfigurationFile):
     be used with this application.
     """
 
-    epilog = ("[vanilla]",
-              "server = minecraft_server.jar",
-              "start_args = nogui.",
-              "url = https://s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
-              )
+    epilog = (
+        "Try to use *http* if *https* does not work.",
+        "",
+        "[vanilla_latest]",
+        "server = minecraft_server.jar",
+        "start_args = nogui.",
+        "url = http://s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
+        "",
+        "[bukkit_latest]",
+        "server = craftbukkit.jar",
+        "start_args = ",
+        "url = http://dl.bukkit.org/latest-rb/craftbukkit.jar"
+        )
+
+    def _complete_section(self, section_name, section):
+        if section_name == self.conf.default_section:
+            return None
+
+        # Use the name of the section as filename for the executable,
+        # if the server option is not set.
+        if not "server" in section or section["server"].isspace():
+            section["server"] = section_name.replace(" ", "_")
+        return None
 
     def _validate_section(self, section_name, section):
         # Ignore the default section.
         if section_name == self.conf.default_section:
             return None
 
-        # the server file
+        # the server executable
         if not "server" in section:
             raise MissingOptionError("server", section_name, self.file)
 
@@ -254,7 +288,7 @@ class ServerConfiguration(BaseConfigurationFile):
             try:
                 urllib.parse.urlparse(section["url"])
             except urllib.error:
-                raise ValueError_("url", section_name, self.file)
+                raise OptionValueError("url", section_name, self.file)
         return None
 
 
@@ -265,40 +299,33 @@ class WorldsConfiguration(BaseConfigurationFile):
     of those worlds.
     """
 
-    epilog = ("[the world's name]",
-              "port = <auto> | int",
-              "min_ram = int",
-              "max_ram = int",
-              "stop_timeout = int",
-              "stop_message = string",
-              "stop_delay = int",
-              "server = a server in server.conf",
-              )
+    epilog = (
+        "[the world's name]",
+        "port = <auto> | int",
+        "min_ram = int",
+        "max_ram = int",
+        "stop_timeout = int",
+        "stop_message = string",
+        "stop_delay = int",
+        "server = a server in server.conf",
+        "",
+        "Note, that some plugins may offer you some more options for",
+        "a world, like *autostart*. Take a look at the plugins help page",
+        "or documentation for further information.",
+        )
+    
+    defaults = collections.OrderedDict(
+        port="<auto>",
+        min_ram="256",
+        max_ram="1024",
+        stop_timeout="10",
+        stop_message="The server is goin down.\n\tHope to see you soon.",
+        stop_delay="5",
+        )
 
     # An error will be raised if a world configuration uses
     # a server that is not in this list.
     known_server = list()
-
-    def _get_parser(self):
-        """
-        Returns a parser with default values.
-        """
-        defaults = collections.OrderedDict(
-            port="<auto>",
-            min_ram="256",
-            max_ram="1024",
-            stop_timeout="10",
-            stop_message="The server is goin down.\n\tHope to see you soon.",
-            stop_delay="5",
-            )
-
-        parser = configparser.ConfigParser(
-            defaults=defaults,
-            allow_no_value=False,
-            strict=True,
-            empty_lines_in_values=False,
-            interpolation=configparser.ExtendedInterpolation())
-        return parser
 
     def _validate_section(self, section_name, section):
         # server
@@ -306,17 +333,18 @@ class WorldsConfiguration(BaseConfigurationFile):
             if section_name != self.conf.default_section:
                 raise MissingOptionError("server", section_name, self.file)
         elif section["server"] not in self.known_server:
-            msg = "The server is unknown."
-            raise ValueError_("server", section_name, self.file, msg)
+            msg = "The server '{}' has not been found in *server.conf*."\
+                  .format(section["server"])
+            raise OptionValueError("server", section_name, self.file, msg)
 
         # ram
         if not section["min_ram"].isdigit():
             msg = "Has to be an integer value."
-            raise ValueError_("min_ram", section_name, self.file, msg)
+            raise OptionValueError("min_ram", section_name, self.file, msg)
 
         if not section["max_ram"].isdigit():
             msg = "Has to be an integer value."
-            raise ValueError_("max_ram", section_name, self.file, msg)
+            raise OptionValueError("max_ram", section_name, self.file, msg)
 
         # port
         if section_name == self.conf.default_section \
@@ -325,19 +353,22 @@ class WorldsConfiguration(BaseConfigurationFile):
         elif not (section["port"].isdigit() \
                 and 0 < section.getint("port") < 65535):
             msg = "Has to be '<auto>' or an integer value between 0 and 65535."
-            raise ValueError_("port", section_name, self.file, msg)
+            raise OptionValueError("port", section_name, self.file, msg)
 
         # stop
         if not section["stop_delay"].isdigit():
             msg = "Has to be an integer value."
-            raise ValueError_("stop_delay", section_name, self.file)
+            raise OptionValueError("stop_delay", section_name, self.file)
 
         if not section["stop_timeout"].isdigit():
             msg = "Has to be an integer value."
-            raise ValueError_("stop_timeout", section_name, self.file)
+            raise OptionValueError("stop_timeout", section_name, self.file)
         return None
 
     def _complete_section(self, section_name, section):
+        if section_name == self.conf.default_section:
+            return None
+        
         # Find an unused port.
         if section["port"] == "<auto>":
             unused_port = app_lib.network.get_unused_port(10000, 30000)
@@ -350,12 +381,13 @@ class Configuration(object):
     Loads an manages all configuration files of the application.
     """
 
-    def __init__(self, main_conf_dir):
+    def __init__(self, app):
         """
         main_conf_dir is the directory that contains all configuration files.
         """
-        self._dir = main_conf_dir
-
+        self._app = app
+        self._dir = app.paths.conf_dir
+        
         self._main = MainConfiguration(
             os.path.join(self._dir, "main.conf"))
         self._server= ServerConfiguration(
@@ -366,6 +398,8 @@ class Configuration(object):
 
     # get
     # --------------------------------------------
+
+    # No one needs access to the underlaying wrapper.
 
     main = property(lambda self: self._main.conf)
     server = property(lambda self: self._server.conf)

@@ -1,23 +1,23 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
+# Benedikt Schmitt <benedikt@benediktschmitt.de>
 
 
 # Modules
 # ------------------------------------------------
+import os
 import sys
 import getpass
-import traceback
-import os
 
 # local
-import argparse_
+import argparse_wrapper
+import base_plugin
 import configuration
 import eventsystem
+import logging_wrapper
 import pathsystem
+import plugin_manager
 import server_wrapper
 import world_wrapper
-import plugin_manager
-import server_manager
-import world_manager
 from app_lib import file_lock
 
 
@@ -56,63 +56,70 @@ class WrongUserError(ApplicationException):
 # ------------------------------------------------
 class Application(object):    
     """
-    This class sets the application up and manages
-    the run.
+    This class sets the application up and manages the run.
     """
 
-    version = "1.0.0"
+    version = "2.0.0-beta"
 
     def __init__(self):
         
-        # Do not change the order of the initialisation!
-        self.pathsystem = pathsystem.Pathsystem()
-        
+        # Do not change the order of the construction!
+        # \Independent constructions and primary ressources
+        self.paths = pathsystem.Pathsystem()
         self.lock = file_lock.FileLock(
-            os.path.join(self.pathsystem.emsm_source_dir, "app.lock"))
+            os.path.join(self.paths.emsm_dir, "app.lock"))
+        self.events = eventsystem.Dispatcher()
+        self._logger = logging_wrapper.Logger(self)
+        self.log = self._logger.emsm
 
-        self.configuration = configuration.Configuration(
-            self.pathsystem.configuration_dir)
-        self.argparser = argparse_.ArgumentParser()
+        # \Input
+        self.conf = configuration.Configuration(self)
+        self.argparser = argparse_wrapper.ArgumentParser(self)
 
-        self.event_dispatcher = eventsystem.Dispatcher()
-
-        self.plugin_manager = plugin_manager.PluginManager(self)
-        self.world_manager = world_manager.WorldManager(self)
-        self.server_manager = server_manager.ServerManager(self)
+        # \Wrapper and manager
+        self.worlds = world_wrapper.WorldManager(self)
+        self.server = server_wrapper.ServerManager(self)
+        self.plugins = plugin_manager.PluginManager(self)
         return None
-    
+
+    # Common    
+    # ------------------------------------------------
+
     def _check_user(self):
         """
         Raises WrongUserError if the user that is running this
         script is not the user named in the configuration file.
         """
-        required_user = self.configuration.main["emsm"]["user"]
-        
+        required_user = self.conf.main["emsm"]["user"]
         if getpass.getuser() != required_user:
             raise WrongUserError(required_user)
         return None
+    
+    # Runlevel    
+    # ------------------------------------------------
     
     def setup(self):
         """
         Sets the application up.
         """
-        self.configuration.read()
+        self.lock.acquire()
+        
+        # Input
+        self.conf.read()
         self._check_user()
+        self._logger.load_conf()
+        self.argparser.add_app_args()
 
-        self.server_manager.load_server()
-        self.world_manager.load_worlds()
-        self.plugin_manager.import_from_app_plugin_dir()
+        # Wrappers
+        self.server.load()
+        self.worlds.load()
 
-        self.argparser.add_application_args(
-            self.world_manager.get_available_worlds(),
-            self.plugin_manager.get_available_plugins(),
-            self.version
-            )
-        self.argparser.parse_known_args()
+        # Plugins
+        self.plugins.import_from_app_plugin_dir()
+        self.plugins.init_plugins()
 
-        self.plugin_manager.init_plugins()
-        self.plugin_manager.prepare_run()
-
+        # Because all plugin subparsers are not set up, we can parse all
+        # arguments.
         self.argparser.parse_args()
         return None
 
@@ -120,56 +127,50 @@ class Application(object):
         """
         Dispatch the application.
         """
-        self.plugin_manager.run()
+        self.plugins.run()
         return None
 
     def finish(self):
         """
-        For clean up stuff.
+        For clean up and background stuff.
         """
-        self.plugin_manager.finish()
-        self.configuration.write()
-        return None
-
-    # application context
-    # --------------------------------------------
-
-    def __enter__(self):
-        self.lock.acquire()
-        return self
-
-
-    def __exit__(self, exc_type, exc_value, tb):
         try:
-            # XXX: I think using the logging module
-            # would be fine.
-            if isinstance(exc_value, SystemExit):
-                pass
-            elif exc_type is not None:
-                # Stdout
-                print("application: failure:")
-                print("\t{}: {}".format(exc_type.__name__, exc_value))
-                # Error file
-                error_file = os.path.join(
-                    self.pathsystem.emsm_source_dir, "errors.txt")
-                with open(error_file, "a") as error_file:
-                    print(sys.argv, file=error_file)
-                    traceback.print_tb(tb, file=error_file)
-                    print("-"*80, file=error_file)
+            self.plugins.finish()
+            self.conf.write()
         finally:
+            self._logger.shutdown()
             self.lock.release()
         return None
 
+    # Application context
+    # --------------------------------------------
+    
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, tb):
+        if not (exc_type is None or isinstance(exc_value, SystemExit)):
+            msg = ("EMSM: Critical:\n"
+                   " > Exception: {exc_type}\n"
+                   " > Message:   {exc_value}\n"
+                   " > A full traceback can be found in the log file."
+                   )
+            msg = msg.format(exc_type=exc_type.__name__,
+                             exc_value=exc_value)
+            print(msg, file=sys.stderr)
+            self.log.critical("Uncaught exception:", exc_info=True)
+        return None
+    
 
 # Main
 # ------------------------------------------------
 if __name__ == "__main__":
-    # I think it's convenient to handle the
-    # locking meachnism and the exceptions this way.
-    try:
+    # The application will log all errors and controll
+    # the work flow. Any traceback output will be surpressed and logged.
+##    try:
         with Application() as app:
             app.setup()
             app.run()
             app.finish()
-    except:
-        pass
+##    except:
+##        pass

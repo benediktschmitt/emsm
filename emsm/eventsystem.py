@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
+# Benedikt Schmitt <benedikt@benediktschmitt.de>
 
 
 # Data
@@ -29,7 +30,7 @@ class Signal(object):
     def disonncet(self, slot):
         try:
             temp = self._slots.index(slot)
-            self._slots.pop(slot)
+            self._slots.pop(temp)
         except IndexError:
             pass
         return None
@@ -52,41 +53,40 @@ class Signal(object):
             raise error
         return None
 
+    def __call__(self, *args, **kargs):
+        """
+        Convenient method for self.emit(...)
+        """
+        return self.emit(*args, **kargs)
+
 
 class Dispatcher(object):
     """
     A simple dispatcher
 
-    For convenience, all signals can only be accessed by their
-    names.
+    For convenience, all signals can only be accessed by their names.
     """
 
     def __init__(self):
         self._signals = dict()
         return None
 
-    def add_signal(self, name):
+    def get_event(self, name, create=True):
         """
-        Adds the signal to the dispatcher if it
-        does not exist and returns it.
+        Returns the *Signal()* object, that corressponds to the *name*. If
+        there's no *Signal()* with this *name*, a new Signal will be created.
         """
-        if not name in self._signals:
+        if name not in self._signals:
             self._signals[name] = Signal(name)
         return self._signals[name]
 
-    def has_signal(self, name):
-        return name in self._signals
-
-    def get_signal(self, name):
-        return self._signals[name]
-
-    def connect(self, slot, signal, create=False):
+    def connect(self, signal, slot, create=True):
         """
         Connects the signal with the slot. If the signal does not
         exist and create is true, the signal will be created.
         """
         if create:
-            self.add_signal(signal)
+            self.get_event(signal, create=True)
         self._signals[signal].connect(slot)
         return None
 

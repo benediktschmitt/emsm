@@ -37,7 +37,8 @@ nosetests.xml
 
 # EMSM
 configuration/
+plugins_data/
 worlds/
 server/
-plugins_data/
-emsm/errors.txt
+emsm.log
+emsm/app.lock
