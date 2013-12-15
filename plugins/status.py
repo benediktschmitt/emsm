@@ -111,7 +111,8 @@ class WorldStatus(object):
             self.status["status"] = "online"
             self.status["uptime"] = self._get_uptime()
             self.status["players"] = self._get_players()
-            self.status["max-players"] = self.properties["max-players"]
+            # The world could be new, so it's wise to use *.get()*
+            self.status["max-players"] = self.properties.get("max-players", -1)
         else:
             self.status["status"] = "offline"
             self.status["uptime"] = self._get_uptime()
