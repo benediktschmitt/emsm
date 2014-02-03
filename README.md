@@ -8,6 +8,17 @@ The **EMSM** itself provides only a simple, but sufficient **API** to manage all
 worlds and server tasks. The work is done by the plugins.
 
 
+## Reference
+
+* [Documentation](#documentation)
+* [Installation](#installation)
+* [Uninstallation](#uninstallation)
+* [Directory structure](#directory-structure)
+* [Contribution and New Plugins](#contribution-and-new-plugins)
+* [Versioning](#versioning)
+* [License](#license)
+
+
 ## Documentation
 Please read the [online documentation](http://benediktschmitt.de/docs/emsm) for 
 a full introduction. I tried to keep it simple and short. You'll come grips with
