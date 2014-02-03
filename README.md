@@ -1,4 +1,4 @@
-![emsm_logo](http://emsm.benediktschmitt.de/_static/logo/emsm_48x48.png)
+![emsm_logo](http://benediktschmitt.de/docs/emsm/_static/logo/emsm_48x48.png)
 
 # EMSM
 The **Extendable Minecraft Server Manager** (EMSM) handles multiple minecraft
@@ -9,8 +9,8 @@ worlds and server tasks. The work is done by the plugins.
 
 
 ## Documentation
-Please read the [online documentation](http://emsm.benediktschmitt.de) for a
-full introduction. I tried to keep it simple and short. You'll come grips with
+Please read the [online documentation](http://benediktschmitt.de/docs/emsm) for 
+a full introduction. I tried to keep it simple and short. You'll come grips with
 it in less than 10 minutes.
 
 
@@ -59,13 +59,14 @@ it in less than 10 minutes.
 			$ chmod +x /etc/init.d/minecraft
 			$ update-rc.d minecraft defaults
 
-7. Well, that's all. For the first run, type:
+7.	Well, that's all. For a dry run, you can use the worlds plugin without any
+	parameter:
 
-         $ minecraft
+			$ minecraft worlds
 
 	This should create the subdirectories and the configuration files. If the
 	*bin_script* does not work, take a look at the complete
-	[documentation](http://emsm.benediktschmitt.de/).
+	[documentation](http://benediktschmitt.de/docs/emsm).
 
 	
 ### Configuration
@@ -200,4 +201,4 @@ for further information.
 
 
 ## License
-I published the EMSM under the [GNU GPL v3](http://www.gnu.org/licenses/gpl-3.0.txt).
+I published the EMSM under the [GNU GPL v3](LICENSE).
