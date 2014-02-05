@@ -133,6 +133,9 @@ class Application(object):
         self.plugins.import_from_app_plugin_dir()
         self.plugins.init_plugins()
 
+        # Make sure, that the configuratoin is written at the first run.
+        self.conf.write()
+
         # Because all plugin subparsers are not set up, we can parse all
         # arguments.
         self.argparser.parse_args()
