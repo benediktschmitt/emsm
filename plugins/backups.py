@@ -300,8 +300,8 @@ class WorldBackupManager(object):
             # so I'disable auto-save in this try-catch construct.
             if self.world.is_online():
                 self.world.send_command("say {}".format(pre_backup_message))
-                self.world.send_command("save-all")
                 self.world.send_command("save-off")
+                self.world.send_command("save-all")
                 
             with tempfile.TemporaryDirectory() as temp_dir:                
                 backup = shutil.make_archive(
@@ -321,6 +321,7 @@ class WorldBackupManager(object):
         finally:
             if self.world.is_online():
                 self.world.send_command("save-on")
+                self.world.send_command("save-all")
                 self.world.send_command("say {}".format(post_backup_message))
 
         self.sync()
