@@ -42,3 +42,6 @@ worlds/
 server/
 emsm.log
 emsm/app.lock
+
+# Documentation
+docs/build
