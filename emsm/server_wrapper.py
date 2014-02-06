@@ -144,7 +144,7 @@ class BaseServerWrapper(object):
                  start_args="",
                  name=None,
                  auto_install=True,
-		 java_args=""
+                 java_args=""
                  ):
         """ ============ ===========================================
             parameter    description
@@ -163,7 +163,7 @@ class BaseServerWrapper(object):
         self.name = name
         self.url = url
         self.start_args = start_args
-	self.java_args = java_args
+        self.java_args = java_args
 
         # Download the server if not yet done.
         if auto_install and not os.path.exists(self.server):
@@ -193,7 +193,7 @@ class BaseServerWrapper(object):
         cmd = "{java} {java_args} -Xms{init_ram}M -Xmx{max_ram}M -jar {server} {start_args}"
         cmd = cmd.format(
             java=_JAVA,
-	    java_args=self.java_args,
+            java_args=self.java_args,
             init_ram=init_ram,
             max_ram=max_ram,
             server=shlex.quote(self.server),
@@ -273,7 +273,7 @@ class ServerWrapper(BaseServerWrapper):
         BaseServerWrapper.__init__(
             self, server=server, url=self.conf["url"],
             start_args=self.conf["start_args"], name=name, auto_install=True,
-	    java_args=self.conf["java_args"])
+            java_args=self.conf["java_args"])
         return None
 
     def is_online(self):
