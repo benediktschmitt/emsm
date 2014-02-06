@@ -5,8 +5,11 @@ The **Extendable Minecraft Server Manager** (EMSM) handles
 **multiple minecraft worlds** and **server versions**. The application is 
 completely written in Python.
 
-The **EMSM** itself provides only a simple, but sufficient **API** to manage all
-worlds and server tasks. The work is done by the plugins.
+The **EMSM** provides a simple, but sufficient **CLI** (*command line interface*) to manage world and server tasks.
+It is based on plugins therefore easily expandable. Further is the **EMSM** written in a modular manner that allows to reuse single components independend 
+of the rest of **EMSM** (if one wishes).
+
+The separation of Minecraft worlds and server executables allows to easily manage several different versions of servers (e.g. Vanilla and Bukkit in multiple versions) for different worlds. The **ESMS** comes with a prebuild backup mechanism as one of the core plugins, which can be automated to create periodical backups. It also provides a core plugin to check the availability of the server and restart them if its configured to do so. Another plugin aims at integrating **EMSM** with init.d to start/stop the server on (re-)boot/shutdown processes.
 
 
 ## Reference
@@ -57,13 +60,12 @@ it in less than 10 minutes.
 	The whole **EMSM** application is now installed in the home directory of the
 	user *minecraft*.
 
-5.	To invoke the **EMSM** easily from everywhere, copy the *bin_script* into
-	the */usr/bin* directory and make it executable:
+5.	To invoke the **EMSM** easily from everywhere, symlink the *bin_script* into
+	the */usr/bin* directory:
 
-			$ cp emsm/bin_script.sh /usr/bin/minecraft
-			$ chmod +x /usr/bin/minecraft
+			$ ln -s /home/minecraft/emsm/bin_script.sh /usr/bin/minecraft
 
-6.	This step is optional. You can copy the *initd_script* to use the features 
+6.	**Optional**: You can copy the *initd_script* to use the features 
 	of the *initd* plugin. This will start your worlds after reboot and stops
 	them when your system is going down.
 
@@ -79,6 +81,14 @@ it in less than 10 minutes.
 	This should create the subdirectories and the configuration files. If the
 	*bin_script* does not work, take a look at the complete
 	[documentation](http://benediktschmitt.de/docs/emsm).
+
+8.	**Optional**: You might want to consider adding cronjobs for backup or guard plugin in e.g. */etc/cron.d/emsm*
+	```Shell
+	# Runs the guard every 5 minutes for the world, where *enable_guard* is true:
+	*/5 * *   *   *   root minecraft guard
+	# Backup all worlds everyday at 6am
+	0 6 * * * root test -x /usr/bin/minecraft && /usr/bin/minecraft -W backups --create
+	```
 
 	
 ### Configuration
