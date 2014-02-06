@@ -275,11 +275,13 @@ class ServerConfiguration(BaseConfigurationFile):
         "server = minecraft_server.jar",
         "start_args = nogui.",
         "url = http://s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
+        "java_args = ",
         "",
         "[bukkit_latest]",
         "server = craftbukkit.jar",
         "start_args = ",
-        "url = http://dl.bukkit.org/latest-rb/craftbukkit.jar"
+        "url = http://dl.bukkit.org/latest-rb/craftbukkit.jar",
+        "java_args = "
         )
 
     def _complete_section(self, section_name, section):
@@ -290,6 +292,10 @@ class ServerConfiguration(BaseConfigurationFile):
         # if the server option is not set.
         if not "server" in section or section["server"].isspace():
             section["server"] = section_name.replace(" ", "_")
+
+        # Make sure, that all optional parameters are initialized.
+        if not "java_args" in section:
+            section["java_args"] = ""
         return None
 
     def _validate_section(self, section_name, section):
