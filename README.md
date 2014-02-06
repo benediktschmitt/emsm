@@ -1,8 +1,9 @@
 ![emsm_logo](http://benediktschmitt.de/docs/emsm/_static/logo/emsm_48x48.png)
 
 # EMSM
-The **Extendable Minecraft Server Manager** (EMSM) handles multiple minecraft
-worlds and server versions. The application is completely written in Python.
+The **Extendable Minecraft Server Manager** (EMSM) handles
+**multiple minecraft worlds** and **server versions**. The application is 
+completely written in Python.
 
 The **EMSM** itself provides only a simple, but sufficient **API** to manage all
 worlds and server tasks. The work is done by the plugins.
@@ -29,7 +30,7 @@ it in less than 10 minutes.
 
 
 ### Environment
-1. 	The **EMSM** requires *Python 3.2* or higher and *screen*. Furthermore, you
+1. The **EMSM** requires *Python 3.2* or higher and *screen*. Furthermore, you
 	need *java* to run the minecraft server, *tar* to extract the **EMSM** 
 	archive and *wget* to download it. So let's start:
 
@@ -59,14 +60,14 @@ it in less than 10 minutes.
 5.	To invoke the **EMSM** easily from everywhere, copy the *bin_script* into
 	the */usr/bin* directory and make it executable:
 
-			$ cp emsm/bin_script /usr/bin/minecraft
+			$ cp emsm/bin_script.sh /usr/bin/minecraft
 			$ chmod +x /usr/bin/minecraft
 
 6.	This step is optional. You can copy the *initd_script* to use the features 
 	of the *initd* plugin. This will start your worlds after reboot and stops
 	them when your system is going down.
 
-			$ cp emsm/initd_script /etc/init.d/minecraft
+			$ cp emsm/initd_script.sh /etc/init.d/minecraft
 			$ chmod +x /etc/init.d/minecraft
 			$ update-rc.d minecraft defaults
 
@@ -117,7 +118,7 @@ If the minecraft server has not been downloaded yet, it will be downloaded now.
 
 ## Uninstallation
 
-**>> Warning:** I suggest, that you make at least a backup of the *worlds* 
+**Warning:** I suggest, that you make at least a backup of the *worlds* 
 folder, before you remove the **EMSM**.
 
 1. Stop all worlds:
@@ -212,4 +213,5 @@ for further information.
 
 
 ## License
-I published the EMSM under the [GNU GPL v3](LICENSE).
+* 0.0.0-beta - 2.0.0-beta: [GNU GPL v3](https://www.gnu.org/copyleft/gpl.html)
+* 2.0.1-beta - current release: [MIT License](LICENSE).
