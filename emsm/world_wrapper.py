@@ -473,7 +473,11 @@ class BaseWorldWrapper(object):
                     start_cmd = server_start_cmd)
                 subprocess.call(shlex.split(sys_cmd))
         finally:
-            os.chdir(old_wd)
+            # We may have not the rights to change back.
+            try:
+                os.chdir(old_wd)
+            except OSError:
+                pass
                        
         if not self.is_online():
             raise WorldStartFailed(self)
