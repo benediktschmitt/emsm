@@ -345,7 +345,7 @@ class WorldsConfiguration(BaseConfigurationFile):
         min_ram="256",
         max_ram="1024",
         stop_timeout="10",
-        stop_message="The server is goin down.\n\tHope to see you soon.",
+        stop_message="The server is going down.\n\tHope to see you soon.",
         stop_delay="5",
         )
 
