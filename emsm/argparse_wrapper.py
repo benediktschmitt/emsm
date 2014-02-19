@@ -28,8 +28,40 @@
 import argparse
 
 
+# Data
+# ------------------------------------------------
+__all__ = ["LicenseAction"]
+
+
 # Classes
 # ------------------------------------------------
+class LicenseAction(argparse.Action):
+    """
+    Prints the license and exits with exit code 0.
+    """
+
+    def __init__(self, option_strings, license=None, dest=argparse.SUPPRESS,
+                 default=argparse.SUPPRESS, help=None):
+        if help is None:
+            help = "show the program's license and exit"
+        super().__init__(
+            option_strings = option_strings,
+            dest = dest,
+            default = default,
+            nargs = 0,
+            help = help)
+        self.license = license if license is not None else str()
+        self.license.strip()
+        return None
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        """
+        Well, what LicenseAction does :)
+        """
+        parser.exit(message=self.license)
+        return None
+    
+
 class ArgumentParser(object):
     """
     Wraps the argparse.ArgumentParser object, that is used by the application.
@@ -67,8 +99,14 @@ class ArgumentParser(object):
         Adds the global arguments to the argparser. These are:
         """
         self.argparser.add_argument(
-            "--version", action="version",
-            version="EMSM {}".format(self._app.version)
+            "--version",
+            action = "version",
+            version = "EMSM {}".format(self._app.version)
+            )
+        self.argparser.add_argument(
+            "--license",
+            action = LicenseAction,
+            license = self._app.license
             )
 
         worlds_group = self.argparser.add_mutually_exclusive_group()

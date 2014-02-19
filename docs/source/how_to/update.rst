@@ -8,6 +8,13 @@ EMSM
    
    The EMSM will deny the initialisation of a plugin if it's outdated.
    
+#. Check, if you already have the latest version:
+
+   .. code-block:: bash
+   
+      $ minecraft --version
+      EMSM x.x.x-gamma
+   
 #. Stop all minecraft worlds:
 
    .. code-block:: bash
