@@ -160,6 +160,7 @@ class BaseServerWrapper(object):
             start_args   The mojang minecraft server needs: "nogui."
             name         The name of the server in the application.
             auto_install Downloads the server-file if not yet done.
+            java_args    Appendix to the java vm arguments.
             ============ ===========================================
         """
         if name is None:
