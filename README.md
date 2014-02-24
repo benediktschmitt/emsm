@@ -22,7 +22,6 @@ at integrating **EMSM** with *init.d* to start/stop the server on
 
 
 ## Reference
-
 * [Documentation](#documentation)
 * [Installation](#installation)
 * [Uninstallation](#uninstallation)
