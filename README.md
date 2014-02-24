@@ -5,11 +5,20 @@ The **Extendable Minecraft Server Manager** (EMSM) handles
 **multiple minecraft worlds** and **server versions**. The application is 
 completely written in Python.
 
-The **EMSM** provides a simple, but sufficient **CLI** (*command line interface*) to manage world and server tasks.
-It is based on plugins therefore easily expandable. Further is the **EMSM** written in a modular manner that allows to reuse single components independend 
+The **EMSM** provides a simple, but sufficient **CLI** (*command line interface*)
+to manage world and server tasks.
+It is based on plugins therefore easily expandable. Further is the **EMSM** 
+written in a modular manner, that allows to reuse single components independent 
 of the rest of **EMSM** (if one wishes).
 
-The separation of Minecraft worlds and server executables allows to easily manage several different versions of servers (e.g. Vanilla and Bukkit in multiple versions) for different worlds. The **ESMS** comes with a prebuild backup mechanism as one of the core plugins, which can be automated to create periodical backups. It also provides a core plugin to check the availability of the server and restart them if its configured to do so. Another plugin aims at integrating **EMSM** with init.d to start/stop the server on (re-)boot/shutdown processes.
+The separation of Minecraft worlds and server executables allows to easily
+manage several different versions of servers (e.g. Vanilla and Bukkit in 
+multiple versions) for different worlds. The **EMSM** comes with a backup 
+mechanism as one of the core plugins, which can be automated to create
+periodical backups. It also provides a core plugin to check the availability 
+of the server and restart them if its configured to do so. Another plugin aims 
+at integrating **EMSM** with *init.d* to start/stop the server on
+(re-)boot/shutdown processes.
 
 
 ## Reference
