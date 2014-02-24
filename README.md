@@ -21,6 +21,13 @@ at integrating **EMSM** with *init.d* to start/stop the server on
 (re-)boot/shutdown processes.
 
 
+## Highlights
+* backup management
+* world guard
+* init.d support
+* World status reports
+
+
 ## Reference
 
 * [Documentation](#documentation)
