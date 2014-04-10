@@ -258,8 +258,7 @@ class Guard(BasePlugin):
         worlds.update(protected_worlds)
 
         for world in worlds:
-            if args.guard:
-                self.guard(world)
+            self.guard(world)
         return None
 
     def finish(self):
