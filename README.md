@@ -123,6 +123,7 @@ it in less than 10 minutes.
 	# Try *http* if *https* does not work.
 	url = http://s3.amazonaws.com/Minecraft.Download/versions/1.6.4/minecraft_server.1.6.4.jar
 	start_args = nogui.
+	java_args = -Xms512M -Xmx1024M -jar
 	```
 
 * worlds.conf:

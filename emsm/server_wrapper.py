@@ -185,24 +185,16 @@ class BaseServerWrapper(object):
         """
         return None    
     
-    def get_start_cmd(self, init_ram, max_ram):
+    def get_start_cmd(self):
         """
-        Returns the command to start the server.
-
-        init_ram is the initial size of the memory allocation pool
-        for the server and max_ram the maximum size.        
+        Returns the command to start the server.       
         """
         global _JAVA
-        
-        if max_ram < init_ram:
-            init_ram, max_ram = max_ram, init_ram
-            
-        cmd = "{java} {java_args} -Xms{init_ram}M -Xmx{max_ram}M -jar {server} {start_args}"
+                    
+        cmd = "{java} {java_args} {server} {start_args}"
         cmd = cmd.format(
             java=_JAVA,
             java_args=self.java_args,
-            init_ram=init_ram,
-            max_ram=max_ram,
             server=shlex.quote(self.server),
             start_args=self.start_args
             )

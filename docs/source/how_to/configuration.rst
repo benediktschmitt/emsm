@@ -57,24 +57,28 @@ Here's a simple example for a configuration that uses multiple server versions:
    # If *https* does not work, use *http* instead.
    url = https://s3.amazonaws.com/Minecraft.Download/versions/1.6.2/minecraft_server.1.6.2.exe
    start_args = nogui.
+   java_args = -Xmx1024M -Xms1024M -jar
    
    # If you want another version of the vanilla server:
    [vanilla_1.5]
    server = minecraft_server_1.5.jar
    url = http://assets.minecraft.net/1_5_2/minecraft_server.jar
    start_args = nogui.
+   java_args = -Xmx1024M -Xms1024M -jar
    
    # For the bukkit server, use:
    [bukkit_latest]
    server = craftbukkit_latest.jar
    url = http://dl.bukkit.org/latest-rb/craftbukkit.jar
    start_args = 
+   java_args = -Xmx1024M -Xms1024M -jar
    
    # Only a beta, when I wrote this:
    [bukkit_1.6]
    server = craftbukkit_1.6.jar
    url = http://cbukk.it/craftbukkit-beta.jar
    start_args =    
+   java_args = -Xmx1024M -Xms1024M -jar
    
 worlds.conf
 -----------
@@ -90,9 +94,6 @@ The section name is also the name of the world in the application.
    # Port of the world. If <auto>, the EMSM will search an unused 
    # port and save it. 
    port = <auto> | int
-   # Initial and maximum RAM in mb.
-   min_ram = int
-   max_ram = int
    # Seconds until a smooth stop is considered as failed.
    stop_timeout = int
    # Message printed before stopping the world.
@@ -110,8 +111,6 @@ worlds *foo* and *bar*:
    # This section contains the default values for all worlds.
    # It's not a world named: DEFAULT
    [DEFAULT]
-   min_ram = 256
-   max_ram = 1024
    stop_delay = 5
    stop_timeout = 10
    stop_message = The server is going down.
@@ -123,8 +122,6 @@ worlds *foo* and *bar*:
    # This ok, when all default values are set and valid.
    
    [bar]
-   min_ram = 128
-   max_ram = 512
    stop_delay = 0
    stop_timeout = 20
    stop_message = See you later aligator.

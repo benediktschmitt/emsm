@@ -610,8 +610,7 @@ class WorldWrapper(BaseWorldWrapper):
         """
         Starts the world.
         """
-        start_cmd = self.server.get_start_cmd(
-            int(self.conf["min_ram"]), int(self.conf["max_ram"]))
+        start_cmd = self.server.get_start_cmd()
         # We need to overwrite the port each start, so that only EMSM controls
         # the port and makes sure, that everything is in sync.
         init_properties = {"server-port": self.conf["port"]}

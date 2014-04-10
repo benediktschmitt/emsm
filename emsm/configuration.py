@@ -328,8 +328,6 @@ class WorldsConfiguration(BaseConfigurationFile):
     epilog = (
         "[the world's name]",
         "port = <auto> | int",
-        "min_ram = int",
-        "max_ram = int",
         "stop_timeout = int",
         "stop_message = string",
         "stop_delay = int",
@@ -342,8 +340,6 @@ class WorldsConfiguration(BaseConfigurationFile):
     
     defaults = collections.OrderedDict(
         port="<auto>",
-        min_ram="256",
-        max_ram="1024",
         stop_timeout="10",
         stop_message="The server is going down.\n\tHope to see you soon.",
         stop_delay="5",
@@ -362,15 +358,6 @@ class WorldsConfiguration(BaseConfigurationFile):
             msg = "The server '{}' has not been found in *server.conf*."\
                   .format(section["server"])
             raise OptionValueError("server", section_name, self.file, msg)
-
-        # ram
-        if not section["min_ram"].isdigit():
-            msg = "Has to be an integer value."
-            raise OptionValueError("min_ram", section_name, self.file, msg)
-
-        if not section["max_ram"].isdigit():
-            msg = "Has to be an integer value."
-            raise OptionValueError("max_ram", section_name, self.file, msg)
 
         # port
         if section_name == self.conf.default_section \
