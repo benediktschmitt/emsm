@@ -40,7 +40,7 @@ at integrating **EMSM** with *init.d* to start/stop the server on
 
 
 ## Documentation
-Please read the [online documentation](http://benediktschmitt.de/docs/emsm) for 
+Please read the [online documentation](http://emsm.readthedocs.org) for 
 a full introduction. I tried to keep it simple and short. You'll come grips with
 it in less than 10 minutes.
 
@@ -96,7 +96,7 @@ it in less than 10 minutes.
 
 	This should create the subdirectories and the configuration files. If the
 	*bin_script* does not work, take a look at the complete
-	[documentation](http://benediktschmitt.de/docs/emsm).
+	[documentation](http://emsm.readthedocs.org).
 
 8.	**Optional**: You might want to consider adding cronjobs for backup or guard plugin in e.g. */etc/cron.d/emsm*
 	```Shell
