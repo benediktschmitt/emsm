@@ -92,8 +92,9 @@ class WrongUserError(ApplicationException):
         return None
 
     def __str__(self):
-        temp = "This script requires a user named '{}'."\
-               .format(self.required_user)
+        temp = "This script requires a user named '{}'. "\
+               "The current user is '{}'."\
+               .format(self.required_user, getpass.getuser())
         return temp
 
     
