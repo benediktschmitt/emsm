@@ -1,4 +1,4 @@
-![emsm_logo](http://benediktschmitt.de/docs/emsm/_static/logo/emsm_48x48.png)
+![emsm_logo](http://emsm.readthedocs.org/en/latest/_static/emsm_48x48.png)
 
 # EMSM
 The **Extendable Minecraft Server Manager** (EMSM) handles
