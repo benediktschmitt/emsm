@@ -57,6 +57,7 @@ Here's a simple example for a configuration that uses multiple server versions:
    # If *https* does not work, use *http* instead.
    url = https://s3.amazonaws.com/Minecraft.Download/versions/1.6.2/minecraft_server.1.6.2.exe
    start_args = nogui.
+   # Don't forget the *-jar* argument! Put this at the end of the args.
    java_args = -Xmx1024M -Xms1024M -jar
    
    # If you want another version of the vanilla server:
@@ -71,6 +72,7 @@ Here's a simple example for a configuration that uses multiple server versions:
    server = craftbukkit_latest.jar
    url = http://dl.bukkit.org/latest-rb/craftbukkit.jar
    start_args = 
+   # Same here: Don't forget the -jar argument at the end.
    java_args = -Xmx1024M -Xms1024M -jar
    
    # Only a beta, when I wrote this:

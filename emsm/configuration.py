@@ -275,13 +275,13 @@ class ServerConfiguration(BaseConfigurationFile):
         "server = minecraft_server.jar",
         "start_args = nogui.",
         "url = http://s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
-        "java_args = ",
+        "java_args = -jar",
         "",
         "[bukkit_latest]",
         "server = craftbukkit.jar",
         "start_args = ",
         "url = http://dl.bukkit.org/latest-rb/craftbukkit.jar",
-        "java_args = "
+        "java_args = -jar"
         )
 
     def _complete_section(self, section_name, section):
