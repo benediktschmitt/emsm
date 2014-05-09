@@ -233,7 +233,6 @@ class MainConfiguration(BaseConfigurationFile):
         "[emsm]",
         "user = minecraft",
         "loglevel = WARNING",
-        "logfile = emsm.log",
         "timeout = -1",
         "",
         "The configuration section of each plugin is titled with the plugins ",
@@ -248,7 +247,6 @@ class MainConfiguration(BaseConfigurationFile):
         parser.add_section("emsm")
         parser["emsm"]["user"] = "minecraft"
         parser["emsm"]["loglevel"] = "WARNING"
-        parser["emsm"]["logfile"] = "emsm.log"
         parser["emsm"]["timeout"] = "-1"
         return parser
 
@@ -261,6 +259,9 @@ class MainConfiguration(BaseConfigurationFile):
         if section["loglevel"] not in ("NOTSET", "DEBUG", "INFO", "WARNING",
                                        "ERROR", "CRITICAL"):
             raise OptionValueError("loglevel", section_name, self.file)
+
+        if "logfile" in section:
+            print("The 'logfile' option is deprecated and will be removed.")
 
         # The timeout for the LockFile has to be -1 (for infinity)
         # or a number >= 0.

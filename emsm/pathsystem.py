@@ -105,6 +105,9 @@ class Pathsystem(object):
 
     emsm_dir = property(lambda self: self._dirs["emsm"])
 
+    log_filename = property(
+        lambda self: os.path.join(self._root_dir, "emsm.log"))
+
     # paths to topic specific subdirectories
     # --------------------------------------------
 

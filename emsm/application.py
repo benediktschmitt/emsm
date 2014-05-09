@@ -105,7 +105,7 @@ class Application(object):
     This class sets the application up and manages the run.
     """
 
-    version = "2.0.2-beta"
+    version = "2.0.3-beta"
 
     license = _LICENSE
 
@@ -231,3 +231,4 @@ if __name__ == "__main__":
             app.run()
     except:
         pass
+
