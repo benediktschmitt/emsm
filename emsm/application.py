@@ -174,9 +174,6 @@ class Application(object):
         self.plugins.import_from_app_plugin_dir()
         self.plugins.init_plugins()
 
-        # Make sure, that the configuratoin is written at the first run.
-        self.conf.write()
-
         # Because all plugin subparsers are not set up, we can parse all
         # arguments.
         self.argparser.parse_args()
@@ -187,6 +184,7 @@ class Application(object):
         Dispatch the application.
         """
         self.plugins.run()
+        self.plugins.finish()
         return None
 
     def finish(self):
@@ -194,7 +192,6 @@ class Application(object):
         For clean up and background stuff.
         """
         try:
-            self.plugins.finish()
             self.conf.write()
         finally:
             self._logger.shutdown()
@@ -218,6 +215,8 @@ class Application(object):
                              exc_value=exc_value)
             print(msg, file=sys.stderr)
             self.log.critical("Uncaught exception:", exc_info=True)
+
+        self.finish()
         return None
     
 
@@ -230,6 +229,5 @@ if __name__ == "__main__":
         with Application() as app:
             app.setup()
             app.run()
-            app.finish()
     except:
         pass
