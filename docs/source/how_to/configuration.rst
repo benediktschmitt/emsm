@@ -14,6 +14,14 @@ plugins.
    [emsm]
    # User that should run all of your minecraft worlds.
    user = minecraft
+   # The log level (see also: https://docs.python.org/3/howto/logging.html)
+   loglevel = "WARNING"
+   # The path to the lockfile. (Relative to the emsm root directory or absolute.)
+   logfile = "emsm.log"
+   # Maximum time that is waited until another EMSM instance releases
+   # the file lock. 
+   # -1 means no timeout, wait if necessairy an infinite time.
+   timeout = -1
    
 Each plugin has its own section with its name. E.g.:
 
