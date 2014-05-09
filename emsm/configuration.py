@@ -233,6 +233,8 @@ class MainConfiguration(BaseConfigurationFile):
         "[emsm]",
         "user = minecraft",
         "loglevel = WARNING",
+        "logfile = emsm.log",
+        "timeout = -1",
         "",
         "The configuration section of each plugin is titled with the plugins ",
         "name."
@@ -247,6 +249,7 @@ class MainConfiguration(BaseConfigurationFile):
         parser["emsm"]["user"] = "minecraft"
         parser["emsm"]["loglevel"] = "WARNING"
         parser["emsm"]["logfile"] = "emsm.log"
+        parser["emsm"]["timeout"] = "-1"
         return parser
 
     def _validate_section(self, section_name, section):
@@ -258,6 +261,11 @@ class MainConfiguration(BaseConfigurationFile):
         if section["loglevel"] not in ("NOTSET", "DEBUG", "INFO", "WARNING",
                                        "ERROR", "CRITICAL"):
             raise OptionValueError("loglevel", section_name, self.file)
+
+        # The timeout for the LockFile has to be -1 (for infinity)
+        # or a number >= 0.
+        if section["timeout"] != "-1" and not section["timeout"].isdigit():
+            raise OptionValueError("timeout", section_name, self.file)
         return None
 
 
