@@ -278,7 +278,7 @@ class ServerWrapper(BaseServerWrapper):
     def is_online(self):
         """
         Returns true if the server is running at least one world. The return
-        value is false, if the user changed the configuration options,
+        value is invalid, if the user changed the configuration options,
         associated with this server.
         """
         worlds = self._app.worlds
