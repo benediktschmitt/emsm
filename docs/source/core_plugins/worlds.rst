@@ -81,6 +81,15 @@ Arguments
 
    Sends the command to the world.
    
+   .. note:: Escaping commands with **spaces**
+   
+      If you want to send a command like ``say Hello players!``, you have to
+      escape it. Under Linux, this works:
+      
+      .. code-block:: bash
+      
+         minecraft -W worlds --send '"say Hello players!"'
+   
 .. option:: --verbose-send CMD
 
    Sends the command to the server and prints the echo in the logfiles.
