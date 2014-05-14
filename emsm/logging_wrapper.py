@@ -54,10 +54,6 @@ class Logger(object):
         self.file_handler = logging.FileHandler(app.paths.log_filename)
         self.file_handler.setFormatter(self.fmt)
         self.root.addHandler(self.file_handler)
-
-        # This file handler is to support the old 'logfile' option.
-        # It is deprecated and will be removed.
-        self.file_handler_old = None
         return None
 
     def shutdown(self):
@@ -65,37 +61,16 @@ class Logger(object):
         Closes all handler used by the emsm logger.
         """
         self.file_handler.close()
-        if self.file_handler_old is not None:
-            self.file_handler_old.close()
         return None
 
     def load_conf(self):
         """
         Sets the logger up, using the configuration options.
-        """
-        def logfile_abspath(logfile):
-            """
-            Returns the absolute path of the logfile. If the path is relative,
-            the emsm root dir is used as root.
-            """
-            if not os.path.isabs(logfile):
-                logfile = os.path.join(self._app.paths.root_dir, logfile)
-            logfile = os.path.expanduser(logfile)
-            logfile = os.path.abspath(logfile)
-            return logfile
-        
+        """        
         # Read the configuration
         conf = self._app.conf.main["emsm"]
         level = conf["loglevel"]
 
         # Apply configuration
         self.root.setLevel(level)
-
-        # Create the file handler for backward stuff. This section can be
-        # removed in future versions. (Written: 9.5.2014)
-        if "logfile" in conf:
-            file = logfile_abspath(conf["logfile"])
-            self.file_handler_old = logging.FileHandler(file)
-            self.file_handler_old.setFormatter(self.fmt)
-            self.root.addHandler(self.file_handler)
         return None
