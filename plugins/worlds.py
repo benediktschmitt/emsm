@@ -464,7 +464,10 @@ class Worlds(BasePlugin):
             if args.properties:
                 world.print_properties()
                 
-            if args.log or args.log_start or args.log_limit:
+            if args.log is not None\
+               or args.log_start is not None \
+               or args.log_limit is not None:
+                
                 if args.log_start is None:
                     args.log_start = self.default_log_start
                 if args.log_limit is None:
