@@ -12,7 +12,7 @@ __all__ = ["get_unused_port"]
 _FOUND_PORTS = list()
 def get_unused_port(min_port, max_port, interface=""):
     """
-    Returns the first unused port in the intervall *[min_, max_]* on the
+    Returns an unused port in the intervall *[min_, max_]* on the
     *interface*.
     """
     global _FOUND_PORTS
@@ -22,8 +22,8 @@ def get_unused_port(min_port, max_port, interface=""):
     if min_port < 0:
         raise ValueError("min_port has to be greater or equal to 0")
 
-    for port in range(min_port, max_port):
-        # Check if the port has already been returned by this function.
+    while True:
+        port = random.randint(min_port, max_port)
         if port in _FOUND_PORTS:
             continue
         
@@ -37,9 +37,7 @@ def get_unused_port(min_port, max_port, interface=""):
             else:
                 _FOUND_PORTS.append(port)
                 return port
-    
-    # No free port has been found.
-    raise Exception("No port has been found.")
+    return None
 
 
 if __name__=="__main__":
