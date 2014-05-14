@@ -282,15 +282,13 @@ class ServerConfiguration(BaseConfigurationFile):
         "",
         "[vanilla_latest]",
         "server = minecraft_server.jar",
-        "start_args = nogui.",
         "url = http://s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
-        "java_args = -jar",
+        "start_cmd = java -jar {server} nogui.",
         "",
         "[bukkit_latest]",
         "server = craftbukkit.jar",
-        "start_args = ",
         "url = http://dl.bukkit.org/latest-rb/craftbukkit.jar",
-        "java_args = -jar"
+        "start_cmd = java -jar {server}",
         )
 
     def _complete_section(self, section_name, section):
@@ -301,10 +299,6 @@ class ServerConfiguration(BaseConfigurationFile):
         # if the server option is not set.
         if not "server" in section or section["server"].isspace():
             section["server"] = section_name.replace(" ", "_")
-
-        # Make sure, that all optional parameters are initialized.
-        if not "java_args" in section:
-            section["java_args"] = ""
         return None
 
     def _validate_section(self, section_name, section):
@@ -324,6 +318,20 @@ class ServerConfiguration(BaseConfigurationFile):
                 urllib.parse.urlparse(section["url"])
             except urllib.error:
                 raise OptionValueError("url", section_name, self.file)
+
+        # java args
+        if "java_args" in section:
+            print("The 'java_args' (server.conf) option is deprecated and "
+                  "will be ignored. Use 'start_cmd' instead.")
+
+        # star args
+        if "start_args" in section:
+            print("The 'start_args' (server.conf) option is deprecated and "
+                  "will be ignored. Use 'start_cmd' instead.")
+
+        # start_cmd
+        if not "start_cmd" in section:
+            raise MissingOptionError("start_cmd", section_name, self.file)
         return None
 
 

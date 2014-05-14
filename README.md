@@ -122,9 +122,9 @@ it in less than 10 minutes.
 	server = minecraft_server_1.6.jar
 	# Try *http* if *https* does not work.
 	url = http://s3.amazonaws.com/Minecraft.Download/versions/1.6.4/minecraft_server.1.6.4.jar
-	start_args = nogui.
-	# Don't forget the *-jar*!
-	java_args = -Xms512M -Xmx1024M -jar
+	# This command is executed in the bash and should start the minecraft server.
+	# {server} is expanded to "emsm_root/server/minecraft_server_1.6.jar"
+	start_cmd = java -Xms512M -Xmx1024M -jar {server} nogui.
 	```
 
 * worlds.conf:

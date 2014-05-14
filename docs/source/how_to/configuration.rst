@@ -47,46 +47,73 @@ You can declare them into the :file:`server.conf` configuration file:
    [servername_in_the_application]
    server = `filename of the executable`
    url = `download url of the executable`
-   start_args = `The mojang server needs: "nogui."`
-   java_args = `Command line arguments for the java virtual machine`
+   start_cmd = `The bash commmand to start the server."`
+
+*  **server**
+
+   This is the name of the executable in the directory ``emsm_root/server``.
+   
+*  **url**
+
+   The EMSM will try to download the server from this url. Furthermore, it 
+   is used for updates.
+   
+   .. note:: **Download error**
+
+      Try http if https does not work.
+      
+*  **start_cmd**
+
+   This command is executed to start the server. The EMSM changes the current
+   working directory to the directory of the world, that should be started 
+   and executes this command. You have to use ``'{server}'`` as placeholder
+   for the path of the server executable:
+   
+   .. code-block:: ini
+      
+      [vanilla]
+      ...
+      server = minecraft_server.jar
+      # start_cmd is expanded to:
+      #   'java -jar /path/to/emsm/server/minecraft_server.jar nogui.'
+      start_cmd = java -jar {server} nogui.
+      
+   .. note:: Escaping **{}**
+   
+      If you need a ``'{}'`` in the *start_cmd* option, escape ``'{'`` 
+      with ``'{{'`` and ``'}'`` with ``'}}'``.   
 
 If you declare a new server, the EMSM will try to **download** it the next time 
 you invoke the application.
 
-Here's a simple example for a configuration that uses multiple server versions:
+Here's a simple example for a configuration, that uses multiple server versions:
 
 .. code-block:: ini
 
-   # The mojang minecraft server (also called vanilla)
+   # The mojang minecraft server (also called vanilla) in version 1.6
    [vanilla_1.6]
    server = minecraft_server_1.6.jar
    # If *https* does not work, use *http* instead.
    url = https://s3.amazonaws.com/Minecraft.Download/versions/1.6.2/minecraft_server.1.6.2.exe
-   start_args = nogui.
-   # Don't forget the *-jar* argument! Put this at the end of the args.
-   java_args = -Xmx1024M -Xms1024M -jar
+   start_cmd = java -jar {server} nogui.
    
    # If you want another version of the vanilla server:
    [vanilla_1.5]
    server = minecraft_server_1.5.jar
    url = http://assets.minecraft.net/1_5_2/minecraft_server.jar
-   start_args = nogui.
-   java_args = -Xmx1024M -Xms1024M -jar
+   start_cmd = java -jar {server} nogui. 
    
    # For the bukkit server, use:
    [bukkit_latest]
    server = craftbukkit_latest.jar
    url = http://dl.bukkit.org/latest-rb/craftbukkit.jar
-   start_args = 
-   # Same here: Don't forget the -jar argument at the end.
-   java_args = -Xmx1024M -Xms1024M -jar
+   start_cmd = java -jar {server}
    
    # Only a beta, when I wrote this:
    [bukkit_1.6]
    server = craftbukkit_1.6.jar
    url = http://cbukk.it/craftbukkit-beta.jar
-   start_args =    
-   java_args = -Xmx1024M -Xms1024M -jar
+   start_cmd = java -jar {server}
    
 worlds.conf
 -----------

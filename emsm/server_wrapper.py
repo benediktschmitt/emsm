@@ -147,21 +147,22 @@ class BaseServerWrapper(object):
     def __init__(self,
                  server,
                  url,
-                 start_args="",
-                 name=None,
+                 name,
+                 start_cmd,
                  auto_install=True,
-                 java_args=""
                  ):
         """ ============ ===========================================
             parameter    description
             ============ ===========================================
             server       The path of the server.
             url          The download url of the server.
-            start_args   The mojang minecraft server needs: "nogui."
             name         The name of the server in the application.
             auto_install Downloads the server-file if not yet done.
-            java_args    Appendix to the java vm arguments.
-            ============ ===========================================
+            start_cmd    The os command to start the server.
+                         E.g.: "java -Xmx512M -jar ${server} nogui."
+                         Note, that in this example, "${server}" is
+                         replaced with the value of *server*.
+            ============ ===========================================            
         """
         if name is None:
             name = os.path.basename(server)
@@ -169,8 +170,7 @@ class BaseServerWrapper(object):
         self.server = server
         self.name = name
         self.url = url
-        self.start_args = start_args
-        self.java_args = java_args
+        self.start_cmd = start_cmd
 
         # Download the server if not yet done.
         if auto_install and not os.path.exists(self.server):
@@ -189,14 +189,17 @@ class BaseServerWrapper(object):
         """
         Returns the command to start the server.       
         """
-        global _JAVA
-                    
-        cmd = "{java} {java_args} {server} {start_args}"
-        cmd = cmd.format(
-            java=_JAVA,
-            java_args=self.java_args,
-            server=shlex.quote(self.server),
-            start_args=self.start_args
+        # In server.conf:
+        #
+        #   [vanilla]
+        #   ...
+        #   server = minecraft_server.jar
+        #   start_cmd = java -jar {server} nogui.
+        #
+        # start_args expands to:
+        #   "java -jar emsm_root/server/minecraft_server.jar nogui."
+        cmd = self.start_cmd.format(
+            server = shlex.quote(self.server)
             )
         return cmd
 
@@ -262,17 +265,19 @@ class ServerWrapper(BaseServerWrapper):
         """
         self._app = app
         self.conf = app.conf.server[name]
-
+                 
         # Events
         self.on_uninstall = app.events.get_event("server_uninstalled")
         
-        # Read all other values from the configuration.
-        server = os.path.join(
-            app.paths.server_dir, self.conf["server"])
+        # Read all other values from the configuration.        
         BaseServerWrapper.__init__(
-            self, server=server, url=self.conf["url"],
-            start_args=self.conf["start_args"], name=name, auto_install=True,
-            java_args=self.conf["java_args"])
+            self,
+            server = os.path.join(app.paths.server_dir, self.conf["server"]),
+            url = self.conf["url"],
+            name = name,
+            start_cmd = self.conf["start_cmd"],
+            auto_install = True
+            )
         return None
 
     def is_online(self):
