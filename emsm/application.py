@@ -105,7 +105,7 @@ class Application(object):
     This class sets the application up and manages the run.
     """
 
-    version = "2.0.3-beta"
+    version = "2.0.4-beta"
 
     license = _LICENSE
 
@@ -150,20 +150,28 @@ class Application(object):
         """
         Sets the application up.
         """
-        # These actions can be done without locking the app's file lock.
+        # Reading the conf is ok. We're not writing to it.
         self.conf.read()
-        self._check_user()
-
+        
         # Everything seems ok, so get ready to run.
+        # We need to acquire the file lock, to avoid that different instances
+        # of the emsm access the same resources. This includes the logfile.
         lock_timeout = self.conf.main["emsm"].getint("timeout", None)
         if lock_timeout == -1:
             lock_timeout = None
         self.lock.acquire(lock_timeout, 0.1)
 
-        # Reload the configuration again. I'm paranoid and it could have changed
-        # while we waited for the file lock.
+        # Set the logger up as early as possible, so that we can log any errors.
+        # The only exceptions, that can not be logged, are the TimeoutException
+        # of the file lock.
+        self._logger.setup()        
         self.conf.read()
         self._logger.load_conf()
+
+        # Todo: I don't like logging so late...
+        self.log.info("EMSM - Setup")
+        
+        self._check_user()
         self.argparser.add_app_args()
 
         # Wrappers
@@ -194,6 +202,7 @@ class Application(object):
         try:
             self.conf.write()
         finally:
+            self.log.info("EMSM - End")
             self._logger.shutdown()
             self.lock.release()
         return None

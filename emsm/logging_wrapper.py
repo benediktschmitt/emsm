@@ -50,10 +50,7 @@ class Logger(object):
             datefmt="%Y-%m-%d %H:%M:%S", style="{"
             )
 
-        # Set the log file up.
-        self.file_handler = logging.FileHandler(app.paths.log_filename)
-        self.file_handler.setFormatter(self.fmt)
-        self.root.addHandler(self.file_handler)
+        self.file_handler = None
         return None
 
     def shutdown(self):
@@ -61,6 +58,15 @@ class Logger(object):
         Closes all handler used by the emsm logger.
         """
         self.file_handler.close()
+        return None
+
+    def setup(self):
+        """
+        Opens the log file for writing.
+        """                
+        self.file_handler = logging.FileHandler(self._app.paths.log_filename)
+        self.file_handler.setFormatter(self.fmt)
+        self.root.addHandler(self.file_handler)
         return None
 
     def load_conf(self):
