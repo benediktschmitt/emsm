@@ -24,34 +24,59 @@
 
 """
 About
-=====
-The main purpose of this plugin is to demonstrate the implementation of an
-EMSM plugin.
-
-
-Configuration
-=============
-[hellodolly]
-max_rows = 5
-
-Where
 -----
-* max_rows
-    Is the maximum number of lines printed at once.
 
+This plugins works as a tutorial. It's inspired by the wordpress plugin
+`Hello Dolly <https://wordpress.org/plugins/hello-dolly/>`_. 
 
-Arguments
-=========
-* --rows ROWS, -r ROWS
-    Number of rows to print.
+Download
+--------
 
+You can find the latest version on
+`GitHub <https://github.com/benediktschmitt/emsm/>`_.
 
-Note
-====
-Note, that this docstring should be helpful, despite to the fact, that the
-user can access this easily for further information with this plugin.
+Or you download the version used to create this documentation file
+:download:`here <hellodolly.py>`.
 
-    $ minecraft plugins --doc hellodolly
+Code
+----
+
+..
+   The next line includes this module as raw text.
+   and by the way: This is a comment.
+
+.. literalinclude:: hellodolly.py
+
+Package
+-------
+
+Now, we want to create our own plugin package, so that the user can install it
+with :mod:`plugins`:
+
+.. code-block:: bash
+
+   $ plugin.py -s hellodolly.py
+   $ ls
+   hellodolly.py hellodolly.tar.bz2 ...
+   
+The package should be now in your current working directory.
+   
+Usage
+-----
+
+.. code-block:: bash
+
+   # Will print only one row:
+   minecraft -W hellodolly
+   
+   # Prints 5 rows or less, if the configuration value is smaller:
+   minecraft -W hellodolly --rows 5
+   
+Documentation
+------------- 
+
+To view the source code of this documentation file, click on the **Source**
+link in the navigation bar. 
 """
 
 
