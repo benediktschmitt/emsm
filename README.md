@@ -235,6 +235,9 @@ If you have a good idea for a new plugin, let me know :)
 Please consider also to contribute to the code. When you found a bug, please
 report it and/or try to fix it.
 
+Note, that I develop under the *dev* branch and so this branch is usually some
+commits ahead and it should be the only branch you commit to.
+
 
 ## Versioning
 The **EMSM** uses semantic version numbers. Take a look at http://semver.org/

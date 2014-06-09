@@ -26,6 +26,9 @@ Code
 
 If you like the EMSM and you want to contribute to the code, then do it :)
 
+Usually, the *dev* branch is ahead of the *master* branch and commits should
+always go to *dev*.
+
 Plugins
 -------
 
