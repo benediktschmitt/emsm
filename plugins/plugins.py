@@ -43,40 +43,44 @@ Arguments
 
 .. option:: --install ARCHIVE, -i ARCHIV
 
-   Installs an new plugin from the archive. If a plugin with the same name
-   already exists, the installation will fail.    
+    Installs an new plugin from the archive. If a plugin with the same name
+    already exists, the installation will fail.    
    
 .. option:: --remove PLUGIN, -r PLUGIN
 
-   Removes the plugin from the EMSM. Please make sure, that no other plugin
-   depends on this one.
+    Removes the plugin from the EMSM. Please make sure, that no other plugin
+    depends on this one.
    
 .. option:: --doc PLUGIN, -d PLUGIN
 
-   Prints the documentation of the selected plugin.
+    Prints the documentation of the selected plugin.
 
 Package structure
 -----------------
 
-The archive that contains the plugin should have the following structure::
+The archive that contains the plugin should have the following structure:
 
-   \foo.tar.bz2
-      \plugin.py
-      \data
-         \bar.txt
-         \bar.csv
-         \...
+.. code-block:: none
 
-During the installation, the path names will be changed to::
+    |- foo.tar.bz2
+       |- plugin.py
+       |- data
+          |- bar.txt
+          |- bar.csv
+          |- ...
 
-   \
-      \plugins_src
-         \foo.py    <= plugin.py
-      \plugins_data
-         \foo       <= data
-            \bar.txt
-            \bar.csv
-            \...
+During the installation, the path names will be changed to:
+
+.. code-block:: none
+
+    |- EMSM_ROOT
+      |- plugins
+         |- foo.py    <= plugin.py
+      |-plugins_data
+         |- foo       <= data
+            |- bar.txt
+            |- bar.csv
+            |- ...
 
 If the plugin contains a docstring like this one, it will be printed after
 the installation.
@@ -100,12 +104,11 @@ Example
 
 Build the plugin *foo*, that comes with a data directory:
 
- .. code-block:: bash
+.. code-block:: bash
    
-   $ plugin.py -c build/foo -s dev/foo.py -d dev/foo_data
-   $ ls build
-   ... foo.tar.bz2 ...
-
+    $ plugin.py -c build/foo -s dev/foo.py -d dev/foo_data
+    $ ls build
+    ... foo.tar.bz2 ...
 """
 
 

@@ -39,9 +39,9 @@ Installation
 
 .. code-block:: bash
 
-   $ cp emsm/initd_script /etc/init.d/minecraft
-   $ chmod +x /etc/init.d/minecraft
-   $ update-rc.d minecraft
+    $ cp emsm/initd_script /etc/init.d/minecraft
+    $ chmod +x /etc/init.d/minecraft
+    $ update-rc.d minecraft
    
 
 Configuration
@@ -52,36 +52,36 @@ main.conf
 
 .. code-block:: ini
    
-   [initd]
-   manage_all_worlds = no
+    [initd]
+    manage_all_worlds = no
 
 **manage_all_worlds**
 
-   If yes, all worlds are automatically started/stopped if the runlevel
-   demands it.
+    If yes, all worlds are automatically started/stopped if the runlevel
+    demands it.
 
 worlds.conf
 ^^^^^^^^^^^
 
 .. code-block:: ini
 
-   [foo]
-   enable_initd = no
+    [foo]
+    enable_initd = no
 
 **enable_initd**
    
-   Is the local value for *manage_all_worlds*.
+    Is the local value for *manage_all_worlds*.
    
 Arguments
 ---------
 
 .. option:: --start
 
-   Starts all worlds, where the *enable_initd* configuration value is true.
+    Starts all worlds, where the *enable_initd* configuration value is true.
 
 .. option:: --stop
    
-   Stops all worlds, where the *enable_initd* configuration value is true.
+    Stops all worlds, where the *enable_initd* configuration value is true.
    
 Events
 ------

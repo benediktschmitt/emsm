@@ -29,35 +29,41 @@ About
 This plugins works as a tutorial. It's inspired by the wordpress plugin
 `Hello Dolly <https://wordpress.org/plugins/hello-dolly/>`_. 
 
-Download
---------
+Code and Download
+-----------------
 
-You can find the latest version on
-`GitHub <https://github.com/benediktschmitt/emsm/>`_.
-
-Or you download the version used to create this documentation file
-:download:`here <hellodolly.py>`.
-
-Code
-----
+You can find the latest version of *hello_dolly* on the EMSM GitHub
+`GitHub repository <https://github.com/benediktschmitt/emsm/blob/master/plugins/plugins.py>`_.
 
 ..
-   The next line includes this module as raw text.
-   and by the way: This is a comment.
+    By the way, this is a comment block in reST.
 
-.. literalinclude:: hellodolly.py
+    The next line is a little hack. Unfortunetly, sphinx does not find
+    "hellodolly.py" when this docstring is included with autodoc. So this does
+    not work:
+
+    .. literalinclude:: hellodolly.py
+
+    So, the next line is actually a small hack.
+    When the documentation is built, this module is included from
+    ``EMSM_ROOT/docs/source/plugins/``, but the module is in
+    ``EMSM_ROOT/plugins/```. 
+
+    Todo: Remove this comment and fix the literalinclude thing.
+
+.. literalinclude:: ../../../plugins/hellodolly.py
 
 Package
 -------
 
-Now, we want to create our own plugin package, so that the user can install it
-with :mod:`plugins`:
+We want to create our own plugin package, so that other users can install it
+with :mod:`plugins` easily:
 
 .. code-block:: bash
 
-   $ plugin.py -s hellodolly.py
-   $ ls
-   hellodolly.py hellodolly.tar.bz2 ...
+    $ plugin.py -s hellodolly.py
+    $ ls
+    hellodolly.py hellodolly.tar.bz2 ...
    
 The package should be now in your current working directory.
    
@@ -66,17 +72,18 @@ Usage
 
 .. code-block:: bash
 
-   # Will print only one row:
-   minecraft -W hellodolly
+    # Will print only one row:
+    minecraft -W hellodolly
    
-   # Prints 5 rows or less, if the configuration value is smaller:
-   minecraft -W hellodolly --rows 5
+    # Prints 5 rows or less, if the configuration value is smaller:
+    minecraft -W hellodolly --rows 5
    
 Documentation
 ------------- 
 
-To view the source code of this documentation file, click on the **Source**
-link in the navigation bar. 
+Acutally, EMSM uses sphinx *autodoc* feature to create the documentation for
+the plugins. So what, you see here is the docstring of the ``hello_dolly.py``
+module.
 """
 
 

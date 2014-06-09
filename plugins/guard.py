@@ -43,45 +43,45 @@ main.conf
 
 .. code-block:: ini
 
-   [guard]
-   error_action = none
-   error_regex = (\[SEVERE\])
-   auto_run = no
-   guard_all_worlds = no
+    [guard]
+    error_action = none
+    error_regex = (\[SEVERE\])
+    auto_run = no
+    guard_all_worlds = no
    
 **error_action**
 
-   Defines the reaction on a detected error.
-   
-   * *none*     Do nothing
-   * *restart*  Try to restart the world
-   * *stop*     Try to stop the world.
-   * *stderr*   Print a message to stderr
+    Defines the reaction on a detected error.
+
+    * *none*     Do nothing
+    * *restart*  Try to restart the world
+    * *stop*     Try to stop the world.
+    * *stderr*   Print a message to stderr
     
 **error_regex**
 
-   If this regex matches the log file, it caues an error handling.
+    If this regex matches the log file, it caues an error handling.
    
 **auto_run**
 
-   If yes, run each time, the EMSM is invoked.
+    If yes, run each time, the EMSM is invoked.
    
 **guard_all_worlds**
 
-   If yes, this plugin guards all worlds per default.      
+    If yes, this plugin guards all worlds per default.      
       
 worlds.conf
 ^^^^^^^^^^^
 
 .. code-block:: ini
 
-   [foo]
-   enable_guard = no
+    [foo]
+    enable_guard = no
    
 **enable_guard**
-   
-   Enables the guard for this plugin. Overwrites the global
-   flag *guard_all_worlds*.
+
+    Enables the guard for this plugin. Overwrites the global
+    flag *guard_all_worlds*.
 
 Summary
 ^^^^^^^
@@ -90,15 +90,15 @@ option in the *DEFAULT* section:
 
 .. code-block:: ini
 
-   [DEFAULT]
-   enable_guard = yes
+    [DEFAULT]
+    enable_guard = yes
    
-   [foo]
-   # This world is protected.
+    [foo]
+    # This world is protected.
    
-   [bar]
-   # This world is not protected.
-   enable_guard = no   
+    [bar]
+    # This world is not protected.
+    enable_guard = no   
 
 Arguments
 ---------
@@ -114,12 +114,12 @@ This plugin is made for *cron*:
 
 .. code-block:: text
 
-   # m h dom mon dow user command
-   # Runs the guard every 5 minutes for all worlds
-   */5 * *   *   *   root minecraft -W guard
+    # m h dom mon dow user command
+    # Runs the guard every 5 minutes for all worlds
+    */5 * *   *   *   root minecraft -W guard
    
-   # Runs the guard every 5 minutes for the world, where *enable_guard* is true:
-   */5 * *   *   *   root minecraft guard   
+    # Runs the guard every 5 minutes for the world, where *enable_guard* is true:
+    */5 * *   *   *   root minecraft guard   
 """
 
 

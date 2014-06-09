@@ -38,11 +38,11 @@ following ways:
 #. Choose a short and unique name for your plugin.
 #. Create a :mod:`plugin package <plugins>`, that contains the source file and
    the data that comes with your plugin.
-#. Write a small `reST file, <http://sphinx-doc.org/>`_ with the documentation
-   of your plugin. If you don't know how to do this, you can take a look to the
-   source file of the documentation of a plugin by clicking on *Source* in the 
-   sidebar.
-   The documentation should at least contain the following sections:
+#. Add a small `reST <http://sphinx-doc.org/>`_ docstring to your plugin.
+   If you don't know how to do this, you can take a look at the source code 
+   of some other plugins.
+   The documentation should at least contain the following sections to be
+   useful:
   
    * About (What does your plugin?)
    * Download URL
