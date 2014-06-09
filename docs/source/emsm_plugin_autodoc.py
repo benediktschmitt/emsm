@@ -158,15 +158,13 @@ def clean_documentation():
     """
     # We only keep the index.rst file in each directory.
     for filename in os.listdir(DOC_PLUGINS_DIR):
-        if filename == "index.rst":
-            continue
-        os.remove(os.path.join(DOC_PLUGINS_DIR, filename))
+        if filename.endswith(".rst") and filename != "index.rst":
+            os.remove(os.path.join(DOC_PLUGINS_DIR, filename))
     print("Cleaned '{}'.".format(DOC_PLUGINS_DIR))
 
     for filename in os.listdir(DOC_CORE_PLUGINS):        
-        if filename == "index.rst":
-            continue
-        os.remove(os.path.join(DOC_CORE_PLUGINS, filename))        
+        if filename.endswith(".rst") and filename != "index.rst":
+            os.remove(os.path.join(DOC_CORE_PLUGINS, filename))        
     print("Cleaned '{}'.".format(DOC_CORE_PLUGINS))
     return None
 
