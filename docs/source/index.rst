@@ -73,7 +73,8 @@ Why should you use the **EMSM**?
 
 *  **Fast learning curve**
 
-   Use the *--help* argument if you don't know how to use a plugin.
+   Use the ``--help`` or ``--long-help`` argument if you don't know how
+   to use a plugin.
 
 *  **Online Documentation**  
 

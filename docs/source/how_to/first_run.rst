@@ -24,12 +24,13 @@ There are some common arguments and run types you should know:
 		$ minecraft backups -h
 		...
 		
-*  The **doc view** of a plugin:
+*  The **long-help** argument:
 
    .. code-block:: bash
    
-		$ minecraft plugins --doc [YOUR_PLUGIN]
-		$ minecraft plugins --doc worlds
+      $ minecraft worlds --long-help
+      $ minecraft backups --long-help
+      ...
 		
 
 Each plugin provides its own arguments, similar to *git*. There are only a few

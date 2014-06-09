@@ -55,6 +55,15 @@ Arguments
 
     Prints the documentation of the selected plugin.
 
+    .. deprecated:: 2.0.4    
+        Use the plugin's ``--long-help`` argument instead:
+
+        .. code-block:: bash
+
+            $ minecraft worlds --long-help
+            $ minecraft backups --long-help
+            ...
+
 Package structure
 -----------------
 

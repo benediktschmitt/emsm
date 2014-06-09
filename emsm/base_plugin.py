@@ -28,6 +28,8 @@
 import os
 import logging
 import shutil
+import argparse
+import subprocess
 
 # local
 from app_lib import userinput
@@ -40,6 +42,55 @@ __all__ = ["BasePlugin"]
 
 # Classes
 # ------------------------------------------------
+class LongHelpAction(argparse.Action):
+    """
+    Prints the description of a plugin and exists with exit code 0.
+    """
+
+    def __init__(self, option_strings, description=None, dest=argparse.SUPPRESS,
+                 default=argparse.SUPPRESS, help=None):
+        if help is None:
+            help = "Shows the manual and exists."
+            
+        self.description = description if description is not None else str()
+        self.description.strip()
+        
+        super().__init__(
+            option_strings = option_strings,
+            dest = dest,
+            default = default,
+            nargs = 0,
+            help = help)
+        return None
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        """
+        Well, what LongHelpAction does :)
+        """
+        # We print the docstring under linux with *less*, if available.
+        was_printed = False
+        try:
+            less_proc = subprocess.Popen("less", stdin=subprocess.PIPE)
+            try:
+                less_proc.stdin.write(self.description.encode())
+                was_printed = True
+            except IOError as err:
+                print(err)
+            finally:
+                less_proc.stdin.close()
+                less_proc.wait()
+        except (OSError, ValueError) as err:
+            pass
+
+        # Use the print command, if nothing else worked.
+        if not was_printed:
+            print(self.description)
+            was_printed = True
+            
+        parser.exit()
+        return None
+
+    
 class BasePlugin(object):
     """
     This is the base class for all plugins.
@@ -62,6 +113,12 @@ class BasePlugin(object):
 
     # The plugin manager can lookup there for a new version of the plugin.
     download_url = ""
+
+    # This string is like the man page of the plugin and displayed when
+    # invoking the plugin with the *--long-help* command. Per default,
+    # we use the docstring of the module that contains the plugin. Therefore,
+    # it is first available, when at least one plugin has been initialised.
+    description = ""
 
     def __init__(self, app, name):
         """
@@ -92,9 +149,17 @@ class BasePlugin(object):
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
 
+        # Get the docstring of the plugin module.
+        type(self).description = app.plugins.get_module(name).__doc__
+
         # Create a new argparser for this plugin.
         self.argparser = app.argparser.plugin_parsers.add_parser(name)
-        return None      
+        
+        self.argparser.add_argument(
+            "--long-help",
+            action = LongHelpAction,
+            description = self.description)
+        return None
 
     def uninstall(self):
         """
