@@ -112,12 +112,12 @@ Cron
 ----
 
 This plugin is very useful, when you use it with cron. This crontab will send
-you a status report at 2:00h:
+you a status report at 2:05h in the morning:
 
 .. code-block:: text
    
     # m h dom mon dow user command
-    5   2 *   *   *   root minecraft -W guard
+    5   2 *   *   *   root minecraft -W status --mail
 """
 
 
