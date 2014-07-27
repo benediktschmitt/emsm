@@ -26,6 +26,7 @@ at integrating **EMSM** with *init.d* to start/stop the server on
 * [Documentation](#documentation)
 * [Installation](#installation)
 * [Uninstallation](#uninstallation)
+* [Commands](#commands)
 * [Directory structure](#directory-structure)
 * [Contribution and New Plugins](#contribution-and-new-plugins)
 * [Versioning](#versioning)
@@ -181,12 +182,12 @@ There are some common arguments and run types you should know:
 		$ minecraft server -h
 		$ minecraft backups -h
 		...
-		
-* The **doc view** of a plugin:
+        
+* The **long-help** argument (like the *man* pages under Linux):
 
-		$ minecraft plugins --doc [YOUR_PLUGIN]
-		$ minecraft plugins --doc worlds
-		
+        $ minecraft worlds --long-help
+        $ minecraft backups --long-help
+        ...		
 
 Each plugin provides its own arguments, similar to *git*. There are only a few
 **global arguments** to unify the interface:
@@ -234,6 +235,9 @@ If you have a good idea for a new plugin, let me know :)
 
 Please consider also to contribute to the code. When you found a bug, please
 report it and/or try to fix it.
+
+Note, that I develop under the *dev* branch and so this branch is usually some
+commits ahead and it should be the only branch you commit to.
 
 
 ## Versioning

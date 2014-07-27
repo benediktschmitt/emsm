@@ -24,34 +24,66 @@
 
 """
 About
-=====
-The main purpose of this plugin is to demonstrate the implementation of an
-EMSM plugin.
-
-
-Configuration
-=============
-[hellodolly]
-max_rows = 5
-
-Where
 -----
-* max_rows
-    Is the maximum number of lines printed at once.
 
+This plugins works as a tutorial. It's inspired by the wordpress plugin
+`Hello Dolly <https://wordpress.org/plugins/hello-dolly/>`_. 
 
-Arguments
-=========
-* --rows ROWS, -r ROWS
-    Number of rows to print.
+Code and Download
+-----------------
 
+You can find the latest version of *hello_dolly* on the EMSM GitHub
+`GitHub repository <https://github.com/benediktschmitt/emsm/blob/master/plugins/plugins.py>`_.
 
-Note
-====
-Note, that this docstring should be helpful, despite to the fact, that the
-user can access this easily for further information with this plugin.
+..
+    By the way, this is a comment block in reST.
 
-    $ minecraft plugins --doc hellodolly
+    The next line is a little hack. Unfortunetly, sphinx does not find
+    "hellodolly.py" when this docstring is included with autodoc. So this does
+    not work:
+
+    .. literalinclude:: hellodolly.py
+
+    So, the next line is actually a small hack.
+    When the documentation is built, this module is included from
+    ``EMSM_ROOT/docs/source/plugins/``, but the module is in
+    ``EMSM_ROOT/plugins/```. 
+
+    Todo: Remove this comment and fix the literalinclude thing.
+
+.. literalinclude:: ../../../plugins/hellodolly.py
+
+Package
+-------
+
+We want to create our own plugin package, so that other users can install it
+with :mod:`plugins` easily:
+
+.. code-block:: bash
+
+    $ plugin.py -s hellodolly.py
+    $ ls
+    hellodolly.py hellodolly.tar.bz2 ...
+   
+The package should be now in your current working directory.
+   
+Usage
+-----
+
+.. code-block:: bash
+
+    # Will print only one row:
+    minecraft -W hellodolly
+   
+    # Prints 5 rows or less, if the configuration value is smaller:
+    minecraft -W hellodolly --rows 5
+   
+Documentation
+------------- 
+
+Acutally, EMSM uses sphinx *autodoc* feature to create the documentation for
+the plugins. So what, you see here is the docstring of the ``hello_dolly.py``
+module.
 """
 
 
