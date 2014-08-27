@@ -33,7 +33,7 @@ Manual installation
 
    .. code-block:: bash
 
-      $ wget https://github.com/benediktschmitt/emsm/archive/master.zip
+      $ wget https://github.com/benediktschmitt/emsm/archive/master.tar.gz
       $ tar -xzf master.tar.gz
       $ mv emsm-master/* ./
       $ rm -r emsm-master master.tar.gz

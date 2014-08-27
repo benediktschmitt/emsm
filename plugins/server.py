@@ -55,6 +55,10 @@ Select the server with the *common* arguments **--server** or **--all-server**.
 .. option:: --configuration
    
     Prints the configuration of the server.
+
+.. option:: --usage
+
+    Prints the names of the worlds, powered by this server.
    
 .. option:: --update
 
@@ -106,6 +110,19 @@ class MyServer(object):
     def __init__(self, app, server):
         self.app = app
         self.server = server
+        return None
+
+    def print_usage(self):
+        """
+        Returns true,
+        """
+        powered_worlds = [world \
+                          for world in self.app.worlds.get_all() \
+                          if world.server == self.server]
+
+        print("{} - usage:".format(self.server.name))
+        for world in powered_worlds:
+            print("\t", world.name)
         return None
 
     def print_configuration(self):
@@ -245,6 +262,13 @@ class Server(BasePlugin):
             help = "Prints the configuration of the server."
             )
 
+        self.argparser.add_argument(
+            "--usage",
+            action = "count",
+            dest = "usage",
+            help = "Prints the names of the worlds, run by this server."
+            )
+
         update_group = self.argparser.add_mutually_exclusive_group()
         update_group.add_argument(
             "--update",
@@ -274,6 +298,9 @@ class Server(BasePlugin):
             
             if args.conf:
                 s.print_configuration()
+                
+            if args.usage:
+                s.print_usage()
 
             if args.update:
                 s.update(False, self.update_message)
