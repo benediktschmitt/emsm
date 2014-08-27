@@ -39,6 +39,9 @@ import shlex
 import signal
 import collections
 
+# third party
+import blinker
+
 
 # Backward compatibility
 # ------------------------------------------------
@@ -537,15 +540,29 @@ class WorldWrapper(BaseWorldWrapper):
     """
     This world wrapper uses the world configuration to get the
     values for parameters in some methods.
-
-    Events:
-        event                           parameter
-        --------------------------------------------------------------
-        world_uninstalled            -> world
-        world_upcoming_status_change -> world, prev_status, end_status
-        world_status_change          -> world, prev_status, end_status
-        world_status_change_failure  -> world, prev_status, end_status
     """
+
+    # Emitted when a world has been uninstalled.
+    world_uninstalled = blinker.signal("world_uninstalled")
+
+    # Emitted when a world is about to start.
+    world_about_to_start = blinker.signal("world_about_to_start")
+
+    # Emitted when a world has been started.
+    world_started = blinker.signal("world_started")
+
+    # Emitted when a world could not be started.
+    world_start_failed = blinker.signal("world_start_failed")
+
+    # Emitted when a world is about to be stopped.
+    world_about_to_stop = blinker.signal("world_about_to_stop")
+
+    # Emitted when a world has been stopped.
+    world_stopped = blinker.signal("world_stopped")
+
+    # Emitted when a world could not be stopped.
+    world_stop_failed = blinker.signal("world_stop_failed")
+    
 
     def __init__(self, app, name):
         """
@@ -554,16 +571,6 @@ class WorldWrapper(BaseWorldWrapper):
         self._app = app
         self.conf = app.conf.worlds[name]
         self.server = app.server.get(self.conf["server"])
-
-        # Events
-        self.on_uninstall = app.events.get_event(
-            "world_uninstalled")
-        self.on_upcoming_status_change = app.events.get_event(
-            "world_upcoming_status_change")
-        self.on_status_change = app.events.get_event(
-            "world_status_change")
-        self.on_status_change_failure = app.events.get_event(
-            "world_status_change_failure")
 
         BaseWorldWrapper.__init__(
             self, name, app.paths.get_world_dir(name))
@@ -579,61 +586,88 @@ class WorldWrapper(BaseWorldWrapper):
         """
         BaseWorldWrapper.uninstall(self)
         self._app.conf.worlds.remove_section(self.name)
-        self.on_uninstall.emit(self)
+        
+        WorldWrapper.world_uninstalled.send(self)
         return None
 
     # start / stop
     # --------------------------------------------
 
-    def _perform_status_change(self, func, end_status):
-        """
-        Emit *world_upcoming_status_change* before executing any command, that
-        could cause a status change.
-        If the status change is successful, *world_status_change* is emitted,
-        else *world_status_change_failed*.
-
-        *func* requires no arguments and should change the statuus of this
-        world.
-        """
-        prev_status = self.is_online()
-        self.on_upcoming_status_change.emit(self, prev_status, end_status)
-        try:
-            func()
-        except WorldError as error:
-            self.on_status_change_failure.emit(self, prev_status, end_status)
-            raise
-        else:
-            self.on_status_change(self, prev_status, end_status)
-        return None
-
     def start(self):
         """
         Starts the world.
+
+        Emits:
+            * world_about_to_start
+            * world_started
+            * world_start_failed
         """
         start_cmd = self.server.get_start_cmd()
+        
         # We need to overwrite the port each start, so that only EMSM controls
         # the port and makes sure, that everything is in sync.
         init_properties = {"server-port": self.conf["port"]}
 
-        func = lambda: BaseWorldWrapper.start(self, start_cmd, init_properties)
-        self._perform_status_change(func, True)
+        if self.is_offline():
+            WorldWrapper.world_about_to_start.send(self)
+            try:
+                BaseWorldWrapper.start(self, start_cmd, init_properties)
+                
+            # Note, that WorldIsOnlineError can not occure since we
+            # checked if the world is offline.
+            except WorldStartFailed:
+                WorldWrapper.world_start_failed.send(self)
+                raise
+            
+            else:
+                WorldWrapper.world_started.send(self)
         return None
 
     def kill_processes(self):
         """
         Kills the processes of the world.
+
+        Emits:
+            * world_about_to_stop
+            * world_stopped
+            * world_stop_failed
         """
-        func = lambda: BaseWorldWrapper.kill_processes(self)
-        return self._perform_status_change(func, False)
+        if self.is_online():
+            WorldWrapper.world_about_to_stop.send(self)
+            try:
+                BaseWorldWrapper.kill_processes(self)
+            except WorldStopFailed:
+                WorldWrapper.world_stop_failed.send(self)
+                raise
+            else:
+                WorldWrapper.world_stopped.send(self)
+        return None
 
     def stop(self, force_stop=False):
         """
         Stops the world.
+        
+        Emits:
+            * world_about_to_stop
+            * world_stopped
+            * world_stop_failed
         """
-        func = lambda: BaseWorldWrapper.stop(
-            self, self.conf["stop_message"], int(self.conf["stop_delay"]),
-            int(self.conf["stop_timeout"]), force_stop)
-        return self._perform_status_change(func, False)
+        if self.is_online():
+            WorldWrapper.world_about_to_stop.send(self)
+            try:
+                BaseWorldWrapper.stop(
+                    self,
+                    message=self.conf["stop_message"],
+                    delay=self.conf.getint("stop_delay"),
+                    timeout=self.conf.getint("stop_timeout"),
+                    force_stop=force_stop
+                    )
+            except WorldStopFailed:
+                WorldWrapper.world_stop_failed.send(self)
+                raise
+            else:
+                WorldWrapper.world_stopped.send(self)
+        return None
 
 
 class WorldManager(object):
@@ -648,8 +682,7 @@ class WorldManager(object):
         # world.name => world
         self._worlds = dict()
 
-        self._app.events.connect(
-            "world_uninstalled", self._remove, create=True)
+        WorldWrapper.world_uninstalled.connect(self._remove)
         return None
 
     def load(self):

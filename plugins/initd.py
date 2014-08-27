@@ -82,21 +82,12 @@ Arguments
 .. option:: --stop
    
     Stops all worlds, where the *enable_initd* configuration value is true.
-   
-Events
-------
-
-The plugin emits the corresponding events:
-
-* initd_start()
-* initd_stop()
-
-Both with no argument.
 """
 
 
 # Modules
 # ------------------------------------------------
+
 # local
 import world_wrapper
 from base_plugin import BasePlugin
@@ -113,12 +104,7 @@ PLUGIN = "InitD"
 class InitD(BasePlugin):
     """
     Connection to the diffrent runlevel of a linux system.
-    Emits events corresponding to the *service minecraft [cmd]*
-    command:
-
-    * service minecraft start -> emit("initd_start")
-    * service minecraft stop -> emit("initd_stop")
-
+    
     This plugin comes with a bash script that must be copied to the
     */etc/init.d/* directory. (The bash script is in the *emsm* source folder.)
     After copying the script to the *init.d* directory, don't forget to run
@@ -129,9 +115,6 @@ class InitD(BasePlugin):
     
     def __init__(self, app, name):
         BasePlugin.__init__(self, app, name)
-
-        self.initd_start = self.app.events.get_event("initd_start")
-        self.initd_stop = self.app.events.get_event("initd_stop")
 
         self.start_occured = False
         self.stop_occured = False
@@ -148,20 +131,22 @@ class InitD(BasePlugin):
     
     def setup_argparser(self):
         self.argparser.description = (
-            "Emits corresponding to the current runlevel diffrent event."
+            "InitD interface for EMSM."
             "Make sure, that you copied the *emsm/initd_script* to "
-            "*/etc/init.d/minecraft*.")
+            "``/etc/init.d/minecraft``.")
 
         # Only one runlevel to the same time.
         me_group = self.argparser.add_mutually_exclusive_group()
         me_group.add_argument(
             "--start",
             action="count", dest="initd_start",
-            help="Emits the initd_start event.")
+            help="Starts all worlds for which initd support is enabled."
+            )
         me_group.add_argument(
             "--stop",
             action="count", dest="initd_stop",
-            help="Emits the initd_stop event.")
+            help="Stop all worlds for which initd support is enabled."
+            )
         return None
 
     def uninstall(self):
@@ -254,13 +239,9 @@ class InitD(BasePlugin):
         if args.initd_start:
             self.start_occured = True
             self.auto_start()
-            self.log.debug("Emitting *initd_start* event.")
-            self.initd_start.emit()
         elif args.initd_stop:
             self.stop_occured = True
             self.auto_stop()
-            self.log.debug("Emitting *initd_stop* event.")
-            self.initd_stop.emit()
             # Exit directly to avoid the *finish* runlevel of the EMSM.
             exit(0)
         return None

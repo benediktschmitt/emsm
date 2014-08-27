@@ -33,7 +33,6 @@ import getpass
 import argparse_wrapper
 import base_plugin
 import configuration
-import eventsystem
 import logging_wrapper
 import pathsystem
 import plugin_manager
@@ -116,7 +115,6 @@ class Application(object):
         self.paths = pathsystem.Pathsystem()
         self.lock = file_lock.FileLock(
             os.path.join(self.paths.emsm_dir, "app.lock"))
-        self.events = eventsystem.Dispatcher()
         self._logger = logging_wrapper.Logger(self)
         self.log = self._logger.emsm
 

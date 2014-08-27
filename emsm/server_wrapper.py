@@ -30,6 +30,9 @@ import shlex
 import shutil
 import urllib.request
 
+# third party
+import blinker
+
 # local
 import app_lib.downloadreporthook
 
@@ -244,13 +247,10 @@ class BaseServerWrapper(object):
 class ServerWrapper(BaseServerWrapper):
     """
     This server wrapper is configurable and implements some events.
-
-    Note:
-        This class makes heavy use of the reference to the application.
-
-    Events:
-        "server_uninstalled" -> (self, )
     """
+
+    # Emmited when the server is uninstalled.
+    server_uninstalled = blinker.signal("server_uninstalled")
 
     def __init__(self, app, name):
         """
@@ -265,9 +265,6 @@ class ServerWrapper(BaseServerWrapper):
         """
         self._app = app
         self.conf = app.conf.server[name]
-                 
-        # Events
-        self.on_uninstall = app.events.get_event("server_uninstalled")
         
         # Read all other values from the configuration.        
         BaseServerWrapper.__init__(
@@ -349,7 +346,7 @@ class ServerWrapper(BaseServerWrapper):
             if conf[section]["server"] == self.name:
                 conf[section]["server"] = replace_with.name
 
-        self.on_uninstall.emit(self)
+        ServerWrapper.server_uninstalled.send(self)
         return None
 
 
@@ -367,8 +364,8 @@ class ServerManager(object):
         # Maps the server names to the ServerWrapper instance
         # server.name => server
         self._server = dict()
-        
-        app.events.connect("server_uninstalled", self._remove, create=True)
+
+        ServerWrapper.server_uninstalled.connect(self._remove)
         return None
 
     def load(self):
