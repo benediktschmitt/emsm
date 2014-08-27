@@ -25,6 +25,8 @@
 
 # Modules
 # ------------------------------------------------
+
+# std
 import os
 import shlex
 import shutil
@@ -33,12 +35,10 @@ import urllib.request
 # third party
 import blinker
 
-# local
-import app_lib.downloadreporthook
-
 
 # Backward compatibility
 # --------------------------------------------------
+
 if not hasattr(shlex, "quote"):
     # From the Python3.3 library
     import re
@@ -56,11 +56,6 @@ if not hasattr(shlex, "quote"):
     shlex.quote = _shlex_quote
     del re
     
-if hasattr(shutil, "which"):
-    _JAVA = shutil.which("java")
-else:
-    _JAVA = "java"
-
 try:
     FileNotFoundError
 except:
@@ -69,22 +64,29 @@ except:
     
 # Data
 # ------------------------------------------------
-__all__ = ["ServerError", "ServerUpdateFailure",
-           "ServerStatusError", "ServerIsOnlineError",
-           "ServerIsOfflineError", "BaseServerWrapper"
-           "ServerWrapper", "ServerManager"]
+__all__ = ["ServerError",
+           "ServerUpdateFailure",
+           "ServerStatusError",
+           "ServerIsOnlineError",
+           "ServerIsOfflineError",
+           "ServerWrapper",
+           "ServerManager"
+           ]
 
 
 # Exceptions
 # --------------------------------------------------
+
 class ServerError(Exception):
-    """ Base class for all module exceptions. """
+    """
+    Base class for all module exceptions.
+    """
     pass
 
 
 class ServerUpdateFailure(ServerError):
     """
-    Raised if the update of a server failed.
+    Raised if a server update failed.
     """
 
     def __init__(self, server):
@@ -140,57 +142,90 @@ class ServerIsOfflineError(ServerStatusError):
     
 # Classes
 # ------------------------------------------------
-class BaseServerWrapper(object):    
-    """
-    Wraps a minecraft server (file).
 
-    I tried to keep this class as much emsm-independant as possible.
+class ServerWrapper(object):    
     """
-       
-    def __init__(self,
-                 server,
-                 url,
-                 name,
-                 start_cmd,
-                 auto_install=True,
-                 ):
-        """ ============ ===========================================
-            parameter    description
-            ============ ===========================================
-            server       The path of the server.
-            url          The download url of the server.
-            name         The name of the server in the application.
-            auto_install Downloads the server-file if not yet done.
-            start_cmd    The os command to start the server.
-                         E.g.: "java -Xmx512M -jar ${server} nogui."
-                         Note, that in this example, "${server}" is
-                         replaced with the value of *server*.
-            ============ ===========================================            
+    Wraps a minecraft server (executable), NOT a world.
+    """
+
+    # Emmited when the server is uninstalled.
+    server_uninstalled = blinker.signal("server_uninstalled")
+    
+
+    def __init__(self, app, name):
         """
-        if name is None:
-            name = os.path.basename(server)
-            
-        self.server = server
-        self.name = name
-        self.url = url
-        self.start_cmd = start_cmd
+        Constructs the server wrapper by using the configuration values
+        in ``app.conf.server[name]``.
+        
+        Params:
+            * app
+                The parent EMSM application object.
+            * name
+                The name of this server in the *server.conf*.
+        """
+        self._app = app
+        self._conf = app.conf.server[name]
 
-        # Download the server if not yet done.
-        if auto_install and not os.path.exists(self.server):
-            self.update()
+        # The absolute path to the server executable that is
+        # wrapped by this object.
+        self._server = os.path.join(app.paths.server_dir, self.conf["server"])
+
+        # The name of the server executable.
+        self._name = name
+
+        # The download url of the server.
+        self._url = self.conf["url"]
+
+        # The shell command which starts the server.
+        # This string contains still some placeholders.
+        #
+        # See also:
+        #   * start_cmd()
+        self._raw_start_cmd = self.conf["start_cmd"]
         return None
 
-    def is_online(self):
+    @property
+    def conf(self):
+        return self._conf
+
+    @property
+    def server(self):
         """
-        Returns None per default. None means not implemented.
-        
-        Should be overwritten.
+        Absolute path of the server executable.
         """
-        return None    
+        return self._server
+
+    @property
+    def name(self):
+        """
+        The name of the server (configuration section name).
+        """
+        return self._name
+
+    @property
+    def url(self):
+        """
+        The download url of the server.
+        """
+        return self._url
+
+    @property
+    def raw_start_cmd(self):
+        """
+        The raw, unformatted command that starts the server. This may
+        still contain placeholders like ``'{server}'``.
+
+        See also:
+            * start_cmd()
+        """
+        return self._raw_start_cmd
     
-    def get_start_cmd(self):
+    def start_cmd(self):
         """
-        Returns the command to start the server.       
+        Returns the formatted shell command needed to start the server.
+
+        See also:
+            * raw_start_cmd
         """
         # In server.conf:
         #
@@ -199,163 +234,117 @@ class BaseServerWrapper(object):
         #   server = minecraft_server.jar
         #   start_cmd = java -jar {server} nogui.
         #
-        # start_args expands to:
+        # start_cmd is expanded to:
         #   "java -jar emsm_root/server/minecraft_server.jar nogui."
-        cmd = self.start_cmd.format(
-            server = shlex.quote(self.server)
+        cmd = self._raw_start_cmd.format(
+            server = shlex.quote(self._server)
             )
         return cmd
+    
+    def is_installed(self):
+        """
+        ``True`` if the executable has been downloaded and exists, otherwise
+        ``False``.
+        """
+        return os.path.exists(self._server)
+    
+    def is_online(self):
+        """
+        Returns ``True`` if at least one world is currently running with
+        this server.
+        """
+        worlds = self._app.worlds.get_by_pred(
+            lambda w: w.server is self and w.is_online()
+            )
+        return bool(worlds)
 
     def update(self, reporthook=None):
         """
         Downloads the server_jar into a temporary file and copies the
-        file if the download succeeded to the server directory.
-        reporthook is the reporthook of urllib.request.urlretrieve.
+        file if the download was succesful to the server directory.
 
-        Raises: ServerIsOnlineError, ServerUpdateFailure
+        Parameters:
+            *reporthook* is the reporthook in *urllib.request.urlretrieve*.
+
+        Exceptions:
+            * ServerIsOnlineError
+            * ServerUpdateFailure
         """
         if self.is_online():
             raise ServerIsOnlineError(self)
 
+        # Download the server.
         try:
             temp_server_file, http_message = urllib.request.urlretrieve(
-                self.url,
+                self._url,
                 reporthook=reporthook
                 )
         except (OSError, urllib.error.URLError):
             raise ServerUpdateFailure(self)
         else:
-            shutil.move(temp_server_file, self.server)
-        return None    
+            shutil.move(temp_server_file, self._server)
+        return None
 
-    def uninstall(self):
+    def uninstall(self, new_server):
         """
-        Removes the server file.
+        Removes the server and its configuration. The worlds currently run
+        by this server will be powered by *new_server* after the next start.
 
-        Raises: ServerIsOnlineError
+        Exceptions:
+            * ServerIsOnlineError
+            * TypeError
+                if *new_server* is not a ServerWrapper instance.
+            * ValueError
+                if *new_server* is not **another** ServerWrapper instance.
         """
         if self.is_online():
             raise ServerIsOnlineError(self)
+
+        if not new_server is None:
+            if not isinstance(new_server, type(self)):
+                raise TypeError("*new_server* has to be a ServerWrapper")                
+            if new_server is self:
+                raise ValueError("*new_server* has to be **another** "
+                                 "ServerWrapper")
+
+        # World reconfiguration
+        # ^^^^^^^^^^^^^^^^^^^^^
         
+        # Get the worlds which are configured to run with this server.
+        worlds = self._app.worlds.get_by_pred(lambda w: w.server is self)
+
+        for world in worlds:
+            # Replace the server wrapper.
+            world.server = new_server
+
+            # Replace the configuration value.
+            # Note, that we check if there is a *default* value for the
+            # server wrapper set.
+            if "server" in world.conf:
+                world.conf["server"] = new_server._name
+
+        # Remove the server
+        # ^^^^^^^^^^^^^^^^^
+
+        # The server file.
         try:
             os.remove(self.server)
         except FileNotFoundError:
             pass
-        return None
 
+        # The server configuration.
+        self._app.conf.server.remove_section(self._name)
 
-class ServerWrapper(BaseServerWrapper):
-    """
-    This server wrapper is configurable and implements some events.
-    """
-
-    # Emmited when the server is uninstalled.
-    server_uninstalled = blinker.signal("server_uninstalled")
-
-    def __init__(self, app, name):
-        """
-        application is a reference to the running application.
-
-        Note, that *application.conf.server[name]* contains the configuration
-        of this server wrapper:
-            [name]
-            server = minecraft_server.jar
-            url = https://s3.amazonaws.com/Minecraft.Download/versions/1.6.2/minecraft_server.1.6.2.jar
-            start_args = nogui.
-        """
-        self._app = app
-        self.conf = app.conf.server[name]
+        # Finish
+        # ^^^^^^
         
-        # Read all other values from the configuration.        
-        BaseServerWrapper.__init__(
-            self,
-            server = os.path.join(app.paths.server_dir, self.conf["server"]),
-            url = self.conf["url"],
-            name = name,
-            start_cmd = self.conf["start_cmd"],
-            auto_install = True
-            )
-        return None
-
-    def is_online(self):
-        """
-        Returns true if the server is running at least one world. The return
-        value is invalid, if the user changed the configuration options,
-        associated with this server.
-        """
-        worlds = self._app.worlds
-        running_worlds = worlds.get_by_pred(
-            lambda w: w.server is self and w.is_online()
-            )
-        return bool(running_worlds)
-
-    def update(self, reporthook=None):
-        """
-        The same magic as in BaseServerWrapper.update(...), but this one will
-        print a pretty reporthook.
-        """
-        if reporthook is None:
-            reporthook = app_lib.downloadreporthook.Reporthook(
-                self.url, target=self.server)
-        BaseServerWrapper.update(self, reporthook)
-        return None
-
-    def uninstall(self, replace_with):
-        """
-        Removes the file and the configuration of the server.
-
-        replace_with has to be another server wrapper. This is necessary
-        to avoid errors at runtime.
-
-        Raises: ValueError, TypeError, ServerIsOnline
-        """
-        if replace_with is self:
-            raise ValueError("replace_with has to be another ServerWrapper!")
-        if not isinstance(replace_with, type(self)):
-            raise TypeError("replace_with has to be a ServerWrapper!")
-
-        # Check if this server is still running some worlds and
-        # if all worlds are offline, replace their ServerWrapper.
-        worlds = self._app.worlds.get_by_pred(lambda w: w.server is self)
-        
-        for world in worlds:
-            if world.is_online():
-                msg = "The world '{}' is online.".format(world.name)
-                raise ServerIsOnlineError(self, msg)
-            
-        for world in worlds:
-            world.server = replace_with
-
-        # Let the base class remove the server.
-        BaseServerWrapper.uninstall(self)
-
-        # Adapt the configuration files:
-        # XXX Don't change the worlds.conf *file* with the world.conf
-        #   *attribute* of the WorldWrapper class. This will not overwrite
-        #   the default value in the configuration! We have to manipulate the
-        #   configuration direct.
-        conf = self._app.conf.server
-        conf.remove_section(self.name)
-
-        # The default_section is ususually the first secction_name, that
-        # is returned.
-        conf = self._app.conf.worlds
-        for section in conf:
-            if "server" not in conf[section]:
-                continue
-            if conf[section]["server"] == self.name:
-                conf[section]["server"] = replace_with.name
-
         ServerWrapper.server_uninstalled.send(self)
         return None
 
 
 class ServerManager(object):
     """
-    Container for all server wrappers.
-
-    Note: This class makes use of the reference to the
-        application.
+    A container for all server wrappers used by a running EMSM application.
     """
 
     def __init__(self, app):
@@ -368,31 +357,58 @@ class ServerManager(object):
         ServerWrapper.server_uninstalled.connect(self._remove)
         return None
 
-    def load(self):
+    def load_server(self):
         """
         Loads all server declared in the server configuration file.
+
+        If a server has not been downloaded yet, ``server.update()`` is
+        called.
+
+        See also:
+            * Application.conf.server
+            * ServerWrapper.is_installed()
+            * ServerWrapper.update()
         """
         conf = self._app.conf.server
         for section in conf.sections():
             server = ServerWrapper(self._app, section)
             self._server[server.name] = server
+
+            # Install the server if not yet done.
+            if not server.is_installed():
+                server.update()
         return None
 
     # container
     # --------------------------------------------
 
     def _remove(self, server):
+        """
+        Removes the ServerWrapper *server* from the internal map.
+        """
         if server in self._server:
             del self._server[server.name]
         return None
 
     def get(self, servername):
-        return self._server[servername]
+        """
+        Returns the corresponding ServerWrapper if there is one. Otherwise
+        ``None``.
+        """
+        return self._server.get(servername)
 
     def get_all(self):
+        """
+        Returns a list with all loaded ServerWrapper.
+        """
         return list(self._server.values())
 
     def get_by_pred(self, pred=None):
+        """
+        Almost equal to:
+            >>> filter(pred, sm.get_all())
+            ...
+        """
         return list(filter(pred, self._server.values()))
 
     def get_selected(self):
@@ -400,8 +416,10 @@ class ServerManager(object):
         Returns all server that have been selected per command line argument.
         """
         args = self._app.argparser.args
+        
         selected_server = args.server
         all_server = args.all_server
+        
         if all_server:
             return list(self._server.values())
         else:

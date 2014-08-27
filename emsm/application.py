@@ -173,7 +173,7 @@ class Application(object):
         self.argparser.add_app_args()
 
         # Wrappers
-        self.server.load()
+        self.server.load_server()
         self.worlds.load()
 
         # Plugins

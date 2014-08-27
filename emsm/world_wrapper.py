@@ -602,7 +602,7 @@ class WorldWrapper(BaseWorldWrapper):
             * world_started
             * world_start_failed
         """
-        start_cmd = self.server.get_start_cmd()
+        start_cmd = self.server.start_cmd()
         
         # We need to overwrite the port each start, so that only EMSM controls
         # the port and makes sure, that everything is in sync.
