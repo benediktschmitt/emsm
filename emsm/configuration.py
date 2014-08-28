@@ -292,10 +292,10 @@ class ServerConfiguration(BaseConfigurationFile):
         if section_name == self.conf.default_section:
             return None
 
-        # Use the name of the section as filename for the executable,
-        # if the server option is not set.
-        if not "server" in section or section["server"].isspace():
-            section["server"] = section_name.replace(" ", "_")
+##        # Use the name of the section as filename for the executable,
+##        # if the server option is not set.
+##        if not "server" in section or section["server"].isspace():
+##            section["server"] = section_name.replace(" ", "_")
         return None
 
     def _validate_section(self, section_name, section):
@@ -303,32 +303,32 @@ class ServerConfiguration(BaseConfigurationFile):
         if section_name == self.conf.default_section:
             return None
 
-        # the server executable
-        if not "server" in section:
-            raise MissingOptionError("server", section_name, self.file)
-
-        # download url of the server
-        if not "url" in section:
-            raise MissingOptionError("url", section_name, self.file)
-        else:
-            try:
-                urllib.parse.urlparse(section["url"])
-            except urllib.error:
-                raise OptionValueError("url", section_name, self.file)
-
-        # java args
-        if "java_args" in section:
-            print("The 'java_args' (server.conf) option is deprecated and "
-                  "will be ignored. Use 'start_cmd' instead.")
-
-        # star args
-        if "start_args" in section:
-            print("The 'start_args' (server.conf) option is deprecated and "
-                  "will be ignored. Use 'start_cmd' instead.")
-
-        # start_cmd
-        if not "start_cmd" in section:
-            raise MissingOptionError("start_cmd", section_name, self.file)
+##        # the server executable
+##        if not "server" in section:
+##            raise MissingOptionError("server", section_name, self.file)
+##
+##        # download url of the server
+##        if not "url" in section:
+##            raise MissingOptionError("url", section_name, self.file)
+##        else:
+##            try:
+##                urllib.parse.urlparse(section["url"])
+##            except urllib.error:
+##                raise OptionValueError("url", section_name, self.file)
+##
+##        # java args
+##        if "java_args" in section:
+##            print("The 'java_args' (server.conf) option is deprecated and "
+##                  "will be ignored. Use 'start_cmd' instead.")
+##
+##        # star args
+##        if "start_args" in section:
+##            print("The 'start_args' (server.conf) option is deprecated and "
+##                  "will be ignored. Use 'start_cmd' instead.")
+##
+##        # start_cmd
+##        if not "start_cmd" in section:
+##            raise MissingOptionError("start_cmd", section_name, self.file)
         return None
 
 
