@@ -115,7 +115,7 @@ class ArgumentParser(object):
             action = "append",
             dest = "worlds",
             metavar = "WORLD",
-            choices = self._app.conf.worlds.sections(),
+            choices = self._app.conf.worlds().sections(),
             default = list(),
             help = "Selects single worlds."
             )
@@ -134,7 +134,7 @@ class ArgumentParser(object):
             action = "append",
             dest = "server",
             metavar = "SERVER",
-            choices = self._app.conf.server.sections(),
+            choices = self._app.conf.server().sections(),
             default = list(),
             help = "Selects single server software."
             )

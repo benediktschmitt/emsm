@@ -265,7 +265,7 @@ class WorldWrapper(object):
         be created if it does not exist.
         """
         self._app = app
-        self._conf = app.conf.worlds[name]
+        self._conf = app.conf.worlds()[name]
         self._check_conf()
 
         # The ServerWrapper for the server that powers this world.
@@ -882,7 +882,7 @@ class WorldManager(object):
         See also:
             * Application.conf.worlds
         """
-        conf = self._app.conf.worlds
+        conf = self._app.conf.worlds()
         for section in conf.sections():
             world = WorldWrapper(self._app, section)
             self._worlds[world.name] = world

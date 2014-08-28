@@ -167,7 +167,7 @@ class ServerWrapper(object):
                 The name of this server in the *server.conf*.
         """
         self._app = app
-        self._conf = app.conf.server[name]
+        self._conf = app.conf.server()[name]
         self._check_conf()
 
         # The absolute path to the server executable that is
@@ -434,7 +434,7 @@ class ServerManager(object):
             * ServerWrapper.is_installed()
             * ServerWrapper.update()
         """
-        conf = self._app.conf.server
+        conf = self._app.conf.server()
         for section in conf.sections():
             server = ServerWrapper(self._app, section)
             self._server[server.name()] = server

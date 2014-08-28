@@ -136,7 +136,7 @@ class Application(object):
         Raises WrongUserError if the user that is running this
         script is not the user named in the configuration file.
         """
-        required_user = self.conf.main["emsm"]["user"]
+        required_user = self.conf.main()["emsm"]["user"]
         if getpass.getuser() != required_user:
             raise WrongUserError(required_user)
         return None
@@ -154,7 +154,7 @@ class Application(object):
         # Everything seems ok, so get ready to run.
         # We need to acquire the file lock, to avoid that different instances
         # of the emsm access the same resources. This includes the logfile.
-        lock_timeout = self.conf.main["emsm"].getint("timeout", None)
+        lock_timeout = self.conf.main()["emsm"].getint("timeout", None)
         if lock_timeout == -1:
             lock_timeout = None
         self.lock.acquire(lock_timeout, 0.1)

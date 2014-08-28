@@ -139,7 +139,7 @@ class BasePlugin(object):
         self.log = logging.getLogger(name)
 
         # Set the configuration up.
-        main_conf = app.conf.main
+        main_conf = app.conf.main()
         if name not in main_conf:
             main_conf.add_section(name)
         self.conf = main_conf[name]

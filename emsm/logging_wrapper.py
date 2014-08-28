@@ -76,7 +76,7 @@ class Logger(object):
         Sets the logger up, using the configuration options.
         """        
         # Read the configuration
-        conf = self._app.conf.main["emsm"]
+        conf = self._app.conf.main()["emsm"]
         level = conf["loglevel"]
 
         # Apply configuration
