@@ -413,7 +413,7 @@ class Configuration(object):
         main_conf_dir is the directory that contains all configuration files.
         """
         self._app = app
-        self._dir = app.paths.conf_dir
+        self._dir = app.paths.conf_dir()
         
         self._main = MainConfiguration(
             os.path.join(self._dir, "main.conf"))

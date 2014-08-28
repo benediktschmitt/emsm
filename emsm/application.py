@@ -114,7 +114,7 @@ class Application(object):
         # \Independent constructions and primary ressources
         self.paths = pathsystem.Pathsystem()
         self.lock = file_lock.FileLock(
-            os.path.join(self.paths.emsm_dir, "app.lock"))
+            os.path.join(self.paths.emsm_root_dir(), "app.lock"))
         self._logger = logging_wrapper.Logger(self)
         self.log = self._logger.emsm
 

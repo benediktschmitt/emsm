@@ -25,11 +25,14 @@
 
 # Modules
 # ------------------------------------------------
+
+# std
 import os
 
 
 # Backward compatibility
 # ------------------------------------------------
+
 try:
     FileExistsError
 except NameError:
@@ -38,88 +41,204 @@ except NameError:
 
 # Data
 # ------------------------------------------------
-__all__ = ["Pathsystem"]
+
+__all__ = [
+    "Pathsystem"
+    ]
 
 
 # Classes
 # ------------------------------------------------
+
 class Pathsystem(object):
     """
     Manages the paths to the different files and directories of the
     application.
+
+    The EMSM directory structure looks like this:
+
+        |- EMSM_ROOT
+           |- configuration
+              |- main.conf
+              |- server.conf
+              |- worlds.conf
+           |- emsm             # the EMSM source files
+              |- application.conf
+              |- world_wrapper.py
+              |- server_wrapper.py
+              |- base_plugin.py
+              |- ...
+           |- plugins          # the plugin's source files
+              |- backups.py
+              |- guard.py
+              |- hellodolly.py
+              |- initd.py
+              |- server.py
+              |- ...
+           |- plugins_data
+              |- backups
+                 |- foo
+                 |- bar
+              |- guard
+              |- hellodolly.py
+                 |- lyrics.txt
+              |- initd
+              |- ...
+           |- server           # the server executables
+              |- minecraft_server.jar
+              |- craftbukkit.jar
+              |- ...
+           |- worlds           # the data of the worlds (minecraft map, ...)
+              |- foo
+                 |- server.properties
+                 |- ...
+              |- bar
+                 |- server.properties
+                 |- ...
     """
 
-    # Usually, the root directory of the wrapper is the parent directory of
-    # this script.
-    DEFAULT_ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
-
-    def __init__(self, root_dir=None):
+    def __init__(self):
         """
-        root_dir is the root directory of the application. If not provided,
-        the DEFAULT_ROOT_DIR will be used.
         """
-        if root_dir is None:
-            root_dir = self.DEFAULT_ROOT_DIR
-        root_dir = os.path.expanduser(root_dir)
-        root_dir = os.path.abspath(root_dir)
-        self._root_dir = root_dir
+        # The root directory is the parent folder of this folder.
+        self._root_dir = os.path.dirname(os.path.dirname(__file__))
+        self._root_dir = os.path.abspath(self._root_dir)
 
-        # The main subdirectories
-        self._dirs = dict()
-        self._dirs["conf"] = os.path.join(self._root_dir, "configuration")
-        self._dirs["plugins_src"] = os.path.join(self._root_dir, "plugins")
-        self._dirs["plugins_data"] = os.path.join(self._root_dir, "plugins_data")
-        self._dirs["server"] = os.path.join(self._root_dir, "server")
-        self._dirs["worlds"] = os.path.join(self._root_dir, "worlds")
-        self._dirs["emsm"] = os.path.join(self._root_dir, "emsm")
-        
-        # Make sure that the base hierarchy exists.
-        self.create()
+        self._conf_dir = os.path.join(self._root_dir, "conf")
+        self._plugins_dir = os.path.join(self._root_dir, "plugins")
+        self._plugins_data_dir = os.path.join(self._root_dir, "plugins_data")
+        self._server_dir = os.path.join(self._root_dir, "server")
+        self._worlds_dir = os.path.join(self._root_dir, "worlds")
+        self._emsm_dir = os.path.join(self._root_dir, "emsm")
+
+        self._log_file = os.path.join(self._root_dir, "emsm.log")
+
+        # Create all folders.
+        self._create()
         return None
 
-    def create(self):
+    def _create(self):
         """
-        Creates the basic directory structure used by the application.
+        Creates the folders used by the EMSM Application.
         """
-        for path in self._dirs.values():
+        def make_dir(path):
+            """
+            Creates the directory *path* if it does not exist or
+            breaks silently, if it already exists.
+            """
             try:
-                os.makedirs(path)
-            except FileExistsError:
+                os.makedirs(path, exist_ok=True)
+            except OSError:
                 pass
+            return None
+                
+        make_dir(self._root_dir)
+        make_dir(self._conf_dir)
+        make_dir(self._plugins_dir)
+        make_dir(self._plugins_data_dir)
+        make_dir(self._server_dir)
+        make_dir(self._worlds_dir)
+        make_dir(self._emsm_dir)
         return None
 
-    # paths to the main subdirectories
-    # --------------------------------------------
-
-    root_dir = property(lambda self: self._root_dir)
-
-    conf_dir = property(lambda self: self._dirs["conf"])
-
-    server_dir = property(lambda self: self._dirs["server"])
-
-    worlds_dir = property(lambda self: self._dirs["worlds"])
-
-    plugins_src_dir = property(lambda self: self._dirs["plugins_src"])
-
-    plugins_data_dir = property(lambda self: self._dirs["plugins_data"])
-
-    emsm_dir = property(lambda self: self._dirs["emsm"])
-
-    log_filename = property(
-        lambda self: os.path.join(self._root_dir, "emsm.log"))
-
-    # paths to topic specific subdirectories
-    # --------------------------------------------
-
-    def get_plugin_data_dir(self, plugin):
+    def root_dir(self):
         """
-        Returns the path of the data directory for the plugin.
-        There's no guarantee that the directory exists.
-        """
-        return os.path.join(self.plugins_data_dir, plugin)
+        The root directory contains the *worlds*, *server*, *configuration*,
+        *emsm*, .. folders.
 
-    def get_world_dir(self, world):
+        See also:
+            * emsm_root_dir()
         """
-        Returns the path of the world.
+        return self._root_dir
+
+    def emsm_root_dir(self):
         """
-        return os.path.join(self.worlds_dir, world)
+        Alias for ``root_dir()``.
+        
+        See also:
+            * root_dir
+        """
+        return self._root_dir
+
+    def conf_dir(self):
+        """
+        Contains the configuration files of the EMSM. NOT the configuration
+        for the minecraft worlds. These are still in the world folder.
+
+        This directory contains the *main.conf*, *server.conf*, .. files.
+        """
+        return self._conf_dir
+
+    def plugins_dir(self):
+        """
+        Contains the source of all plugins that are currently installed.
+
+        This directory usually contains the *world.py*, *server.py*, *guard.py*
+        plugins.
+        """
+        return self._plugins_dir
+
+    def plugins_data_dir(self):
+        """
+        The directory that contains the data of all plugins.
+
+        See also:
+            * plugin_data_dir()
+        """
+        return self._plugins_data_dir
+
+    def plugin_data_dir(self, plugin_name):
+        """
+        This directory should contain all data of the plugin with the
+        name *plugin_name*.
+
+        Furthermore is this directory a child of ``plugins_data_dir()``.
+
+        See also:
+            * plugins_data_dir()
+        """
+        return os.path.join(self._plugins_data_dir, plugin_name)
+
+    def server_dir(self):
+        """
+        This directory contains all server executables specified in
+        the *server.conf* configuration file.
+        """
+        return self._server_dir
+
+    def worlds_dir(self):
+        """
+        Contains for each world in *worlds.conf* one folder that contains
+        the data generated by the minecraft server.
+
+        See also:
+            * world_dir()
+        """
+        return self._worlds_dir
+
+    def world_dir(self, world_name):
+        """
+        The directory that contains the data generated by the minecraft server
+        like the *server.properties*, *ops.json*, *whitelist.json*, ... files.
+
+        Furthermore, this is a child of *worlds_dir()*.
+
+        See also:
+            * worlds_dir()
+        """
+        return os.path.join(self._worlds_dir, world_name)
+
+    def emsm_dir(self):
+        """
+        Contains the source code of the EMSM application like the
+        *server_wrapper.py* and *world_wrapper.py* files.
+        """
+        return self._emsm_dir
+
+    def log_file(self):
+        """
+        The path to the EMSM log file.
+
+        Note, that his is NOT the log of the minecraft server.
+        """
+        return self._log_file

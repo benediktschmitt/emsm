@@ -145,7 +145,7 @@ class BasePlugin(object):
         self.conf = main_conf[name]
 
         # Get the directories of the plugin.
-        self.data_dir = app.paths.get_plugin_data_dir(name)
+        self.data_dir = app.paths.plugin_data_dir(name)
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
 

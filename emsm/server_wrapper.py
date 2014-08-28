@@ -172,7 +172,9 @@ class ServerWrapper(object):
 
         # The absolute path to the server executable that is
         # wrapped by this object.
-        self._server = os.path.join(app.paths.server_dir, self._conf["server"])
+        self._server = os.path.join(
+            app.paths.server_dir(), self._conf["server"]
+            )
 
         # The name of the server executable.
         self._name = name

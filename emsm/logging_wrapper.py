@@ -25,6 +25,8 @@
 
 # Modules
 # ------------------------------------------------
+
+# std
 import logging
 import os
 import sys
@@ -64,7 +66,7 @@ class Logger(object):
         """
         Opens the log file for writing.
         """                
-        self.file_handler = logging.FileHandler(self._app.paths.log_filename)
+        self.file_handler = logging.FileHandler(self._app.paths.log_file())
         self.file_handler.setFormatter(self.fmt)
         self.root.addHandler(self.file_handler)
         return None

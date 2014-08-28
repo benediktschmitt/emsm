@@ -36,7 +36,7 @@ nosetests.xml
 .pydevproject
 
 # EMSM
-configuration/
+conf/
 plugins_data/
 worlds/
 server/

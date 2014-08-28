@@ -275,7 +275,7 @@ class WorldWrapper(object):
         self._name = name
 
         # The directory that contains the world data.
-        self._directory = app.paths.get_world_dir(name)
+        self._directory = app.paths.world_dir(name)
         return None
 
     def _check_conf(self):

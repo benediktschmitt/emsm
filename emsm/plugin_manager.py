@@ -270,7 +270,7 @@ class PluginManager(object):
         Imports the plugins from the application's default
         plugins directory.
         """
-        directory = self._app.paths.plugins_src_dir
+        directory = self._app.paths.plugins_dir()
         self.import_from_directory(directory)
         return None
 
