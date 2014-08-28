@@ -1003,7 +1003,7 @@ class BackupManager(BasePlugin):
         """
         Returns an initialised backup manager for the world.
         """
-        backup_dirs = [os.path.join(path, world.name) \
+        backup_dirs = [os.path.join(path, world.name()) \
                        for path in self.backup_dirs]
 
         world = VerboseWorldBackupManager(

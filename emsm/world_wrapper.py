@@ -22,14 +22,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-"""
-The BaseWorldWrapper class is independent from the EMSM and can be
-used to implement your own server wrapper, if you don't like EMSM.
-"""
-
 
 # Modules
 # ------------------------------------------------
+
+#std
 import time
 import shutil
 import os
@@ -38,6 +35,9 @@ import subprocess
 import shlex
 import signal
 import collections
+import re
+import random
+import socket
 
 # third party
 import blinker
@@ -45,6 +45,7 @@ import blinker
 
 # Backward compatibility
 # ------------------------------------------------
+
 if not hasattr(shlex, "quote"):
     # From the Python3.3 library
     import re
@@ -78,19 +79,25 @@ except NameError:
     
 # Data
 # ------------------------------------------------
-__all__ = ["WorldError", "WorldStatusError",
-           "WorldIsOnlineError", "WorldIsOfflineError",
-           "WorldStartFailed", "WorldStopFailed",
-           "WorldCommandTimeout",           
-           "BaseWorldWrapper", "WorldWrapper",
-           "WorldManager"
-           ]
+
+__all__ = [
+    "WorldError",
+    "WorldStatusError",
+    "WorldIsOnlineError",
+    "WorldIsOfflineError",
+    "WorldStartFailed",
+    "WorldStopFailed",
+    "WorldCommandTimeout",
+    "WorldWrapper"
+    "WorldManager"
+    ]
 
 _SCREEN = shlex.which("screen")
 
 
 # Exceptions
 # ------------------------------------------------
+
 class WorldError(Exception):
     """
     Base class for all other exceptions in this module.
@@ -114,7 +121,7 @@ class WorldStatusError(WorldError):
             temp = "The world '{}' is online!"
         else:
             temp = "The world '{}' is offline!"
-        temp = temp.format(self.world.name)
+        temp = temp.format(self.world.name())
         return temp
 
     
@@ -122,6 +129,7 @@ class WorldIsOnlineError(WorldStatusError):
     """
     Raised if a world is online but should be offline.
     """
+    
     def __init__(self, world):
         WorldStatusError.__init__(self, world, True)
         return None
@@ -131,6 +139,7 @@ class WorldIsOfflineError(WorldStatusError):
     """
     Raised if a world is offline but should be online.
     """
+    
     def __init__(self, world):
         WorldStatusError.__init__(self, world, False)
         return None
@@ -139,28 +148,30 @@ class WorldIsOfflineError(WorldStatusError):
 class WorldStartFailed(WorldError):    
     """
     Raised if the world start failed.
-    """    
+    """
+    
     def __init__(self, world):
         self.world = world
         return None
     
     def __str__(self):
         temp = "The start of the world '{}' failed!"\
-               .format(self.world.name)
+               .format(self.world.name())
         return temp
 
     
 class WorldStopFailed(WorldError):    
     """
     Raised if the world stop failed.
-    """ 
+    """
+    
     def __init__(self, world):
         self.world = world
         return None
     
     def __str__(self):
         temp = "The stop of the world '{}' failed!"\
-               .format(self.world.name)
+               .format(self.world.name())
         return temp
 
     
@@ -175,13 +186,48 @@ class WorldCommandTimeout(WorldError):
     
     def __str__(self):
         temp = "The world '{}' did not react!"\
-               .format(self.world.name)
+               .format(self.world.name())
         return temp
 
+
+# Functions
+# ------------------------------------------------
+
+_FOUND_PORTS = list()
+def get_unused_port(min_port=10000, max_port=65535, interface=""):
+    """
+    Returns an unused port in the intervall *[min_, max_]* on the
+    *interface*.
+    """
+    global _FOUND_PORTS
     
+    if max_port > 65535:
+        raise ValueError("max_port has to be less than 65535") 
+    if min_port < 0:
+        raise ValueError("min_port has to be greater or equal to 0")
+
+    while True:
+        port = random.randint(min_port, max_port)
+        if port in _FOUND_PORTS:
+            continue
+        
+        # Check the port.
+        with socket.socket() as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)        
+            try:
+                s.bind((interface, port))
+            except OSError as error:
+                pass
+            else:
+                _FOUND_PORTS.append(port)
+                return port
+    return None
+
+
 # Classes
 # ------------------------------------------------
-class BaseWorldWrapper(object):
+
+class WorldWrapper(object):
     """
     Provides methods to handle a minecraft world like
     start, stop, force-stop, ...
@@ -190,357 +236,6 @@ class BaseWorldWrapper(object):
     # Screen prefix for the minecraft-server sessions.
     # DO NOT CHANGE THIS VALUE IF A WORLD IS ONLINE!
     SCREEN_PREFIX = "minecraft_"
-    
-    def __init__(self, name, directory, auto_install=True):
-        """
-        If auto_install is true, the directory of the world will
-        be created if it does not exist.
-        """
-        self.name = str(name)
-        self.screen_name = self.SCREEN_PREFIX + self.name
-        self.directory = directory
-
-        if auto_install:
-            self.install()
-        return None
-    
-    # common
-    # --------------------------------------------
-    
-    def worldpath_to_ospath(self, rel_path):
-        """
-        Converts the rel_path, that is relative to the root
-        directory of the minecraft world, into the absolute
-        path of the operating system.
-        """
-        return os.path.join(self.directory, rel_path)
-
-    @property
-    def log_path(self):
-        """Returns the path to the log file of the world."""
-        # MC 1.7+
-        filename = self.worldpath_to_ospath("logs/latest.log")
-        if os.path.exists(filename):
-            return filename
-        # Previous versions
-        return self.worldpath_to_ospath("server.log")
-
-    # server.properties
-    # --------------------------------------------
-    
-    def get_properties(self):
-        """
-        Returns a dictionary with the properties.
-        """
-        filename = self.worldpath_to_ospath("server.properties")        
-
-        # I'm using an OrderedDict to remain the order of
-        # the properties.
-        if not os.path.exists(filename):
-            return collections.OrderedDict()
-        
-        properties = collections.OrderedDict()
-        with open(filename) as file:
-            for line in file:
-                line = line.split("=")
-                if len(line) != 2:
-                    continue
-                key = line[0].strip()
-                val = line[1].strip()
-                properties[key] = val
-        return properties
-    
-    def overwrite_properties(self, **kwargs):
-        """
-        Overwrites the properties file to use the values of the
-        keyword arguments.
-        E.g.:
-        self.overwrite_properties(motd="Hello world!")
-        """
-        filename = self.worldpath_to_ospath("server.properties") 
-
-        properties = self.get_properties()
-        properties.update(kwargs)
-
-        properties = ["{}={}".format(key, val) \
-                      for key, val in properties.items()]
-        properties = "\n".join(properties)
-        
-        with open(filename, "w") as file:
-            file.write(properties)
-        return None
-    
-    # server.log
-    # --------------------------------------------
-    
-    def get_log(self):
-        """
-        Returns the log of the world since the last start. If the
-        logfile does not exist, an empty string will be returned.
-        """         
-        try:
-            last_log = str()
-            with open(self.log_path) as log:
-                for line in log:
-                    if "STARTING" in line.upper():
-                        last_log = str()
-                    last_log += line
-        except (FileNotFoundError, IOError) as err:
-            return str()
-        return last_log
-
-    # screen
-    # --------------------------------------------
-    
-    def get_pids(self):
-        """
-        Returns a list with the pids of the screen sessions named
-        self.screen_name
-        """
-        # Get sessions
-        # XXX: screen -ls seems to exit always the exit code 1
-        #   so it's convenient to use gestatusoutput.
-        status, output = subprocess.getstatusoutput("screen -ls")
-    
-        # foo@bar:~$ screen -ls
-        # There is a screen on:
-        #         20405.minecraft_barz    (07/08/13 14:42:15)     (Detached)
-        # 1 Socket in /var/run/screen/S-foo.
-        
-        # Filter PIDs
-        pids = list()
-        for line in output.split("\n"):
-            if self.screen_name not in line:
-                continue
-            pid = line[:line.find(self.screen_name) - 1]
-            pid = pid.strip()
-            pid = int(pid)
-            pids.append(pid)
-        return pids
-    
-    def is_online(self):
-        return bool(self.get_pids())
-
-    def is_offline(self):
-        return not self.is_online()
-
-    def send_command(self, server_cmd):
-        """
-        Sends the given command to all screen sessions with
-        the world's screen name.
-
-        Raises: WorldIsOfflineError
-        """
-        if not self.is_online():
-            raise WorldIsOfflineError(self)
-        
-        server_cmd += "\n"
-        server_cmd = shlex.quote(server_cmd)
-            
-        pids = self.get_pids()
-        for pid in pids:
-            sys_cmd = "screen -S {0}.{1} -p 0 -X stuff {2}"\
-                      .format(pid, self.screen_name, server_cmd)
-            subprocess.call(shlex.split(sys_cmd))
-        return None
-    
-    def send_command_get_output(self, server_cmd, timeout=10,
-                                poll_intervall=0.2):
-        """
-        Like self.send_commmand(..) but checks every *poll_intervall*
-        seconds, if content has been added to the logfile and returns the
-        change. If no change could be detected after *timeout* seconds,
-        an error will be raised.
-        
-        Raises: WorldIsOfflineError
-        Raises: WorldCommandTimeout
-        """
-        filename = self.log_path
-
-        # Save the current logfile size to parse the log faster.
-        try:
-            with open(filename) as log:
-                log.seek(0, 2)
-                offset = log.tell()
-        except (FileNotFoundError, IOError):
-            offset = 0
-
-        self.send_command(server_cmd)
-
-        # Parse the logfile for a change.
-        start_time = time.time()
-        output = str()
-        while (not output) and time.time() - start_time < timeout:
-            time.sleep(poll_intervall)
-
-            try:           
-                with open(filename) as log:
-                    log.seek(offset, 0)
-                    output = log.read()
-            except (FileNotFoundError, IOError):
-                break
-            
-        if not output:
-            raise WorldCommandTimeout(self)
-        return output
-
-    def open_console(self):
-        """
-        Opens all screen sessions that match a pid in
-        self.get_pids().
-
-        Raises: WorldIsOfflineError
-        """
-        if not self.is_online():
-            raise WorldIsOfflineError(self)
-        
-        pids = self.get_pids()
-        for pid in pids:
-            sys_cmd = "screen -x {pid}".format(pid=pid)
-
-            try:
-                subprocess.check_call(shlex.split(sys_cmd))
-            except subprocess.CalledProcessError as error:
-                # It's probably not the terminal of the user,
-                # so try this one.
-                sys_cmd = "script -c {} /dev/null"\
-                          .format(shlex.quote(sys_cmd))
-                subprocess.check_call(
-                    shlex.split(sys_cmd), stdin=sys.stdin,
-                    stdout=sys.stdout, stderr=sys.stderr)
-        return None
-    
-    # setup
-    # --------------------------------------------
-    
-    def install(self):
-        """
-        Creates the directory of the world.
-        """   
-        directory = self.worldpath_to_ospath("")  
-        try:
-            os.makedirs(directory, exist_ok=True)
-        # XXX: Fixes an error with sudo / su
-        except FileExistsError:
-            pass
-        return None
-
-    def uninstall(self):
-        """
-        Uninstall
-
-        Calls: self.kill_processes()
-        """
-        if self.is_online():
-            self.kill_processes()
-            
-        # Delete the directory
-        directory = self.worldpath_to_ospath("")
-
-        # Try 5 times to remove the directory. This is necessairy, if the
-        # world was online. *server.log.lck* made problems.
-        for i in range(5):
-            try:
-                shutil.rmtree(directory)
-            except FileExistsError:
-                time.sleep(0.5)
-            else:
-                break
-        return None
-    
-    # start / stop
-    # --------------------------------------------------
-    
-    def start(self, server_start_cmd, init_properties=dict()):
-        """
-        Starts the world if the world is offline.
-
-        Raises: WorldIsOnlineError
-        Raises: WorldStartFailed
-        """
-        global _SCREEN
-        
-        if self.is_online():
-            raise WorldIsOnlineError(self)
-        
-        self.overwrite_properties(**init_properties)
-
-        # We need to change the cwd to the world's directory
-        # to before starting the server.
-        old_wd = os.getcwd()
-        os.chdir(self.directory)
-        try:
-            if os.path.samefile(os.getcwd(), self.directory):
-                sys_cmd = "{screen} -dmS {screen_name} {start_cmd}".format(
-                    screen=_SCREEN, screen_name = self.screen_name,
-                    start_cmd = server_start_cmd)
-                subprocess.call(shlex.split(sys_cmd))
-        finally:
-            # We may have not the rights to change back.
-            try:
-                os.chdir(old_wd)
-            except OSError:
-                pass
-                       
-        if not self.is_online():
-            raise WorldStartFailed(self)
-        return None
-    
-    def kill_processes(self):
-        """
-        Kills the processes with the pid in self.get_pids()
-
-        Raises: WorldStopFailed
-        """
-        pids = self.get_pids()
-        for pid in pids:
-            os.kill(pid, signal.SIGTERM)
-
-        if self.is_online():
-            raise WorldStopFailed(self)
-        return None        
-
-    def stop(self, message=str(), delay=5, timeout=5, force_stop=False,
-             poll_intervall=0.1):
-        """
-        Sends the *message* to the server and waits *delay* seconds before
-        sending the stop command. Every *poll_intervall* seconds will be
-        checked if the server is offline. If the server is still alive after
-        *timeout* seconds, a WorldStopFailed exception will be raised.
-        If *force_stop* is true, kill_processes will be called before
-        raising a WorldStopFailed exception.
-        
-        Raises: WorldIsOfflineError
-        Raises: WorldStopFailed
-        """
-        if self.is_offline():
-            raise WorldIsOfflineError(self)
-
-        for line in message.split("\n"):
-            line = line.strip()
-            self.send_command("say {}".format(line))
-
-        self.send_command("save-all")
-        time.sleep(delay)
-        
-        self.send_command("stop")
-        start_time = time.time()
-        while self.is_online() and time.time() - start_time < timeout:
-            time.sleep(poll_intervall)
-            
-        if force_stop:
-            self.kill_processes()
-            
-        if self.is_online():
-            raise WorldStopFailed(self)
-        return None
-
-
-class WorldWrapper(BaseWorldWrapper):
-    """
-    This world wrapper uses the world configuration to get the
-    values for parameters in some methods.
-    """
 
     # Emitted when a world has been uninstalled.
     world_uninstalled = blinker.signal("world_uninstalled")
@@ -563,113 +258,608 @@ class WorldWrapper(BaseWorldWrapper):
     # Emitted when a world could not be stopped.
     world_stop_failed = blinker.signal("world_stop_failed")
     
-
+        
     def __init__(self, app, name):
         """
-        application is a reference to the running application.
+        If auto_install is true, the directory of the world will
+        be created if it does not exist.
         """
         self._app = app
-        self.conf = app.conf.worlds[name]
-        self.server = app.server.get(self.conf["server"])
+        self._conf = app.conf.worlds[name]
+        self._check_conf()
 
-        BaseWorldWrapper.__init__(
-            self, name, app.paths.get_world_dir(name))
+        # The ServerWrapper for the server that powers this world.
+        self._server = app.server.get(self._conf["server"])
+
+        # The name of the world.
+        self._name = name
+
+        # The directory that contains the world data.
+        self._directory = app.paths.get_world_dir(name)
         return None
 
-    # setup
-    # --------------------------------------------
+    def _check_conf(self):
+        """
+        Checks if the configuration contains only valid values and
+        types (float, int, ...).
+
+        Exceptions:
+            * ValueError
+                If a configration option has an invalid value.
+            * TypeError
+                If a configuration option has an invalid type.
+        """
+        # port
+        if self._conf["port"] == "<auto>":
+            self._conf["port"] = str(get_unused_port())
+
+        if not self._conf["port"].isdecimal():
+            raise TypeError("conf:port is not an integer")
+        if not 0 <= int(self._conf["port"]) <= 65535:
+            raise ValueError("conf:port is not in range [0, 65535]")
+
+        # stop timeout
+        if not self._conf["stop_timeout"].isdecimal():
+            raise TypeError("conf:stop_timeout is not an integer")
+
+        # stop delay
+        if not self._conf["stop_delay"].isdecimal():
+            raise TypeError("conf:stop_delay is not an integer")
+
+        # server
+        if not self._conf["server"] in self._app.server.get_names():
+            raise ValueError("conf:server does not exist")
+        return None
+
+    def worldpath_to_ospath(self, rel_path):
+        """
+        Converts the *rel_path*, that is relative to the root directory of
+        the minecraft world, into the absolute path of the operating system.
+
+        See also:
+            * directory
+
+        Example:
+            >>> # I assume the EMSM root is: "/home/minecraft"
+            >>> foo.name()
+            "foo"
+            >>> foo.worldpath_to_ospath("server.properties")
+            "/home/minecraft/worlds/foo/server.properties"
+        """
+        return os.path.join(self._directory, rel_path)
+    
+    def conf(self):
+        """
+        The configuration section of this world.
+
+        See also:
+            * Application.conf.worlds
+        """
+        return self._conf
+
+    def server(self):
+        """
+        The ServerWrapper for the server that runs this world.
+        """
+        return self._server
+
+    def name(self):
+        """
+        The name of the world.
+
+        This is the name of the configuration section and the folder name
+        in the ``worlds`` directory.
+        """
+        return self._name
+
+    def screen_name(self):
+        """
+        Returns the name of the screen session that runs the server of this
+        world.
+
+        See also:
+            * SCREEN_PREFIX
+            * name
+        """
+        return WorldWrapper.SCREEN_PREFIX + self._name
+
+    def directory(self):
+        """
+        Returns the directory that contains all world data generated by the
+        minecraft server.
+        Contains usually the ``server.properties`` file and a ``world`` folder.
+        """
+        return self._directory
+
+    def log_path(self):
+        """
+        Returns the path to the log file of the world.
+
+        Todo:
+            * Check if this value is also server dependant and move the
+              functionlity of getting the correct log path to the server.
+        """
+        # MC 1.7+
+        filename = self.worldpath_to_ospath("logs/latest.log")
+        if os.path.exists(filename):
+            return filename
+        # Previous versions
+        return self.worldpath_to_ospath("server.log")
+
+    def latest_log(self):
+        """
+        Returns the log of the world since the last start. If the
+        logfile does not exist, an empty string will be returned.
+
+        Todo:
+            * The *start* keyword which signalises a server restart in the
+              log is server independant and should be moved to the
+              ServerWrapper features.
+        """
+        # Matches all lines in the log, that signalize the start of
+        # a server.
+        re_start_line = re.compile(".*(?:STARTING).*", re.IGNORECASE)
+        
+        try:
+            last_log = str()
+            with open(self.log_path()) as log:
+                for line in log:
+                    if re.match(re_start_line, line):
+                        last_log = str()
+                    last_log += line
+        except (FileNotFoundError, IOError) as err:
+            last_log = str()
+        return last_log
+    
+    def server_properties(self):
+        """
+        Returns a dictionary with the content of the ``server.properties`` file.
+        """
+        filename = self.worldpath_to_ospath("server.properties")
+
+        # Use an OrderedDict to preserve the order.
+        properties = collections.OrderedDict()
+        try:
+            with open(filename) as file:
+                for line in file:
+                    line = line.split("=")
+                    if len(line) != 2:
+                        continue
+                    key = line[0].strip()
+                    val = line[1].strip()
+                    properties[key] = val
+        except (FileNotFoundError, IOError):
+            pass
+        return properties
+    
+    def overwrite_properties(self, **kwargs):
+        """
+        Overwrites the server.properties file with the values
+        of the keyword arguments.
+
+        Example:
+            >>> world.overwrite_properties(motd="Hello world!")
+            >>> world.overwrite_properties(port="42424")
+            >>> world.overwrite_properties(motd="Hello world!", port="42424")
+        """
+        filename = self.worldpath_to_ospath("server.properties") 
+
+        properties = self.server_properties()
+        properties.update(kwargs)
+
+        properties_str = "\n".join("{}={}".format(key, val) \
+                                   for key, val in properties.items())
+        
+        with open(filename, "w") as file:
+            file.write(properties_str)
+        return None
+
+    
+    def pids(self):
+        """
+        Returns a list with the pids of the screen sessions with the name
+        *self.screen_name*.
+
+        See also:
+            * screen_name()
+        """
+        # Get sessions
+        # XXX: screen -ls seems to exit always with the exit code 1.
+        #   so it's convenient to use gestatusoutput.
+        status, output = subprocess.getstatusoutput("screen -ls")
+
+        # Example output (without the '>' char):
+        #
+        # > foo@bar:~$ screen -ls
+        # > There is a screen on:
+        # >        20405.minecraft_barz    (07/08/13 14:42:15)     (Detached)
+        # > 1 Socket in /var/run/screen/S-foo.
+        
+        # Filter the PIDs
+        re_pid = re.compile(
+            "^\s*(\d+?).{screen_name}".format(screen_name=self.screen_name()),
+            re.MULTILINE
+            )
+        pids = re.findall(re_pid, output)
+        pids = [int(pid) for pid in pids]
+        return pids
+    
+    def is_online(self):
+        """
+        Returns ``True`` if the world is currently running.
+
+        See also:
+            * get_pids()
+        """
+        return bool(self.pids())
+
+    def is_offline(self):
+        """
+        Returns ``True`` if the world is currently **not** running.
+
+        See also:
+            * get_pids()
+        """
+        return not self.is_online()
+
+    def send_command(self, server_cmd):
+        """
+        Sends the given command to all screen sessions with the world's screen
+        name.
+
+        Exceptions:
+            * WorldIsOfflineError
+        """
+        pids = self.pids()
+
+        # Break if the world is offline.
+        if not pids:
+            raise WorldIsOfflineError(self)
+
+        # Quote the command.
+        # The '\n' simulates pressing the ENTER key in the screen session.
+        server_cmd += "\n"
+        server_cmd = shlex.quote(server_cmd)
+
+        # Send the command to the server.
+        for pid in pids:
+            sys_cmd = "screen -S {0}.{1} -p 0 -X stuff {2}"\
+                      .format(pid, self.screen_name(), server_cmd)
+            sys_cmd = shlex.split(sys_cmd)
+            subprocess.call(sys_cmd)
+        return None
+    
+    def send_command_get_output(self, server_cmd, timeout=10,
+                                poll_intervall=0.2):
+        """
+        Like ``send_commmand()`` but checks every *poll_intervall*
+        seconds, if content has been added to the logfile and returns the
+        change. If no change could be detected after *timeout* seconds,
+        an error will be raised.
+
+        Exceptions:
+            * WorldIsOfflineError
+            * WorldCommandTimeout
+        """
+        # Save the current size of the logfile to detect changes.
+        try:
+            with open(self.log_path()) as log:
+                log.seek(0, 2)
+                offset = log.tell()
+        except (FileNotFoundError, IOError):
+            offset = 0
+
+        # Send the command.
+        self.send_command(server_cmd)
+
+        # Parse the logfile for a change.
+        start_time = time.time()
+        output = str()
+        while (not output) and time.time() - start_time < timeout:
+            time.sleep(poll_intervall)
+
+            try:           
+                with open(self.log_path()) as log:
+                    log.seek(offset, 0)
+                    output = log.read()
+            except (FileNotFoundError, IOError):
+                break
+        
+        if not output:
+            raise WorldCommandTimeout(self)
+        return output
+
+    def open_console(self):
+        """
+        Opens all screen sessions that match a pid in ``get_pids()``.
+
+        Exceptions:
+            * WorldIsOfflineError
+        """
+        pids = self.pids()
+
+        # Break if the world is offline.
+        if not pids:
+            raise WorldIsOfflineError(self)
+
+        # Open all world screen sessions (one for each found pid).
+        for pid in pids:
+            sys_cmd = "screen -x {pid}".format(pid=pid)
+            sys_cmd = shlex.split(sys_cmd)
+
+            try:
+                subprocess.check_call(sys_cmd)
+            except subprocess.CalledProcessError as error:
+                # It's probably not the terminal of the user,
+                # so try this one.
+                sys_cmd = "script -c {} /dev/null"\
+                          .format(shlex.quote(sys_cmd))
+                subprocess.check_call(
+                    shlex.split(sys_cmd),
+                    stdin = sys.stdin,
+                    stdout = sys.stdout,
+                    stderr = sys.stderr
+                    )
+        return None
+
+
+    def is_installed(self):
+        """
+        Returns true if the directory of the world exists, otherwise false.
+
+        See also:
+            * directory()
+            * install()
+            * uninstall()
+        """
+        return os.path.exists(self._directory) \
+               and os.path.isdir(self._directory)
+        
+    def install(self):
+        """
+        Creates the directory of the world.
+
+        See also:
+            * directory()
+        """ 
+        try:
+            os.makedirs(self._directory, exist_ok=True)
+        # XXX: Fixes an error with sudo / su
+        except FileExistsError:
+            pass
+        return None
 
     def uninstall(self):
         """
-        Removes the world's directory and the configuration of the world.
-        When done, emits the "world_uninstalled" signal.
+        Stops the world (see ``kill_processes()``) and removes the world
+        directory.
+
+        See also:
+            * kill_processes()
+            * directory()
         """
-        BaseWorldWrapper.uninstall(self)
-        self._app.conf.worlds.remove_section(self.name)
-        
+        self.kill_processes()
+
+        # Try 5 times to remove the directory. This is necessairy, if the
+        # world was online and fixes a problem with *server.log.lck*.
+        for i in range(5):
+            try:
+                shutil.rmtree(self._directory)
+            except FileExistsError:
+                time.sleep(0.5)
+            else:
+                break
+
+        # Remove the configuration.
+        self._app.conf.worlds.remove_section(self._name)
+
+        # Emit the corresponing signal to this event.
         WorldWrapper.world_uninstalled.send(self)
         return None
 
-    # start / stop
-    # --------------------------------------------
-
-    def start(self):
+    
+    def start(self, init_properties=None):
         """
-        Starts the world.
+        Starts the world if the world is offline. If the world is already
+        online, nothing happens.
 
-        Emits:
+        See also:
+            * overwrite_properties()
+
+        Exceptions:
+            * WorldStartFailed
+
+        Signals:
             * world_about_to_start
             * world_started
             * world_start_failed
         """
-        start_cmd = self.server.start_cmd()
-        
-        # We need to overwrite the port each start, so that only EMSM controls
-        # the port and makes sure, that everything is in sync.
-        init_properties = {"server-port": self.conf["port"]}
+        global _SCREEN
 
-        if self.is_offline():
-            WorldWrapper.world_about_to_start.send(self)
+        # Break if the world is already online.
+        if self.is_online():
+            return None
+
+        WorldWrapper.world_about_to_start.send(self)
+
+        # Overwrite the server.properties before we start.
+        if init_properties is None:
+            init_properties = dict()
+        init_properties["server-port"] = self._conf["port"]
+        self.overwrite_properties(**init_properties)
+
+        # We need to change the current working directory to the world's
+        # directory so that the server starts in the correct environment.
+        old_wd = os.getcwd()
+        os.chdir(self.directory())
+        try:
+            if os.path.samefile(os.getcwd(), self.directory()):
+                sys_cmd = "{screen} -dmS {screen_name} {start_cmd}".format(
+                    screen = _SCREEN,
+                    screen_name = self.screen_name(),
+                    start_cmd = self._server.start_cmd()
+                    )
+                sys_cmd = shlex.split(sys_cmd)
+                subprocess.call(sys_cmd)
+        finally:
+            # We may have not the rights to change back.
             try:
-                BaseWorldWrapper.start(self, start_cmd, init_properties)
-                
-            # Note, that WorldIsOnlineError can not occure since we
-            # checked if the world is offline.
-            except WorldStartFailed:
-                WorldWrapper.world_start_failed.send(self)
-                raise
-            
-            else:
-                WorldWrapper.world_started.send(self)
+                os.chdir(old_wd)
+            except OSError:
+                pass
+
+        # Check if the world is really online.
+        if not self.is_online():
+            WorldWrapper.world_start_failed.send(self)
+            raise WorldStartFailed(self)
+        
+        WorldWrapper.world_started.send(self)
         return None
 
+    
     def kill_processes(self):
         """
-        Kills the processes of the world.
+        Kills all processes with a pid in ``pids()``.
 
-        Emits:
+        See also:
+            * pids()
+
+        Exceptions:
+            * WorldStopFailed
+
+        Signals:
             * world_about_to_stop
             * world_stopped
             * world_stop_failed
         """
-        if self.is_online():
-            WorldWrapper.world_about_to_stop.send(self)
-            try:
-                BaseWorldWrapper.kill_processes(self)
-            except WorldStopFailed:
-                WorldWrapper.world_stop_failed.send(self)
-                raise
-            else:
-                WorldWrapper.world_stopped.send(self)
-        return None
-
-    def stop(self, force_stop=False):
-        """
-        Stops the world.
+        pids = self.pids()
         
-        Emits:
+        # Break if the world is already offline.
+        if not pids:
+            return None
+
+        # Kill all processes.
+        WorldWrapper.world_about_to_stop.send(self)
+        for pid in pids:
+            os.kill(pid, signal.SIGTERM)
+
+        # Check if the world is now offline.
+        if self.is_online():
+            WorldWrapper.world_stop_failed.send(self)
+            raise WorldStopFailed(self)
+
+        WorldWrapper.world_stopped.send(self)
+        return None
+    
+
+    def stop(self, force_stop=False, message=None, delay=None,
+             timeout=None):
+        """
+        Stops the server.
+        
+        Parameters:
+            * message
+                Send to the world before the ``stop`` command is executed.
+            * delay
+                Time in seconds that is waited between seding the *message*
+                and executing the ``stop`` command.
+            * timeout
+                Maximum time in seconds waited for the server stop after
+                executing the ``stop`` command.
+            * force_stop
+                If true and the server could not be stopped,
+                ``kill_processes()`` is called.
+
+        See also:
+            * kill_processes()
+            * is_offline()
+            
+        Exceptions:
+            * WorldStopFailed
+
+        Signals:
             * world_about_to_stop
             * world_stopped
             * world_stop_failed
         """
+        # Break if the world is already offline.
+        if self.is_offline():
+            return None
+
+        WorldWrapper.world_about_to_stop.send(self)
+
+        # Get the default parameter values from the configuration.
+        if message is None:
+            message = self._conf["stop_message"]
+        if delay is None:
+            delay = int(self._conf["stop_delay"])
+        if timeout is None:
+            timeout = int(self._conf["stop_timeout"])
+
+        # Send the stop_message.
+        for line in message.split("\n"):
+            line = line.strip()
+            self.send_command("say {}".format(line))
+
+        # Save the world and wait delay seconds to make sure the
+        # world is saved and the stop_message can be read.
+        self.send_command("save-all")
+        time.sleep(delay)
+
+        # Stop the world.
+        self.send_command("stop")
+        start_time = time.time()
+        while self.is_online() and time.time() - start_time < timeout:
+            time.sleep(0.25)
+
+        # Force the stop if necessairy.
+        if force_stop:
+            self.kill_processes()
+
+        # Check if the world is offline.
         if self.is_online():
-            WorldWrapper.world_about_to_stop.send(self)
-            try:
-                BaseWorldWrapper.stop(
-                    self,
-                    message=self.conf["stop_message"],
-                    delay=self.conf.getint("stop_delay"),
-                    timeout=self.conf.getint("stop_timeout"),
-                    force_stop=force_stop
-                    )
-            except WorldStopFailed:
-                WorldWrapper.world_stop_failed.send(self)
-                raise
-            else:
-                WorldWrapper.world_stopped.send(self)
+            WorldWrapper.world_stop_failed.send(self)
+            raise WorldStopFailed(self)
+
+        WorldWrapper.world_stopped.send(self)
         return None
 
+    def restart(self, force_restart=False, stop_args=None):
+        """
+        Restarts the server.
 
+        Parameters:
+            * force_restart
+                Forces the stop of the server by calling kill_processes() if
+                necessairy.
+            * stop_args
+                Is a dictionary and if provided, these values are passed
+                to ``stop()``.
+
+        Exceptions:
+            * WorldStopFailed
+            * WorldStartFailed
+
+        Signals:
+            * world_about_to_stop
+            * world_stopped
+            * world_stop_failed
+            * world_about_to_start
+            * world_started
+            * world_start_failed
+
+        See also:
+            * stop()
+            * start()
+        """
+        if stop_args is None:
+            stop_args = dict()
+            
+        self.stop(force_stop=force_restart, **stop_args)
+        self.start()
+        return None
+    
+    
 class WorldManager(object):
     """
     Works as a container for the WorldWrapper instances.
@@ -679,7 +869,7 @@ class WorldManager(object):
         self._app = app
 
         # Maps the name of the world to the world wrapper
-        # world.name => world
+        # world.name() => world
         self._worlds = dict()
 
         WorldWrapper.world_uninstalled.connect(self._remove)
@@ -688,42 +878,67 @@ class WorldManager(object):
     def load(self):
         """
         Loads all worlds declared in the configuration file.
+
+        See also:
+            * Application.conf.worlds
         """
         conf = self._app.conf.worlds
         for section in conf.sections():
             world = WorldWrapper(self._app, section)
             self._worlds[world.name] = world
+
+            # Make sure the folder exists.
+            if not world.is_installed():
+                world.install()
         return None
 
     # container
     # --------------------------------------------
 
     def _remove(self, world):
+        """
+        Removes the WorldWrapper *world* from the internal map.
+        """
         if world in self._worlds:
             del self._worlds[world.name]
         return None
 
     def get(self, worldname):
-        return self._worlds[worldname]
+        """
+        Returns the WorldWrapper for the world with the name *worldname* or
+        None if there is no world with that name.
+        """
+        return self._worlds.get(worldname)
 
     def get_all(self):
+        """
+        Returns a list with all loaded worlds.
+        """
         return list(self._worlds.values())
 
-    def get_by_pred(self, func=None):
+    def get_by_pred(self, pred=None):
         """
-        Returns the worlds where func returns true.
-        E.g.:
-        func = lambda w: w.is_running()
+        Filters the list using the predicate *pred*.
+
+        Example:        
+            >>> # All running worlds
+            >>> wm.get_by_pred(lambda w: w.is_online())
+            ...
+
+        See also:
+            * get_all()
         """
-        return list(filter(func, self._worlds.values()))
+        return list(filter(pred, self._worlds.values()))
 
     def get_selected(self):
         """
         Returns all worlds that have been selected per command line argument.
         """
         args = self._app.argparser.args
+        
         selected_worlds = args.worlds
         all_worlds = args.all_worlds
+        
         if all_worlds:
             return list(self._worlds.values())
         else:

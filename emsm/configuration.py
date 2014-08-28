@@ -36,9 +36,6 @@ import urllib.parse
 import configparser
 import collections
 
-# local
-import app_lib.network
-
 
 # Backward compatibility
 # ------------------------------------------------
@@ -367,42 +364,42 @@ class WorldsConfiguration(BaseConfigurationFile):
     known_server = list()
 
     def _validate_section(self, section_name, section):
-        # server
-        if "server" not in section:
-            if section_name != self.conf.default_section:
-                raise MissingOptionError("server", section_name, self.file)
-        elif section["server"] not in self.known_server:
-            msg = "The server '{}' has not been found in *server.conf*."\
-                  .format(section["server"])
-            raise OptionValueError("server", section_name, self.file, msg)
-
-        # port
-        if section_name == self.conf.default_section \
-           and section["port"] == "<auto>":
-            pass
-        elif not (section["port"].isdigit() \
-                and 0 < section.getint("port") < 65535):
-            msg = "Has to be '<auto>' or an integer value between 0 and 65535."
-            raise OptionValueError("port", section_name, self.file, msg)
-
-        # stop
-        if not section["stop_delay"].isdigit():
-            msg = "Has to be an integer value."
-            raise OptionValueError("stop_delay", section_name, self.file)
-
-        if not section["stop_timeout"].isdigit():
-            msg = "Has to be an integer value."
-            raise OptionValueError("stop_timeout", section_name, self.file)
+##        # server
+##        if "server" not in section:
+##            if section_name != self.conf.default_section:
+##                raise MissingOptionError("server", section_name, self.file)
+##        elif section["server"] not in self.known_server:
+##            msg = "The server '{}' has not been found in *server.conf*."\
+##                  .format(section["server"])
+##            raise OptionValueError("server", section_name, self.file, msg)
+##
+##        # port
+##        if section_name == self.conf.default_section \
+##           and section["port"] == "<auto>":
+##            pass
+##        elif not (section["port"].isdigit() \
+##                and 0 < section.getint("port") < 65535):
+##            msg = "Has to be '<auto>' or an integer value between 0 and 65535."
+##            raise OptionValueError("port", section_name, self.file, msg)
+##
+##        # stop
+##        if not section["stop_delay"].isdigit():
+##            msg = "Has to be an integer value."
+##            raise OptionValueError("stop_delay", section_name, self.file)
+##
+##        if not section["stop_timeout"].isdigit():
+##            msg = "Has to be an integer value."
+##            raise OptionValueError("stop_timeout", section_name, self.file)
         return None
 
     def _complete_section(self, section_name, section):
-        if section_name == self.conf.default_section:
-            return None
-        
-        # Find an unused port.
-        if section["port"] == "<auto>":
-            unused_port = app_lib.network.get_unused_port(10000, 30000)
-            section["port"] = str(unused_port)
+##        if section_name == self.conf.default_section:
+##            return None
+##        
+##        # Find an unused port.
+##        if section["port"] == "<auto>":
+##            unused_port = app_lib.network.get_unused_port(10000, 30000)
+##            section["port"] = str(unused_port)
         return section
 
 

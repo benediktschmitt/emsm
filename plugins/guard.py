@@ -125,6 +125,8 @@ This plugin is made for *cron*:
 
 # Modules
 # ------------------------------------------------
+
+# std 
 import re
 import sys
 import time
@@ -138,11 +140,13 @@ from app_lib import userinput
 
 # Data
 # ------------------------------------------------
+
 PLUGIN = "Guard"
 
 
 # Functions
 # ------------------------------------------------
+
 def check_port(port, ip="", timeout=1):
     """
     Returns `true` if the tcp address *ip*:*port* is reachable.
@@ -164,7 +168,7 @@ def world_is_listening(world, attempts=10, sleep_intervall=1):
     """
     Returns `true`, if the *world* is listening on it's address.
     """
-    properties = world.get_properties()
+    properties = world.server_properties()
     ip = properties.get("server-ip", "")
     port = properties.get("server-port", "")
     port = int(port) if port.isdigit() else 25565
@@ -177,7 +181,8 @@ def world_is_listening(world, attempts=10, sleep_intervall=1):
 
     
 # Classes
-# ------------------------------------------------   
+# ------------------------------------------------
+
 class Guard(BasePlugin):
     """
     Provides automatic error handling for minecraft worlds.
@@ -239,7 +244,7 @@ class Guard(BasePlugin):
         """
         # Try to get the 'local' value
         try:
-            tmp = world.conf.getboolean("enable_guard")
+            tmp = world.conf().getboolean("enable_guard")
         except ValueError:
             pass
         else:
@@ -260,7 +265,7 @@ class Guard(BasePlugin):
         # XXX Could be buggy if a world has been restarted a few seconds ago.
         error = error or not world_is_listening(world)
         if self.error_regex:
-            error = error or re.search(self.error_regex, world.get_log())
+            error = error or re.search(self.error_regex, world.latest_log())
         
         if error:
             msg = "The world '{}' is not running smooth.".format(world.name)
@@ -289,7 +294,7 @@ class Guard(BasePlugin):
                 
             elif self.error_action == "stderr":
                 print("{}: '{}' seems to be offline"\
-                      .format(self.name, world.name), file=sys.stderr)
+                      .format(self.name, world.name()), file=sys.stderr)
         return None
 
     def run(self, args):

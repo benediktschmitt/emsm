@@ -165,8 +165,8 @@ class WorldStatus(object):
 
         # Frequently used attributes to get the status
         self.name = world.name
-        self.log = world.get_log()
-        self.properties = world.get_properties()
+        self.log = world.latest_log()
+        self.properties = world.server_properties()
 
         # Collect the status information.
         self.status = collections.OrderedDict()
