@@ -93,7 +93,6 @@ import os
 import world_wrapper
 import server_wrapper
 from base_plugin import BasePlugin
-from app_lib import downloadreporthook
 from app_lib import userinput
 
 
@@ -201,7 +200,7 @@ class MyServer(object):
 
         # Stop those worlds.
         try:
-            print("\t", "stopping all worlds ...")
+            print("\t", "stopping all running worlds ...")
             for world in worlds:
                 print("\t\t", world.name())                
                 world.stop(force_stop=force_stop, message=stop_message)

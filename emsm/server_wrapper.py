@@ -35,9 +35,6 @@ import urllib.request
 # third party
 import blinker
 
-# local
-from app_lib import downloadreporthook
-
 
 # Backward compatibility
 # --------------------------------------------------
@@ -319,15 +316,10 @@ class ServerWrapper(object):
             shutil.move(temp_server_file, self._server)
         return None
 
-    def install(self, show_reporthook=True):
+    def install(self):
         """
         Installs the server. (This method basically calls ``update()``).
         If the server is already installed, nothing happens.
-
-        Parameters:
-            * show_reporthook
-                if true, a nice wget style progressbar of the download
-                pogress is displayed, otherwise not.
 
         Exceptions:
             * ServerUpdateFailure
@@ -335,15 +327,15 @@ class ServerWrapper(object):
         if self.is_installed():
             return None
 
-        if show_reporthook:
-            reporthook = downloadreporthook.Reporthook(
-                url = self._url,
-                target=self._server
-                )
+        self._app.log.info("downloading '{}' from '{}' ..."\
+                           .format(self._name, self._url))
+        try:
+            self.update()
+        except ServerUpdateFailure as err:
+            self._app.log.info("download of '{}' failed.".format(self._name))
+            raise
         else:
-            reporthook = None
-
-        self.update(reporthook)
+            self._app.log.info("download of '{}' complete.".format(self._name))
         return None
 
     def uninstall(self, new_server):

@@ -127,9 +127,6 @@ from base_plugin import BasePlugin
 from app_lib import pprinttable
 from app_lib import userinput
 
-# We need only the filesize_to_string method
-from app_lib.downloadreporthook import filesize_to_string
-
 
 # Backward compatibility
 # ------------------------------------------------
