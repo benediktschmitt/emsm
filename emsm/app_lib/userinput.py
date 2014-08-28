@@ -51,17 +51,33 @@ def get_int(prompt, check_func=None):
 def get_float(prompt, check_func=None):
     return get_value(prompt, float, check_func)
 
-def choose(choices):
+def choose(prompt, choices):
     """
-    The user has to choose an element of choices.
+    The user has to choose an element of *choices*.
     """
-    choices_str = [str(e) for e in choices]
-    prompt = "> Choose from:\n" +\
-             ">   [{}] ".format("|".join(choices_str))
-    
-    choice = get_value(prompt, lambda s: s.strip(), lambda s: s in choices_str)
-    index = choices_str.index(choice)
-    return (choice, index)
+    # Build the whole prompt.
+    for i, choice in enumerate(choices):
+        prompt += "\n{}. {}".format(i, choice)
+    prompt += "\n"
+
+    # Let the user choose.
+    while True:
+        try:
+            index = int(input(prompt))
+            choice = choices[index]
+        except KeyboardInterrupt:
+            # This makes sure, that the user can still leave
+            # the application by [ctrl + c].
+            raise
+        except:
+            # Show the prompt again ...
+            pass
+        else:
+            # Everything is ok: The user entered an integer
+            # and the *index* is in the correct range: [0, len(choices)].
+            # So we've got our value.
+            break
+    return (index, choice)
 
 def ask(question, default=None):
     """

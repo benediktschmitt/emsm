@@ -85,6 +85,8 @@ Select the server with the *common* arguments **--server** or **--all-server**.
 
 # Modules
 # ------------------------------------------------
+
+# std
 import os
 
 # local
@@ -97,146 +99,197 @@ from app_lib import userinput
 
 # Data
 # ------------------------------------------------
+
 PLUGIN = "Server"
 
     
 # Classes
 # ------------------------------------------------
+
 class MyServer(object):
     """
-    Wraps an application server wrapper. :)
+    Wraps an EMSM ServerWrapper :).
+
+    Todo:
+        * Find a better class name ...
     """
 
     def __init__(self, app, server):
-        self.app = app
-        self.server = server
+        self._app = app
+        self._server = server
         return None
 
-    def print_usage(self):
+    def server(self):
         """
-        Returns true,
+        Returns the wrapper ServerWrapper instance.
         """
-        powered_worlds = [world \
-                          for world in self.app.worlds.get_all() \
-                          if world.server == self.server]
+        return self._server
 
-        print("{} - usage:".format(self.server.name))
-        for world in powered_worlds:
-            print("\t", world.name)
+    def print_status(self):
+        """
+        Prints a list with the worlds powered by the server.
+
+        See also:
+            * WorldWrapper.server()
+            * ServerWrapper.is_online()
+        """
+        # Get all worlds powered by this server.
+        worlds = self._app.worlds.get_by_pred(
+            lambda w: w.server() is self._server
+            )
+        online_worlds = list(filter(lambda w: w.is_online(), worlds))
+        offline_worlds = list(filter(lambda w: w.is_offline(), worlds))
+
+        # Print the worlds grouped by their current status (offline/online).
+        print("{} - usage:".format(self._server.name()))
+        if online_worlds:
+            print("\t", "online ({}/{}):".format(len(online_worlds), len(worlds)))
+            for world in online_worlds:
+                print("\t\t", world.name())
+
+        if offline_worlds:
+            print("\t", "offline ({}/{}):".format(len(offline_worlds), len(worlds)))
+            for world in offline_worlds:
+                print("\t\t", world.name())
+
+        if not online_worlds and not offline_worlds:
+            print("\t", "- no worlds -")
         return None
 
-    def print_configuration(self):
+    def print_conf(self):
         """
         Prints the configuration of the server.
+
+        See also:
+            * ServerWrapper.conf()
         """
-        print("{} - configuration:".format(self.server.name))
-        for option in self.server.conf:
-            print("\t", option, "=", self.server.conf[option])
+        conf = self._server.conf().items()
+        
+        print("{} - configuration:".format(self._server.name()))
+        for key, value in sorted(conf):
+            # Make sure, that multiline values have the correct indent.
+            value = value.replace("\n", "\n\t\t")
+            
+            print("\t", key, "=", value)
         return None
 
     def update(self, force_stop=True, stop_message=str()):
         """
         Updates the server.
 
-        Before the server will be updated, all worlds that are currently
-        online with this server, will be stopped.
+        All powered worlds by this server that are currently online, will
+        be stopped and restarted after the update.
+
+        Parameters:
+            * force_stop
+                Force the stop of the worlds by calling
+                WorldWrapper.stop(force_stop=True).
+            * stop_message
+                The message displayed before stopping the server.
+
+        See also:
+            * ServerWrapper.update()
+            * WorldWrapper.stop()
         """
-        print("{} - update: ...".format(self.server.name))
+        print("{} - update: ".format(self._server.name()))
         
-        # Get all worlds, that are currently running the server.
-        worlds = self.app.worlds.get_by_pred(
-            lambda w: w.server is self.server and w.is_online())
+        # Get all worlds, powered by this server which are currently
+        # online.
+        worlds = self._app.worlds.get_by_pred(
+            lambda w: w.server() is self._server and w.is_online()
+            )
 
         # Stop those worlds.
         try:
+            print("\t", "stopping all worlds ...")
             for world in worlds:
-                print("{} - update: Stopping the world '{}' ..."\
-                      .format(self.server.name, world.name))
-                world.send_command("say {}".format(stop_message))
-                world.stop(force_stop)
-        # Do not continue if a world could not be stopped.
-        except world_wrapper.WorldStopFailed as error:
-            print("{} - update: failure: The world '{}' could not be stopped."\
-                  .format(self.server.name, error.world.name))
-        # Continue with the server update if all worlds are offline.
+                print("\t\t", world.name())                
+                world.stop(force_stop=force_stop, message=stop_message)
+                
+        # A world could not be stopped.
+        except world_wrapper.WorldStopFailed as err:
+            print("\t", "FAILURE: Could not stop the world '{}'."\
+                  .format(err.world.name()))
+            
+        # Continue with the server update if all worlds could be stopped.
         else:
-            reporthook = downloadreporthook.Reporthook(
-                url=self.server.url,
-                target=self.server.server
-                )
-            print("{} - update: Downloading the server ..."\
-                  .format(self.server.name))
+            print("\t", "downloading server executable ...")
             try:
-                self.server.update(reporthook)
-            except server_wrapper.ServerUpdateFailure as error:
-                print("{} - update: failure: {}"\
-                      .format(self.server.name, error))
-            else:
-                print("{} - update: Download is complete."\
-                      .format(self.server.name))
+                self._server.update()
+            except server_wrapper.ServerUpdateFailure as err:
+                print("\t\t", "FAILURE: Could not download the server "\
+                              "executable. (check the url)")
+                
         # Restart the worlds.
         finally:
+            print("\t", "restarting the worlds ...")
             for world in worlds:
                 try:
                     world.start()
-                except world_wrapper.WorldIsOnlineError:
-                    pass
-                except world_wrapper.WorldStartFailed:
-                    print("{} - update: failure: The world '{} could not be "\
-                          "restarted.".format(self.server.name, world.name))
+                except world_wrapper.WorldStartFailed as err:
+                    print("\t\t", "FAILURE:", world.name())
                 else:
-                    print("{} - update: The world '{}' has been restated."\
-                          .format(self.server.name, world.name))
+                    print("\t\t", world.name())
         return None
 
     def uninstall(self):
         """
         Uninstalls the server.
 
-        Before the server will be uninstalled, there will be some checks to
-        make sure the server can be uninstalled without any side effects.
+        This is more a dialog than a simple command. The user has to choose
+        a new server that should run the currently powered worlds.
+
+        See also:
+            * ServerWrapper.uninstall()
         """
-        # We need a server that could replace this one.
-        avlb_server = self.app.server.get_names()
-        avlb_server.pop( avlb_server.index(self.server.name) )
+        print("{} - uninstall:".format(self._server.name()))
+
+        # Replacement
+        # ^^^^^^^^^^^
+        
+        # We need a server that can replace this one.
+        other_server_names = self._app.server.get_names()
+        other_server_names.pop(other_server_names.index(self._server.name()))
 
         # Break if there is no other server available.
-        if not avlb_server:
-            print("{} - uninstall: failure: There's no other server that "\
-                  "could replace this one.".format(self.server.name))
+        if not other_server_names:
+            print("\t", "FAILURE: There is no server, that can replace this one.")
             return None
-        
-        # Make sure, that the server should be removed.
-        question = "{} - uninstall: Are you sure, that you want to "\
-                   "uninstall the server? ".format(self.server.name)
-        if not userinput.ask(question):
-            return None
-        
-        # Get the name of the server that should replace this one.
-        replacement = userinput.get_value(
-            prompt=("{} - uninstall: Which server should replace this one?\n\t"
-                    "(Chose from: {}) ".format(self.server.name, avlb_server)),
-            check_func=lambda server: server in avlb_server,
+
+        # Let the user choose the new server.
+        tmp = userinput.choose(
+            prompt = "Which server should replace this one?",
+            choices = other_server_names
             )
-        replacement = self.app.server.get(replacement)        
+        new_server_name = other_server_names[tmp[0]]
+        new_server = self._app.server.get(new_server_name)
         
-        # Remove the server.
+        # Final question
+        # ^^^^^^^^^^^^^^
+
+        if not userinput.ask("Are you sure, that you want to uninstall the server?"):
+            return None
+
+        # Uninstall
+        # ^^^^^^^^^
+        
         try:
-            self.server.uninstall(replacement)
+            self._server.uninstall(new_server)
         except server_wrapper.ServerIsOnlineError as error:
-            print("{} - uninstall: The server is still running. ",
-                  "\n\t'{}'".format(self.server.name, error))
+            print("\t", "FAILURE: The server is still online.")
         return None
 
     
 class Server(BasePlugin):
     """
-    Public interface for the server wrapper.    
+    Command line interface for the EMSM ServerWrapper.
     """
 
     version = "2.0.0"
     
     def __init__(self, application, name):
+        """
+        """
         BasePlugin.__init__(self, application, name)
 
         self.setup_conf()
@@ -244,16 +297,24 @@ class Server(BasePlugin):
         return None
 
     def setup_conf(self):
-        self.update_message = self.conf.get(
+        """
+        Copies the configuration options in the object's attributes and
+        validates them.
+        """
+        self._update_message = self.conf.get(
             "update_message", "The server is going down for an update.")
 
-        self.conf["update_message"] = self.update_message
+        # Write the configuration options back into the dictionary.
+        # Note, that this will initalise the configuration section of this
+        # plugin.
+        self.conf["update_message"] = self._update_message
         return None
 
     def setup_argparser(self):
-        self.argparser.description = (
-            "This plugin provides methods to manage the server files "
-            "and the server configuration.")
+        """
+        Sets the argument parser of this plugin up.
+        """
+        self.argparser.description = "Manage your server executables"
                 
         self.argparser.add_argument(
             "--configuration",
@@ -263,9 +324,9 @@ class Server(BasePlugin):
             )
 
         self.argparser.add_argument(
-            "--usage",
+            "--status",
             action = "count",
-            dest = "usage",
+            dest = "status",
             help = "Prints the names of the worlds, run by this server."
             )
 
@@ -292,21 +353,33 @@ class Server(BasePlugin):
         return None
 
     def run(self, args):
-        server = self.app.server.get_selected()
-        for s in server:            
-            s = MyServer(self.app, s)
-            
-            if args.conf:
-                s.print_configuration()
-                
-            if args.usage:
-                s.print_usage()
+        """
+        ...
+        """
+        for server in self.app.server.get_selected():            
+            server = MyServer(self.app, server)
 
+            # configuration
+            if args.conf:
+                server.print_conf()
+
+            # status
+            if args.status:
+                server.print_status()
+
+            # update
             if args.update:
-                s.update(False, self.update_message)
+                server.update(
+                    force_stop=False,
+                    stop_message=self._update_message
+                    )
             elif args.force_update:
-                s.update(True, self.update_message)
-                
+                server.update(
+                    force_stop=True,
+                    stop_message=self._update_message
+                    )
+
+            # installation / uninstallation
             if args.uninstall:
-                s.uninstall()
+                server.uninstall()
         return None

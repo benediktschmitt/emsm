@@ -35,6 +35,9 @@ import urllib.request
 # third party
 import blinker
 
+# local
+from app_lib import downloadreporthook
+
 
 # Backward compatibility
 # --------------------------------------------------
@@ -165,51 +168,80 @@ class ServerWrapper(object):
         """
         self._app = app
         self._conf = app.conf.server[name]
+        self._check_conf()
 
         # The absolute path to the server executable that is
         # wrapped by this object.
-        self._server = os.path.join(app.paths.server_dir, self.conf["server"])
+        self._server = os.path.join(app.paths.server_dir, self._conf["server"])
 
         # The name of the server executable.
         self._name = name
 
         # The download url of the server.
-        self._url = self.conf["url"]
+        self._url = self._conf["url"]
 
         # The shell command which starts the server.
         # This string contains still some placeholders.
         #
         # See also:
         #   * start_cmd()
-        self._raw_start_cmd = self.conf["start_cmd"]
+        self._raw_start_cmd = self._conf["start_cmd"]
         return None
 
-    @property
+    def _check_conf(self):
+        """
+        Validates the configuration values.
+
+        See also:
+            * Application.conf.server
+            * conf()
+
+        Exceptions:
+            * ValueError
+                if a configuration option has an invalid value.
+            * TypeError
+                if a configuration option has an invalid type.
+        """
+        # server
+        if not "server" in self._conf:
+            raise KeyError("conf:server not set")
+
+        # url
+        if not "url" in self._conf:
+            raise KeyError("conf:url not set")
+        
+        try:
+            urllib.parse.urlparse(self._conf["url"])
+        except urllib.error:
+            # Todo: Raise a TypeError instead?
+            raise ValueError("conf:url is not a url")
+
+        # start_cmd
+        if not "start_cmd" in self._conf:
+            raise KeyError("conf:start_cmd not set")
+        return None
+
     def conf(self):
         return self._conf
 
-    @property
     def server(self):
         """
         Absolute path of the server executable.
         """
         return self._server
 
-    @property
     def name(self):
         """
         The name of the server (configuration section name).
         """
         return self._name
 
-    @property
     def url(self):
         """
         The download url of the server.
         """
         return self._url
 
-    @property
     def raw_start_cmd(self):
         """
         The raw, unformatted command that starts the server. This may
@@ -254,7 +286,7 @@ class ServerWrapper(object):
         this server.
         """
         worlds = self._app.worlds.get_by_pred(
-            lambda w: w.server is self and w.is_online()
+            lambda w: w.server() is self and w.is_online()
             )
         return bool(worlds)
 
@@ -285,6 +317,33 @@ class ServerWrapper(object):
             shutil.move(temp_server_file, self._server)
         return None
 
+    def install(self, show_reporthook=True):
+        """
+        Installs the server. (This method basically calls ``update()``).
+        If the server is already installed, nothing happens.
+
+        Parameters:
+            * show_reporthook
+                if true, a nice wget style progressbar of the download
+                pogress is displayed, otherwise not.
+
+        Exceptions:
+            * ServerUpdateFailure
+        """
+        if self.is_installed():
+            return None
+
+        if show_reporthook:
+            reporthook = downloadreporthook.Reporthook(
+                url = self._url,
+                target=self._server
+                )
+        else:
+            reporthook = None
+
+        self.update(reporthook)
+        return None
+
     def uninstall(self, new_server):
         """
         Removes the server and its configuration. The worlds currently run
@@ -295,13 +354,17 @@ class ServerWrapper(object):
             * TypeError
                 if *new_server* is not a ServerWrapper instance.
             * ValueError
-                if *new_server* is not **another** ServerWrapper instance.
+                if *new_server* is not **another** ServerWrapper instance.                
+
+        Todo:
+            * This method should not raise a ServerIsOnlineError. It should
+              stop all running worlds and restart them with the new server.
         """
         if self.is_online():
             raise ServerIsOnlineError(self)
 
         if not new_server is None:
-            if not isinstance(new_server, type(self)):
+            if not isinstance(new_server, ServerWrapper):
                 raise TypeError("*new_server* has to be a ServerWrapper")                
             if new_server is self:
                 raise ValueError("*new_server* has to be **another** "
@@ -311,7 +374,7 @@ class ServerWrapper(object):
         # ^^^^^^^^^^^^^^^^^^^^^
         
         # Get the worlds which are configured to run with this server.
-        worlds = self._app.worlds.get_by_pred(lambda w: w.server is self)
+        worlds = self._app.worlds.get_by_pred(lambda w: w.server() is self)
 
         for world in worlds:
             # Replace the server wrapper.
@@ -320,15 +383,15 @@ class ServerWrapper(object):
             # Replace the configuration value.
             # Note, that we check if there is a *default* value for the
             # server wrapper set.
-            if "server" in world.conf:
-                world.conf["server"] = new_server._name
+            if "server" in world.conf():
+                world.conf()["server"] = new_server._name
 
         # Remove the server
         # ^^^^^^^^^^^^^^^^^
 
         # The server file.
         try:
-            os.remove(self.server)
+            os.remove(self._server)
         except FileNotFoundError:
             pass
 
@@ -372,11 +435,11 @@ class ServerManager(object):
         conf = self._app.conf.server
         for section in conf.sections():
             server = ServerWrapper(self._app, section)
-            self._server[server.name] = server
+            self._server[server.name()] = server
 
             # Install the server if not yet done.
             if not server.is_installed():
-                server.update()
+                server.install()
         return None
 
     # container
@@ -386,8 +449,8 @@ class ServerManager(object):
         """
         Removes the ServerWrapper *server* from the internal map.
         """
-        if server in self._server:
-            del self._server[server.name]
+        if server in self._server.values():
+            del self._server[server.name()]
         return None
 
     def get(self, servername):
