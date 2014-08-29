@@ -31,6 +31,7 @@ import os
 import shlex
 import shutil
 import urllib.request
+import logging
 
 # third party
 import blinker
@@ -64,6 +65,7 @@ except:
     
 # Data
 # ------------------------------------------------
+
 __all__ = ["ServerError",
            "ServerUpdateFailure",
            "ServerStatusError",
@@ -72,6 +74,8 @@ __all__ = ["ServerError",
            "ServerWrapper",
            "ServerManager"
            ]
+
+_log = logging.getLogger(__name__)
 
 
 # Exceptions
@@ -327,15 +331,15 @@ class ServerWrapper(object):
         if self.is_installed():
             return None
 
-        self._app.log.info("downloading '{}' from '{}' ..."\
-                           .format(self._name, self._url))
+        _log.info("downloading '{}' from '{}' ..."\
+                  .format(self._name, self._url))
         try:
             self.update()
         except ServerUpdateFailure as err:
-            self._app.log.info("download of '{}' failed.".format(self._name))
+            _log.info("download of '{}' failed.".format(self._name))
             raise
         else:
-            self._app.log.info("download of '{}' complete.".format(self._name))
+            _log.info("download of '{}' complete.".format(self._name))
         return None
 
     def uninstall(self, new_server):

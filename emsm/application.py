@@ -28,6 +28,7 @@
 import os
 import sys
 import getpass
+import logging
 
 # local
 import argparse_wrapper
@@ -70,6 +71,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+_log = logging.getLogger(__name__)
 
 # Exceptions
 # ------------------------------------------------
@@ -116,7 +118,6 @@ class Application(object):
         self.lock = file_lock.FileLock(
             os.path.join(self.paths.emsm_root_dir(), "app.lock"))
         self._logger = logging_wrapper.Logger(self)
-        self.log = self._logger.emsm
 
         # \Input
         self.conf = configuration.Configuration(self)
@@ -164,10 +165,9 @@ class Application(object):
         # of the file lock.
         self._logger.setup()        
         self.conf.read()
-        self._logger.load_conf()
 
         # Todo: I don't like logging so late...
-        self.log.info("EMSM - Setup")
+        _log.info("EMSM - Setup")
         
         self._check_user()
         self.argparser.add_app_args()
@@ -200,8 +200,7 @@ class Application(object):
         try:
             self.conf.write()
         finally:
-            self.log.info("EMSM - End")
-            self._logger.shutdown()
+            _log.info("EMSM - End")
             self.lock.release()
         return None
 
@@ -221,7 +220,7 @@ class Application(object):
             msg = msg.format(exc_type=exc_type.__name__,
                              exc_value=exc_value)
             print(msg, file=sys.stderr)
-            self.log.critical("Uncaught exception:", exc_info=True)
+            _log.critical("Uncaught exception:", exc_info=True)
 
         self.finish()
         return None

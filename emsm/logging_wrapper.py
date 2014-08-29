@@ -28,57 +28,86 @@
 
 # std
 import logging
+import logging.handlers
 import os
-import sys
+import queue
 
 
 # Classes
 # ------------------------------------------------
 class Logger(object):
     """
-    Wrapps the EMSM logger.
+    Sets the *root* logging.Logger up.
+
+    The EMSM logger queues all log records until the *emsm.log* can be
+    acquired without side effects. This is the case, when the Application
+    has acquired the **file lock**. The queued records are then pushed
+    to the *emsm.log*.
+
+    The logging stategy requires, that each module uses his own
+    logger instance:
+
+        >>> import logging
+        >>> log = logging.getLogger(__name__)
     """
 
     def __init__(self, app):
         """
         """
         self._app = app
+        self._log_dir = app.paths.log_dir()
 
-        self.root = logging.getLogger()
-        self.emsm = logging.getLogger("emsm")
-        
-        self.fmt = logging.Formatter(
-            fmt="{asctime}[{levelname:8}][{name:12}] {message}",
+        # The root logger
+        self._root_log = logging.getLogger()
+        self._root_log.setLevel(logging.INFO)
+
+        # The EMSM log format.
+        self._log_format = logging.Formatter(
+            fmt="[{asctime}][{levelname:8}][{module:25}] {message}",
             datefmt="%Y-%m-%d %H:%M:%S", style="{"
             )
 
-        self.file_handler = None
-        return None
+        # Used to store the log records until we can access the *emsm.log*.
+        # As soon as *emsm.log* is opened, we write all records in the queue
+        # to the log file.
+        # These attributes are set to None, as soon as the log file is opened.
+        self._log_queue = queue.Queue()
+        self._log_queue_handler = logging.handlers.QueueHandler(self._log_queue)
+        self._root_log.addHandler(self._log_queue_handler)
 
-    def shutdown(self):
-        """
-        Closes all handler used by the emsm logger.
-        """
-        self.file_handler.close()
+        # The FileHandler for the EMSM log file (usually *emsm.log*)
+        # The file is opened, as soon as the Application acquired the file lock.
+        #
+        # See also:
+        #   * setup()
+        self._log_file_handler = None
         return None
 
     def setup(self):
         """
-        Opens the log file for writing.
-        """                
-        self.file_handler = logging.FileHandler(self._app.paths.log_file())
-        self.file_handler.setFormatter(self.fmt)
-        self.root.addHandler(self.file_handler)
-        return None
+        Opens the *emsm.log* and pushes all queued log recods to the log file.
 
-    def load_conf(self):
+        Hint:
+            * This method requires that the Application aquired the file lock.
         """
-        Sets the logger up, using the configuration options.
-        """        
-        # Read the configuration
-        conf = self._app.conf.main()["emsm"]
-        level = conf["loglevel"]
+        # We use the rotating file handler so that the logfiles are
+        # automatically compressed, when they are bigger than 10mb.
+        self._log_file_handler = logging.handlers.RotatingFileHandler(
+            os.path.join(self._log_dir, "emsm.log"),
+            maxBytes = 10*1024**2,
+            backupCount = 5
+            )
+        self._log_file_handler.setFormatter(self._log_format)
 
-        # Apply configuration
-        self.root.setLevel(level)
+        # Push the queued records to the file handler.
+        while not self._log_queue.empty():
+            record = self._log_queue.get(block=False)
+            self._log_file_handler.handle(record)
+            
+        # Add the file handler to the root logger and remove the queue handler.
+        self._root_log.addHandler(self._log_file_handler)
+
+        self._root_log.removeHandler(self._log_queue_handler)
+        self._log_queue_handler = None
+        self._log_queue = None
         return None

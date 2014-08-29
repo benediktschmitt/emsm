@@ -95,6 +95,11 @@ class Pathsystem(object):
               |- bar
                  |- server.properties
                  |- ...
+            |- logs
+              |- emsm.log
+              |- emsm.log.1
+              |- emsm.log.2
+              |- ...
     """
 
     def __init__(self):
@@ -110,8 +115,7 @@ class Pathsystem(object):
         self._server_dir = os.path.join(self._root_dir, "server")
         self._worlds_dir = os.path.join(self._root_dir, "worlds")
         self._emsm_dir = os.path.join(self._root_dir, "emsm")
-
-        self._log_file = os.path.join(self._root_dir, "emsm.log")
+        self._log_dir = os.path.join(self._root_dir, "logs")
 
         # Create all folders.
         self._create()
@@ -139,6 +143,7 @@ class Pathsystem(object):
         make_dir(self._server_dir)
         make_dir(self._worlds_dir)
         make_dir(self._emsm_dir)
+        make_dir(self._log_dir)
         return None
 
     def root_dir(self):
@@ -235,10 +240,10 @@ class Pathsystem(object):
         """
         return self._emsm_dir
 
-    def log_file(self):
+    def log_dir(self):
         """
-        The path to the EMSM log file.
+        Contains the EMSM log files.
 
-        Note, that his is NOT the log of the minecraft server.
+        Note, that his is NOT the log directory of the minecraft server.
         """
-        return self._log_file
+        return self._log_dir
