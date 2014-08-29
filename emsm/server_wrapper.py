@@ -476,7 +476,7 @@ class ServerManager(object):
         """
         Returns all server that have been selected per command line argument.
         """
-        args = self._app.argparser.args
+        args = self._app.argparser.args()
         
         selected_server = args.server
         all_server = args.all_server

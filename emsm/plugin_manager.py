@@ -331,7 +331,7 @@ class PluginManager(object):
         """
         Calls the run method of the invoked plugin.
         """
-        args = self._app.argparser.args
+        args = self._app.argparser.args()
         invoked_plugin = args.plugin
         if invoked_plugin is not None:
             plugin = self._plugins[invoked_plugin]

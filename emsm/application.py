@@ -170,7 +170,6 @@ class Application(object):
         _log.info("EMSM - Setup")
         
         self._check_user()
-        self.argparser.add_app_args()
 
         # Wrappers
         self.server.load_server()
@@ -180,9 +179,8 @@ class Application(object):
         self.plugins.import_from_app_plugin_dir()
         self.plugins.init_plugins()
 
-        # Because all plugin subparsers are not set up, we can parse all
-        # arguments.
-        self.argparser.parse_args()
+        # Argument parser
+        self.argparser.setup()
         return None
 
     def run(self):

@@ -934,7 +934,7 @@ class WorldManager(object):
         """
         Returns all worlds that have been selected per command line argument.
         """
-        args = self._app.argparser.args
+        args = self._app.argparser.args()
         
         selected_worlds = args.worlds
         all_worlds = args.all_worlds
