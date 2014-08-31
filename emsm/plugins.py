@@ -73,22 +73,6 @@ class PluginException(Exception):
     pass
 
 
-class PluginUnavailableError(PluginException):
-    """
-    Raised if a plugin could not be found.
-    """
-
-    def __init__(self, plugin, msg=str()):
-        self.plugin = plugin
-        self.msg = msg
-        return None
-
-    def __str__(self):
-        temp = "The plugin '{}' is not available. {}"\
-               .format(self.plugin, self.msg)
-        return temp
-
-
 class PluginImplementationError(PluginException):
     """
     Raised if a plugin is not correct implemented.
@@ -234,6 +218,7 @@ class PluginManager(object):
                 
         Exceptions:
             * PluginOutdatedError
+            * PluginImplementationError
 
         See also:
             * _plugin_is_outdated()
@@ -246,8 +231,8 @@ class PluginManager(object):
         # Try to import the module.
         try:
             module = _import_module(name, path)
-        except ImportError as error:
-            raise PluginUnavailableError(name, error)
+        except Exception as err:
+            raise PluginImplementationError(name, err)            
 
         # Check if the module contains a plugin.
         if not hasattr(module, "PLUGIN"):
@@ -315,9 +300,6 @@ class PluginManager(object):
                 print(err)
                 log.warning(err)
             except PluginOutdatedError as err:
-                log.warning(err)
-                print(err)
-            except PluginUnavailableError as err:
                 log.warning(err)
                 print(err)
         return None
