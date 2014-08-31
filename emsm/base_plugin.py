@@ -33,7 +33,7 @@ import shutil
 
 # emsm
 from . import argparse_
-from .app_lib import userinput
+from .lib import userinput
 
 
 # Data

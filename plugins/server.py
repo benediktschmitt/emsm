@@ -93,7 +93,7 @@ import os
 from emsm import worlds
 from emsm import server
 from emsm.base_plugin import BasePlugin
-from emsm.app_lib import userinput
+from emsm.lib import userinput
 
 
 # Data
