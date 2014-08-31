@@ -517,6 +517,8 @@ class Worlds(BasePlugin):
 
     version = "2.0.0"
 
+    DESCRIPTION = __doc__
+
     def __init__(self, application, name):
         """
         """
@@ -530,52 +532,56 @@ class Worlds(BasePlugin):
         """
         Loads the configuration values and makes sure they have a valid value.
         """
+        conf = self.conf()
+        
         # Load the values.
-        self._default_log_start = self.conf.getint(
+        self._default_log_start = conf.getint(
             "default_log_start", 0)
-        self._default_log_limit = self.conf.getint(
+        self._default_log_limit = conf.getint(
             "default_log_limit", 10)
-        self._default_open_console_delay = self.conf.getint(
+        self._default_open_console_delay = conf.getint(
             "open_console_delay", 1)
-        self._default_send_command_timeout = self.conf.getint(
+        self._default_send_command_timeout = conf.getint(
             "send_command_timeout", 10)
 
         # And store the *used* values in the configuration.
         # This makes sense since we initialise the configuration section
         # this way and overwrite invalid values catch by *get()* above.
-        self.conf["default_log_start"] = str(self._default_log_start)
-        self.conf["default_log_limit"] = str(self._default_log_limit)
-        self.conf["open_console_delay"] = str(self._default_open_console_delay)
-        self.conf["send_command_timeout"] = str(self._default_send_command_timeout)
+        conf["default_log_start"] = str(self._default_log_start)
+        conf["default_log_limit"] = str(self._default_log_limit)
+        conf["open_console_delay"] = str(self._default_open_console_delay)
+        conf["send_command_timeout"] = str(self._default_send_command_timeout)
         return None
 
     def setup_argparser(self):
         """
         Adds the accepted arguments to the argpaser of this plugin.
         """
-        self.argparser.description = "Manage and interact with a world."
+        parser = self.argparser()
+        
+        parser.description = "Manage and interact with a world."
 
         # Information about the world.
-        self.argparser.add_argument(
+        parser.add_argument(
             "--configuration",
             action = "count",
             dest = "configuration",
             help = "Prints the configuration section."
             )
-        self.argparser.add_argument(
+        parser.add_argument(
             "--properties",
             action = "count",
             dest = "properties",
             help = "Prints the content of the server.properties file."
             )
         
-        self.argparser.add_argument(
+        parser.add_argument(
             "--log",
             action = "count",
             dest = "log",
             help = "Prints the log."
             )
-        self.argparser.add_argument(
+        parser.add_argument(
             "--log-start",
             action = "store",
             dest = "log_start",
@@ -583,7 +589,7 @@ class Worlds(BasePlugin):
             help = "First printed line of the log. "\
             "('\"-2\"' starts with the 2nd last line)"
             )
-        self.argparser.add_argument(
+        parser.add_argument(
             "--log-limit",
             action = "store",
             dest = "log_limit",
@@ -591,13 +597,13 @@ class Worlds(BasePlugin):
             help = "The number of lines that will be printed."
             )
 
-        self.argparser.add_argument(
+        parser.add_argument(
             "--pid",
             action = "count",
             dest = "pid",
             help = "Prints the pid of the server that runs the world."
             )
-        self.argparser.add_argument(
+        parser.add_argument(
             "--status",
             action = "count",
             dest = "status",
@@ -606,7 +612,7 @@ class Worlds(BasePlugin):
         
         # XXX: I need a name for those group
         # of arguments.
-        con_iface_group = self.argparser.add_mutually_exclusive_group()
+        con_iface_group = parser.add_mutually_exclusive_group()
         con_iface_group.add_argument(
             "--send",
             action = "store",
@@ -629,7 +635,7 @@ class Worlds(BasePlugin):
             )
         
         # Status changes
-        group_status_change = self.argparser.add_mutually_exclusive_group()
+        group_status_change = parser.add_mutually_exclusive_group()
         group_status_change.add_argument(
             "--start",
             action = "count",
@@ -673,7 +679,7 @@ class Worlds(BasePlugin):
             )
         
         # Setup
-        self.argparser.add_argument(
+        parser.add_argument(
             "--uninstall",
             action = "count",
             dest = "uninstall",

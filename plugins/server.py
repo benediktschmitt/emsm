@@ -300,36 +300,41 @@ class Server(BasePlugin):
         Copies the configuration options in the object's attributes and
         validates them.
         """
-        self._update_message = self.conf.get(
-            "update_message", "The server is going down for an update.")
+        conf = self.conf()
+        
+        self._update_message = conf.get(
+            "update_message", "The server is going down for an update."
+            )
 
         # Write the configuration options back into the dictionary.
         # Note, that this will initalise the configuration section of this
         # plugin.
-        self.conf["update_message"] = self._update_message
+        conf["update_message"] = self._update_message
         return None
 
     def setup_argparser(self):
         """
         Sets the argument parser of this plugin up.
         """
-        self.argparser.description = "Manage your server executables"
+        parser = self.argparser()
+        
+        parser.description = "Manage your server executables"
                 
-        self.argparser.add_argument(
+        parser.add_argument(
             "--configuration",
             action = "count",
             dest = "conf",
             help = "Prints the configuration of the server."
             )
 
-        self.argparser.add_argument(
+        parser.add_argument(
             "--status",
             action = "count",
             dest = "status",
             help = "Prints the names of the worlds, run by this server."
             )
 
-        update_group = self.argparser.add_mutually_exclusive_group()
+        update_group = parser.add_mutually_exclusive_group()
         update_group.add_argument(
             "--update",
             action = "count",
@@ -343,7 +348,7 @@ class Server(BasePlugin):
             help = "Forces the stop of a world before the update begins."
             )
         
-        self.argparser.add_argument(
+        parser.add_argument(
             "--uninstall",
             action = "count",
             dest = "uninstall",
