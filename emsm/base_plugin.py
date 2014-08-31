@@ -25,6 +25,8 @@
 
 # Modules
 # ------------------------------------------------
+
+# std
 import os
 import logging
 import shutil
@@ -32,8 +34,8 @@ import argparse
 import subprocess
 
 # local
-import argparse_wrapper
-from app_lib import userinput
+from . import argparse_
+from .app_lib import userinput
 
 
 # Data
@@ -110,7 +112,7 @@ class BasePlugin(object):
         
         self.argparser.add_argument(
             "--long-help",
-            action = argparse_wrapper.LongHelpAction,
+            action = argparse_.LongHelpAction,
             description = self.description)
         return None
 

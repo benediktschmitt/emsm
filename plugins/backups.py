@@ -121,11 +121,11 @@ import json
 import hashlib
 
 # local
-import world_wrapper
-import configuration
-from base_plugin import BasePlugin
-from app_lib import pprinttable
-from app_lib import userinput
+from emsm import worlds
+from emsm import conf
+from emsm.base_plugin import BasePlugin
+from emsm.app_lib import pprinttable
+from emsm.app_lib import userinput
 
 
 # Backward compatibility

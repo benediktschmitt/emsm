@@ -90,10 +90,10 @@ Select the server with the *common* arguments **--server** or **--all-server**.
 import os
 
 # local
-import world_wrapper
-import server_wrapper
-from base_plugin import BasePlugin
-from app_lib import userinput
+from emsm import worlds
+from emsm import server
+from emsm.base_plugin import BasePlugin
+from emsm.app_lib import userinput
 
 
 # Data

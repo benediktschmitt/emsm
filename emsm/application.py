@@ -31,15 +31,15 @@ import getpass
 import logging
 
 # local
-import argparse_wrapper
-import base_plugin
-import configuration
-import logging_wrapper
-import pathsystem
-import plugin_manager
-import server_wrapper
-import world_wrapper
-from app_lib import file_lock
+from . import argparse_
+from . import base_plugin
+from . import conf
+from . import logging_
+from . import paths
+from . import plugins
+from . import server
+from . import worlds
+from .app_lib import file_lock
 
 
 # Data
@@ -114,19 +114,19 @@ class Application(object):
         
         # Do not change the order of the construction!
         # \Independent constructions and primary ressources
-        self.paths = pathsystem.Pathsystem()
+        self.paths = paths.Pathsystem()
         self.lock = file_lock.FileLock(
             os.path.join(self.paths.emsm_root_dir(), "app.lock"))
-        self._logger = logging_wrapper.Logger(self)
+        self._logger = logging_.Logger(self)
 
         # \Input
-        self.conf = configuration.Configuration(self)
-        self.argparser = argparse_wrapper.ArgumentParser(self)
+        self.conf = conf.Configuration(self)
+        self.argparser = argparse_.ArgumentParser(self)
 
         # \Wrapper and manager
-        self.worlds = world_wrapper.WorldManager(self)
-        self.server = server_wrapper.ServerManager(self)
-        self.plugins = plugin_manager.PluginManager(self)
+        self.worlds = worlds.WorldManager(self)
+        self.server = server.ServerManager(self)
+        self.plugins = plugins.PluginManager(self)
         return None
 
     # Common    
@@ -176,7 +176,7 @@ class Application(object):
         self.worlds.load()
 
         # Plugins
-        self.plugins.import_from_app_plugin_dir()
+        self.plugins.setup()
         self.plugins.init_plugins()
 
         # Argument parser
@@ -222,17 +222,4 @@ class Application(object):
 
         self.finish()
         return None
-    
-
-# Main
-# ------------------------------------------------
-if __name__ == "__main__":
-    # The application will log all errors and controll
-    # the work flow. Any traceback output will be surpressed and logged.
-##    try:
-        with Application() as app:
-            app.setup()
-            app.run()
-##    except:
-##        pass
 

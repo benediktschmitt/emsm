@@ -133,9 +133,9 @@ import re
 import collections
 import datetime
 
-# local
-from base_plugin import BasePlugin
-from app_lib import userinput, pprinttable
+# emsm
+from emsm.base_plugin import BasePlugin
+from emsm.app_lib import userinput, pprinttable
 
 
 # Backwards compatibility

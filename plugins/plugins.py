@@ -133,10 +133,10 @@ import urllib.request
 
 # local
 try:
-    import plugin_manager
-    from base_plugin import BasePlugin
-    from app_lib import userinput
-    emsm_context = True
+    from emsm import plugins
+    from emsm.base_plugin import BasePlugin
+    from emsm.app_lib import userinput
+    emsm_context = True    
 except ImportError:
     # Not nice, but if I define this dummy class, I can avoid an ugly
     # *if* structure.
@@ -314,7 +314,7 @@ class PluginPackage(object):
             print("Installation complete.")
         return None
 
-    
+
 class Plugins(BasePlugin):
     """
     Provides methods to install or remove plugins for this application.

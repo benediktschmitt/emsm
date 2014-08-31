@@ -93,7 +93,7 @@ import os
 import random
 
 # local
-from base_plugin import BasePlugin
+from emsm.base_plugin import BasePlugin
 
 
 # Vars
@@ -153,17 +153,17 @@ class HelloDolly(BasePlugin):
     # We don't need to wait for other plugins, so we don't care
     # about the init priority. If you want that your plugin is initialised
     # earlier than others, make this value smaller.
-    #init_priority = 0
+    init_priority = 0
 
     # Also, we don't care about the fact if the finish method of our
     # plugin is called early or late. The *finish* method of plugins with
     # a smaller *finish_priority* is called earlier.
-    #finish_priority = 0
+    finish_priority = 0
 
     # At the moment, there is no direct url to the latest version of this
     # plugin. The plugin manager can use this url to detect new versions of
     # your plugin and will download them (almost) automatically.
-    #download_url = ""
+    download_url = ""
     
     # The last compatible version of the EMSM
     version = "2.0.0"

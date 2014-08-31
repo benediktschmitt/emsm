@@ -187,11 +187,12 @@ import os
 import sys
 import time
 
-# local
-import world_wrapper
-from base_plugin import BasePlugin
-from app_lib import userinput
-from app_lib import pprinttable
+# emsm
+from emsm import worlds
+from emsm.base_plugin import BasePlugin
+
+from emsm.app_lib import userinput
+from emsm.app_lib import pprinttable
 
 
 # Data
