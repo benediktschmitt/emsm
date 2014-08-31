@@ -75,7 +75,7 @@ __all__ = ["ServerError",
            "ServerManager"
            ]
 
-_log = logging.getLogger(__name__)
+log = logging.getLogger(__file__)
 
 
 # Exceptions
@@ -167,6 +167,8 @@ class ServerWrapper(object):
             * name
                 The name of this server in the *server.conf*.
         """
+        log.info("initialising server '{}' ...".format(name))
+        
         self._app = app
         self._conf = app.conf().server()[name]
         self._check_conf()
@@ -288,7 +290,7 @@ class ServerWrapper(object):
         Returns ``True`` if at least one world is currently running with
         this server.
         """
-        worlds = self._app.worlds.get_by_pred(
+        worlds = self._app.worlds().get_by_pred(
             lambda w: w.server() is self and w.is_online()
             )
         return bool(worlds)
@@ -309,6 +311,9 @@ class ServerWrapper(object):
             raise ServerIsOnlineError(self)
 
         # Download the server.
+        log.info("downloading server '{}' from '{}' ..."\
+                 .format(self._name, self._url)
+                 )
         try:
             temp_server_file, http_message = urllib.request.urlretrieve(
                 self._url,
@@ -318,6 +323,7 @@ class ServerWrapper(object):
             raise ServerUpdateFailure(self)
         else:
             shutil.move(temp_server_file, self._server)
+            log.info("downloaded server '{}'.".format(self._name))
         return None
 
     def install(self):
@@ -331,15 +337,7 @@ class ServerWrapper(object):
         if self.is_installed():
             return None
 
-        _log.info("downloading '{}' from '{}' ..."\
-                  .format(self._name, self._url))
-        try:
-            self.update()
-        except ServerUpdateFailure as err:
-            _log.info("download of '{}' failed.".format(self._name))
-            raise
-        else:
-            _log.info("download of '{}' complete.".format(self._name))
+        self.update()
         return None
 
     def uninstall(self, new_server):
@@ -358,6 +356,8 @@ class ServerWrapper(object):
             * This method should not raise a ServerIsOnlineError. It should
               stop all running worlds and restart them with the new server.
         """
+        log.info("uninstalling the server '{}' ...".format(self._name))
+        
         if self.is_online():
             raise ServerIsOnlineError(self)
 
@@ -370,9 +370,9 @@ class ServerWrapper(object):
 
         # World reconfiguration
         # ^^^^^^^^^^^^^^^^^^^^^
-        
+
         # Get the worlds which are configured to run with this server.
-        worlds = self._app.worlds.get_by_pred(lambda w: w.server() is self)
+        worlds = self._app.worlds().get_by_pred(lambda w: w.server() is self)
 
         for world in worlds:
             # Replace the server wrapper.
@@ -398,7 +398,8 @@ class ServerWrapper(object):
 
         # Finish
         # ^^^^^^
-        
+
+        log.info("uninstalled server '{}'.".format(self._name))
         ServerWrapper.server_uninstalled.send(self)
         return None
 
@@ -430,6 +431,8 @@ class ServerManager(object):
             * ServerWrapper.is_installed()
             * ServerWrapper.update()
         """
+        log.info("loading all server wrappers ...")
+        
         conf = self._app.conf().server()
         for section in conf.sections():
             server = ServerWrapper(self._app, section)

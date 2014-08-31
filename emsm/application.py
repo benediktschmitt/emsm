@@ -103,13 +103,12 @@ class Application(object):
         """
         """
         # The order of the initialisation is not trivial!
-        
         self._paths = paths.Pathsystem()
         self._lock = filelock.FileLock(
             os.path.join(self._paths.root_dir(), "app.lock")
             )
+        self._logger = logging_.Logger(self)        
 
-        self._logger = logging_.Logger(self)
         self._conf = conf.Configuration(self)
         self._argparser = argparse_.ArgumentParser(self)
 

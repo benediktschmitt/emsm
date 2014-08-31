@@ -194,7 +194,7 @@ class MyServer(object):
         
         # Get all worlds, powered by this server which are currently
         # online.
-        worlds = self._app.worlds.get_by_pred(
+        worlds = self._app.worlds().get_by_pred(
             lambda w: w.server() is self._server and w.is_online()
             )
 
@@ -215,7 +215,7 @@ class MyServer(object):
             print("\t", "downloading server executable ...")
             try:
                 self._server.update()
-            except server_wrapper.ServerUpdateFailure as err:
+            except server.ServerUpdateFailure as err:
                 print("\t\t", "FAILURE: Could not download the server "\
                               "executable. (check the url)")
                 
@@ -225,7 +225,7 @@ class MyServer(object):
             for world in worlds:
                 try:
                     world.start()
-                except world_wrapper.WorldStartFailed as err:
+                except worlds.WorldStartFailed as err:
                     print("\t\t", "FAILURE:", world.name())
                 else:
                     print("\t\t", world.name())
@@ -361,7 +361,7 @@ class Server(BasePlugin):
         ...
         """
         for server in self.app().server().get_selected():            
-            server = MyServer(self.app, server)
+            server = MyServer(self.app(), server)
 
             # configuration
             if args.conf:

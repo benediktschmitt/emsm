@@ -29,6 +29,7 @@
 # std
 import argparse
 import subprocess
+import logging
 
 
 # Data
@@ -39,6 +40,8 @@ __all__ = [
     "LongHelpAction",
     "ArgumentParser"
     ]
+
+log = logging.getLogger(__file__)
 
 
 # Classes
@@ -180,7 +183,11 @@ class ArgumentParser(object):
                 result of the previouds parsing is returned.
         """
         if self._args is None or not cache:
+            log.info("parsing arguments ...".format(self._args))
+            
             self._args = self._argparser.parse_args()
+            
+            log.info("parsed arguments: {}".format(self._args))
         return self._args
 
     def plugin_parser(self, plugin_name):
@@ -204,6 +211,8 @@ class ArgumentParser(object):
             * Application.server
             * Application.world
         """
+        log.info("adding emsm arguments ...")
+        
         # About the EMSM.
         self._argparser.add_argument(
             "--version",

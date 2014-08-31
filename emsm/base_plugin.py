@@ -79,6 +79,8 @@ class BasePlugin(object):
         Override:
             * Extend, but do not override.
         """
+        log.info("initialising '{}' ...".format(name))
+        
         self.__app = app
         self.__name = name
 
@@ -89,8 +91,6 @@ class BasePlugin(object):
             action = argparse_.LongHelpAction,
             description = type(self).DESCRIPTION
             )
-
-        log.debug("initialised BasePlugin for '{}'.".format(name))
         return None
 
     def app(self):
@@ -113,7 +113,11 @@ class BasePlugin(object):
         # Make sure the configuration section exists.
         main_conf = self.__app.conf().main()
         if not self.__name in main_conf:
+            log.info("creating configuration section for '{}'"\
+                     .format(self.__name))
+            
             main_conf.add_section(self.__name)
+            
             log.info("created configuration section for '{}'."\
                      .format(self.__name))
         
@@ -135,7 +139,10 @@ class BasePlugin(object):
 
         # Make sure the directory exists.
         if not os.path.exists(data_dir) and create:
+            log.info("creating data directory for '{}'.".format(self.__name))
+            
             os.makedirs(data_dir)
+            
             log.info("created data directory for '{}'.".format(self.__name))
         
         return data_dir
@@ -199,7 +206,8 @@ class BasePlugin(object):
             self.__app.conf.main().remove_section(self.__name)
             
             log.info("removed '{}' configuration section."\
-                     .format(self.__name))
+                     .format(self.__name)
+                     )
         return None
 
     def run(self, args):

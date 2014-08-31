@@ -38,6 +38,7 @@ import collections
 import re
 import random
 import socket
+import logging
 
 # third party
 import blinker
@@ -91,6 +92,8 @@ __all__ = [
     "WorldWrapper"
     "WorldManager"
     ]
+
+log = logging.getLogger(__file__)
 
 _SCREEN = shlex.which("screen")
 
@@ -264,6 +267,8 @@ class WorldWrapper(object):
         If auto_install is true, the directory of the world will
         be created if it does not exist.
         """
+        log.info("initialising world '{}' ...".format(name))
+        
         self._app = app
         self._conf = app.conf().worlds()[name]
         self._check_conf()
@@ -518,7 +523,7 @@ class WorldWrapper(object):
 
         # Quote the command.
         # The '\n' simulates pressing the ENTER key in the screen session.
-        server_cmd += "\n"
+        server_cmd += "\n\n"
         server_cmd = shlex.quote(server_cmd)
 
         # Send the command to the server.

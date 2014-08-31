@@ -28,6 +28,7 @@
 
 # std 
 import os
+import logging
 import configparser
 
 
@@ -46,6 +47,8 @@ except NameError:
 __all__ = [
     "Configuration"
     ]
+
+log = logging.getLogger(__file__)
 
 
 # Classes
@@ -279,6 +282,8 @@ class Configuration(object):
         See also:
             * ConfigParser.read()
         """
+        log.info("reading configuration ...")
+        
         # Don't change the order!
         self._main.read()
         self._server.read()
@@ -292,6 +297,8 @@ class Configuration(object):
         See also:
             * ConfigParser.write()
         """
+        log.info("writing configuration ...")
+        
         self._main.write()
         self._server.write()
         self._worlds.write()

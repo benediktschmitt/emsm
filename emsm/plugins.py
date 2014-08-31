@@ -60,7 +60,7 @@ __all__ = [
     "PluginManager",
     ]
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(__file__)
 
 
 # Exceptions
@@ -289,6 +289,8 @@ class PluginManager(object):
                 return False
             return True
 
+        log.info("loading plugins from '{}' ...".format(directory))
+        
         for filename in os.listdir(directory):
             path = os.path.join(directory, filename)
             if not file_is_plugin(path):
@@ -297,11 +299,11 @@ class PluginManager(object):
             try:
                 self.import_plugin(path)
             except PluginImplementationError as err:
-                print(err)
                 log.warning(err)
             except PluginOutdatedError as err:
                 log.warning(err)
-                print(err)
+            else:
+                log.info("loaded plugin from '{}'.".format(path))
         return None
 
     def remove_plugin(self, plugin_name, call_finish=False):
@@ -315,6 +317,8 @@ class PluginManager(object):
                 If true, the *finish()* method of the plugin is called, before
                 it is removed.
         """
+        log.info("unloading plugin '{}' ...".format(plugin_name))
+        
         plugin = self._plugins.get(plugin_name, None)
 
         # Break if there is not plugin with that name.
@@ -330,7 +334,7 @@ class PluginManager(object):
         del self._plugin_modules[plugin_name]
 
         # The plugin has been removed.
-        log.info("The plugin '{}' has been removed.".format(plugin_name))
+        log.info("the plugin '{}' has been unloaded.".format(plugin_name))
         return None
 
     def uninstall(self, plugin_name):
@@ -373,6 +377,8 @@ class PluginManager(object):
         When you call this method multiple times, only plugins that have
         not been initialised already, will be initialised.
         """
+        log.info("initialising plugins ...")
+        
         # Initialise the plugins corresponding to their *INIT_PRIORITY*
         init_queue = self._plugin_types.items()
         init_queue = sorted(init_queue, key=lambda e: e[1].INIT_PRIORITY)
@@ -386,6 +392,8 @@ class PluginManager(object):
             # Create a new plugin instance and save it.
             plugin = plugin_type(self._app, name)
             self._plugins[name] = plugin
+
+        log.info("initialised plugins.")
         return None
     
     def run(self):
@@ -402,9 +410,11 @@ class PluginManager(object):
 
         # Break if no plugin has been selected.
         if plugin_name is None:
+            log.info("no plugin for run selected.")
             return None
 
         # Execute the plugin.
+        log.info("running plugin '{}' ...".format(plugin_name))
         plugin = self._plugins[plugin_name]
         plugin.run(args)
         return None
@@ -416,6 +426,8 @@ class PluginManager(object):
         See also:
             * BasePlugin.finish()
         """
+        log.info("finish plugins ...")
+        
         finish_queue = self._plugins.values()
         finish_queue = sorted(finish_queue, key=lambda p: p.FINISH_PRIORITY)
         
