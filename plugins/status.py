@@ -135,7 +135,7 @@ import datetime
 
 # emsm
 from emsm.base_plugin import BasePlugin
-from emsm.app_lib import userinput, pprinttable
+from emsm.app_lib import userinput
 
 
 # Backwards compatibility

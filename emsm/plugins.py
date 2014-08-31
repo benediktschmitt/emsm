@@ -317,6 +317,9 @@ class PluginManager(object):
             except PluginOutdatedError as err:
                 log.warning(err)
                 print(err)
+            except PluginUnavailableError as err:
+                log.warning(err)
+                print(err)
         return None
 
     def remove_plugin(self, plugin_name, call_finish=False):
