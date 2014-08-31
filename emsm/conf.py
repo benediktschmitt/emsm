@@ -158,8 +158,7 @@ class MainConfiguration(ConfigParser):
         # Add the default configuration for the EMSM.
         self.add_section("emsm")
         self["emsm"]["user"] = "minecraft"
-        self["emsm"]["loglevel"] = "WARNING"
-        self["emsm"]["timeout"] = "-1"
+        self["emsm"]["timeout"] = "0"
         return None
     
 
