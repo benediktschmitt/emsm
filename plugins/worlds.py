@@ -192,7 +192,6 @@ from emsm import worlds
 from emsm.base_plugin import BasePlugin
 
 from emsm.app_lib import userinput
-from emsm.app_lib import pprinttable
 
 
 # Data

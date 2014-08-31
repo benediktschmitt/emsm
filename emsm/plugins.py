@@ -208,7 +208,7 @@ class PluginManager(object):
             * http://semver.org
         """        
         app_version = self._app.version.split(".")
-        plugin_version = plugin.version.split(".")
+        plugin_version = plugin.VERSION.split(".")
 
         # The version number is invalid.
         if len(plugin_version) < 2:
@@ -392,7 +392,7 @@ class PluginManager(object):
         """
         # Initialise the plugins corresponding to their *INIT_PRIORITY*
         init_queue = self._plugin_types.items()
-        init_queue = sorted(init_queue, key=lambda e: e[1].init_priority)
+        init_queue = sorted(init_queue, key=lambda e: e[1].INIT_PRIORITY)
         
         for name, plugin_type in init_queue:
             
@@ -434,7 +434,7 @@ class PluginManager(object):
             * BasePlugin.finish()
         """
         finish_queue = self._plugins.values()
-        finish_queue = sorted(finish_queue, key=lambda p: p.finish_priority)
+        finish_queue = sorted(finish_queue, key=lambda p: p.FINISH_PRIORITY)
         
         for plugin in finish_queue:
             plugin.finish()

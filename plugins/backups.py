@@ -124,7 +124,6 @@ import hashlib
 from emsm import worlds
 from emsm import conf
 from emsm.base_plugin import BasePlugin
-from emsm.app_lib import pprinttable
 from emsm.app_lib import userinput
 
 

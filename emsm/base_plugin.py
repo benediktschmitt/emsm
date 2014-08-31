@@ -56,24 +56,24 @@ class BasePlugin(object):
 
     # Integer with the init priority of the plugin.
     # A higher value results in a later initialisation.
-    init_priority = 0
+    INIT_PRIORITY = 0
 
     # Integer with the finish priority of the plugin.
     # A higher value results in a later call of the finish method.
-    finish_priority = 0
+    FINISH_PRIORITY = 0
 
     # The last compatible version of the application the
     # plugin worked.
-    version = "0.0.0"
+    VERSION = "0.0.0"
 
     # The plugin manager can lookup there for a new version of the plugin.
-    download_url = ""
+    DOWNLOAD_URL = ""
 
     # This string is like the man page of the plugin and displayed when
     # invoking the plugin with the *--long-help* command. Per default,
     # we use the docstring of the module that contains the plugin. Therefore,
     # it is first available, when at least one plugin has been initialised.
-    description = ""
+    DESCRIPTION = ""
 
     def __init__(self, app, name):
         """
