@@ -207,7 +207,7 @@ class PluginManager(object):
         Web:
             * http://semver.org
         """        
-        app_version = self._app.version.split(".")
+        app_version = self._app.VERSION.split(".")
         plugin_version = plugin.VERSION.split(".")
 
         # The version number is invalid.
@@ -380,7 +380,8 @@ class PluginManager(object):
         See also:
             * Pathsystem.plugins()
         """
-        self.import_from_directory(self._app.paths.plugins_dir())
+        plugins_dir = self._app.paths().plugins_dir()
+        self.import_from_directory(plugins_dir)
         return None
 
     def init_plugins(self):
@@ -414,7 +415,7 @@ class PluginManager(object):
             * ArgumentParser.args()
         """
         # Get the name of the selected plugin.
-        args = self._app.argparser.args()
+        args = self._app.argparser().args()
         plugin_name = args.plugin
 
         # Break if no plugin has been selected.

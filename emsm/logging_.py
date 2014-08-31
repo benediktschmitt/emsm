@@ -55,7 +55,7 @@ class Logger(object):
         """
         """
         self._app = app
-        self._log_dir = app.paths.log_dir()
+        self._log_dir = app.paths().log_dir()
 
         # The root logger
         self._root_log = logging.getLogger()

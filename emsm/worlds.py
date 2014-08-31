@@ -265,17 +265,17 @@ class WorldWrapper(object):
         be created if it does not exist.
         """
         self._app = app
-        self._conf = app.conf.worlds()[name]
+        self._conf = app.conf().worlds()[name]
         self._check_conf()
 
         # The ServerWrapper for the server that powers this world.
-        self._server = app.server.get(self._conf["server"])
+        self._server = app.server().get(self._conf["server"])
 
         # The name of the world.
         self._name = name
 
         # The directory that contains the world data.
-        self._directory = app.paths.world_dir(name)
+        self._directory = app.paths().world_dir(name)
         return None
 
     def _check_conf(self):
@@ -307,7 +307,7 @@ class WorldWrapper(object):
             raise TypeError("conf:stop_delay is not an integer")
 
         # server
-        if not self._conf["server"] in self._app.server.get_names():
+        if not self._conf["server"] in self._app.server().get_names():
             raise ValueError("conf:server does not exist")
         return None
 
@@ -875,14 +875,14 @@ class WorldManager(object):
         WorldWrapper.world_uninstalled.connect(self._remove)
         return None
 
-    def load(self):
+    def load_worlds(self):
         """
         Loads all worlds declared in the configuration file.
 
         See also:
             * Application.conf.worlds
         """
-        conf = self._app.conf.worlds()
+        conf = self._app.conf().worlds()
         for section in conf.sections():
             world = WorldWrapper(self._app, section)
             self._worlds[world.name] = world
@@ -934,7 +934,7 @@ class WorldManager(object):
         """
         Returns all worlds that have been selected per command line argument.
         """
-        args = self._app.argparser.args()
+        args = self._app.argparser().args()
         
         selected_worlds = args.worlds
         all_worlds = args.all_worlds

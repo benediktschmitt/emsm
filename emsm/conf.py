@@ -161,29 +161,7 @@ class MainConfiguration(ConfigParser):
         self["emsm"]["loglevel"] = "WARNING"
         self["emsm"]["timeout"] = "-1"
         return None
-
-    def read(self):
-        """
-        Like ConfigParser.read(), but also validates the values of the
-        EMSM options.
-
-        Exceptions:
-            * ValueError
-                if an option has an invalid value.
-            * TypeError
-                if an option has an invalid type (int <-> alphanum)
-        """
-        super().read()
-
-        # Validate ...
-        # ^^^^^^^^^^^^
-
-        # timeout
-        if self["emsm"]["timeout"] != "-1" \
-           and not self["emsm"]["timeout"].isdecimal():
-            raise TypeError("conf:timeout is not an integer!")
-        return None
-        
+    
 
 class ServerConfiguration(ConfigParser):
     """
@@ -261,7 +239,7 @@ class Configuration(object):
         """
         """
         self._app = app
-        self._dir = app.paths.conf_dir()
+        self._dir = app.paths().conf_dir()
 
         self._main = MainConfiguration(os.path.join(self._dir, "main.conf"))
         self._server= ServerConfiguration(os.path.join(self._dir, "server.conf"))

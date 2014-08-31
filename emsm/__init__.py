@@ -36,6 +36,7 @@ from . import application
 from . import argparse_ as argparse
 from . import base_plugin
 from . import conf
+from .license import LICENSE
 from . import logging_ as logging
 from . import paths
 from . import plugins

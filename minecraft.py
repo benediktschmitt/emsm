@@ -38,7 +38,12 @@ import emsm
 # ------------------------------------------------
 
 if __name__ == "__main__":
-    app = emsm.application.Application()    
-    app.setup()
-    app.run()
-    app.finish()
+    # Todo: Move the control flow into the Application class.
+    app = emsm.application.Application()
+    try:
+        app.setup()
+        app.run()
+    except Exception as err:
+        app.handle_exception()
+    finally:
+        app.finish()

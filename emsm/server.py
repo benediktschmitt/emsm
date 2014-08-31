@@ -168,13 +168,13 @@ class ServerWrapper(object):
                 The name of this server in the *server.conf*.
         """
         self._app = app
-        self._conf = app.conf.server()[name]
+        self._conf = app.conf().server()[name]
         self._check_conf()
 
         # The absolute path to the server executable that is
         # wrapped by this object.
         self._server = os.path.join(
-            app.paths.server_dir(), self._conf["server"]
+            app.paths().server_dir(), self._conf["server"]
             )
 
         # The name of the server executable.
@@ -430,7 +430,7 @@ class ServerManager(object):
             * ServerWrapper.is_installed()
             * ServerWrapper.update()
         """
-        conf = self._app.conf.server()
+        conf = self._app.conf().server()
         for section in conf.sections():
             server = ServerWrapper(self._app, section)
             self._server[server.name()] = server
@@ -476,7 +476,7 @@ class ServerManager(object):
         """
         Returns all server that have been selected per command line argument.
         """
-        args = self._app.argparser.args()
+        args = self._app.argparser().args()
         
         selected_server = args.server
         all_server = args.all_server

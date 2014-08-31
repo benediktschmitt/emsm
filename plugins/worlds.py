@@ -690,7 +690,7 @@ class Worlds(BasePlugin):
     def run(self, args):
         """
         """
-        worlds = self.app.worlds.get_selected()
+        worlds = self.app().worlds().get_selected()
         for world in worlds:
             world = MyWorld(self.app, world)
 

@@ -83,7 +83,7 @@ class BasePlugin(object):
         self.__name = name
 
         # Get the argparser for this plugin and set it up.
-        self.__argparser = app.argparser.plugin_parser(name)  
+        self.__argparser = app.argparser().plugin_parser(name)  
         self.__argparser.add_argument(
             "--long-help",
             action = argparse_.LongHelpAction,
@@ -111,7 +111,7 @@ class BasePlugin(object):
         of the plugin.
         """
         # Make sure the configuration section exists.
-        main_conf = self.__app.conf.main()
+        main_conf = self.__app.conf().main()
         if not self.__name in main_conf:
             main_conf.add_section(self.__name)
             log.info("created configuration section for '{}'."\

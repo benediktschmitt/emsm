@@ -208,12 +208,12 @@ class ArgumentParser(object):
         self._argparser.add_argument(
             "--version",
             action = "version",
-            version = "EMSM {}".format(self._app.version)
+            version = "EMSM {}".format(self._app.VERSION)
             )
         self._argparser.add_argument(
             "--license",
             action = LicenseAction,
-            license_ = self._app.license
+            license_ = self._app.LICENSE
             )
 
         # The selectable worlds.
@@ -223,7 +223,7 @@ class ArgumentParser(object):
             action = "append",
             dest = "worlds",
             metavar = "WORLD",
-            choices = self._app.worlds.get_names(),
+            choices = self._app.worlds().get_names(),
             default = list(),
             help = "Selects the world."
             )
@@ -243,7 +243,7 @@ class ArgumentParser(object):
             action = "append",
             dest = "server",
             metavar = "SERVER",
-            choices = self._app.server.get_names(),
+            choices = self._app.server().get_names(),
             default = list(),
             help = "Selects single server software."
             )

@@ -360,7 +360,7 @@ class Server(BasePlugin):
         """
         ...
         """
-        for server in self.app.server.get_selected():            
+        for server in self.app().server().get_selected():            
             server = MyServer(self.app, server)
 
             # configuration
