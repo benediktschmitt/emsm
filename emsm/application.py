@@ -30,6 +30,9 @@ import sys
 import getpass
 import logging
 
+# third party
+import filelock
+
 # local
 from . import argparse_
 from . import base_plugin
@@ -39,7 +42,6 @@ from . import paths
 from . import plugins
 from . import server
 from . import worlds
-from .app_lib import file_lock
 
 
 # Data
@@ -115,7 +117,7 @@ class Application(object):
         # Do not change the order of the construction!
         # \Independent constructions and primary ressources
         self.paths = paths.Pathsystem()
-        self.lock = file_lock.FileLock(
+        self.lock = filelock.FileLock(
             os.path.join(self.paths.emsm_root_dir(), "app.lock"))
         self._logger = logging_.Logger(self)
 
