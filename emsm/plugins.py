@@ -55,7 +55,6 @@ else:
 
 __all__ = [
     "PluginException",
-    "PluginUnavailableError",
     "PluginImplementationError",
     "PluginOutdatedError",
     "PluginManager",

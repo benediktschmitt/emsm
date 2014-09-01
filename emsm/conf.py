@@ -45,6 +45,9 @@ except NameError:
 # ------------------------------------------------
 
 __all__ = [
+    "MainConfiguration",
+    "ServerConfiguration",
+    "WorldsConfiguration",
     "Configuration"
     ]
 
