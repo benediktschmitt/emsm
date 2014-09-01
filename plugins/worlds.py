@@ -166,13 +166,13 @@ Examples
    
     # Send a command to the server and print the console output:
     $ minecraft -W worlds --verbose-send list
-    $ minecraft -W worlds --verbose-send 'say Use more TNT!'
+    $ minecraft -W worlds --verbose-send '"say Use more TNT!"'
    
     # Print the log of the world *foo*:
     $ minecraft -w foo worlds --log
-    $ minecraft -w foo worlds --log-start '-20'
-    $ minecraft -w foo worlds --log-limit '5'
-    $ minecraft -w foo worlds --log-start '-50' --log-limit 10
+    $ minecraft -w foo worlds --log-start '"-20"'
+    $ minecraft -w foo worlds --log-limit '"5"'
+    $ minecraft -w foo worlds --log-start '"-50'" --log-limit 10
    
     # Open the console of a running world
     $ minecraft -w bar worlds --console
@@ -183,19 +183,20 @@ Examples
 
 # Modules
 # --------------------------------------------------
+
+# std
 import os
 import sys
 import time
 
 # emsm
-from emsm import worlds
+import emsm
 from emsm.base_plugin import BasePlugin
-
-from emsm.lib import userinput
 
 
 # Data
 # --------------------------------------------------
+
 PLUGIN = "Worlds"
 
 
@@ -207,6 +208,8 @@ class MyWorld(object):
     """    
 
     def __init__(self, app, world):
+        """
+        """
         self._app = app
         self._world = world
         return None
@@ -339,7 +342,7 @@ class MyWorld(object):
         """
         try:
             self._world.send_command(cmd)
-        except world_wrapper.WorldIsOfflineError:
+        except emsm.worlds.WorldIsOfflineError:
             print("{} - send-command:".format(self._world.name()))
             print("\t", "FAILURE: The world is offline.")
         else:
@@ -364,10 +367,10 @@ class MyWorld(object):
             output = self._world.send_command_get_output(
                 server_cmd=cmd, timeout=timeout
                 )
-        except world_wrapper.WorldIsOfflineError:
+        except emsm.worlds.WorldIsOfflineError:
             print("{} - send-command:".format(self._world.name()))
             print("\t", "FAILURE: The world is offline.")
-        except world_wrapper.WorldCommandTimeout:
+        except emsm.worlds.WorldCommandTimeout:
             print("{} - send-command:".format(self._world.name()))
             print("\t", "FAILURE: The world did not react.")
         else:
@@ -412,7 +415,7 @@ class MyWorld(object):
         """
         try:
             self._world.start()
-        except world_wrapper.WorldStartFailed:
+        except emsm.worlds.WorldStartFailed:
             print("{} - start:".format(self._world.name()))
             print("\t", "FAILURE: The world could not be started.")
         else:
@@ -429,7 +432,7 @@ class MyWorld(object):
         """
         try:
             self._world.kill_processes()
-        except world_wrapper.WorldStopFailed:
+        except emsm.worlds.WorldStopFailed:
             print("{} - kill-processes:".format(self._world.name()))
             print("\t", "FAILURE: The world could not be stopped.")
         else:
@@ -452,7 +455,7 @@ class MyWorld(object):
         print("{} - stop:".format(self._world.name()))
         try:
             self._world.stop(force_stop=force_stop)
-        except world_wrapper.WorldStopFailed:
+        except emsm.worlds.WorldStopFailed:
             if force_stop:
                 print("\t", "FAILURE: The world could not be stopped.")
             else:
@@ -477,13 +480,13 @@ class MyWorld(object):
         print("{} - restart:".format(self._world.name()))
         try:
             self._world.restart(force_restart=force_restart)
-        except world_wrapper.WorldStopFailed:
+        except emsm.worlds.WorldStopFailed:
             if force_stop:
                 print("\t", "FAILURE: The world could not be stopped.")
             else:
                 print("\t", "FAILURE: The world could not be stopped.")
-                print("\t", "         Try: *--force-stop*")
-        except world_wrapper.WorldStartFailed:
+                print("\t", "         Try: *--force-restart*")
+        except emsm.worlds.WorldStartFailed:
             print("{} - start:".format(self._world.name()))
             print("\t", "FAILURE: The world could not be started.")
         else:
@@ -502,7 +505,7 @@ class MyWorld(object):
         # Make sure, that the user wants to remove the world.
         prompt = "\t Are you sure, that you want to remove the world?"
 
-        if userinput.ask(prompt):
+        if emsm.lib.userinput.ask(prompt):
             self._world.uninstall()
             print("\t", "The world has been removed.")
         else:
@@ -511,11 +514,8 @@ class MyWorld(object):
 
     
 class Worlds(BasePlugin):
-    """
-    The actual plugin and the public interface for the WorldWrapper class.
-    """
 
-    version = "2.0.0"
+    VERSION = "3.0.0-beta"
 
     DESCRIPTION = __doc__
 

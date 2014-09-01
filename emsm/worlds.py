@@ -682,7 +682,7 @@ class WorldWrapper(object):
                 break
 
         # Remove the configuration.
-        self._app.conf.worlds.remove_section(self._name)
+        self._app.conf().worlds().remove_section(self._name)
 
         # Emit the corresponing signal to this event.
         WorldWrapper.world_uninstalled.send(self)
@@ -916,7 +916,7 @@ class WorldManager(object):
         conf = self._app.conf().worlds()
         for section in conf.sections():
             world = WorldWrapper(self._app, section)
-            self._worlds[world.name] = world
+            self._worlds[world.name()] = world
 
             # Make sure the folder exists.
             if not world.is_installed():
@@ -930,8 +930,8 @@ class WorldManager(object):
         """
         Removes the WorldWrapper *world* from the internal map.
         """
-        if world in self._worlds:
-            del self._worlds[world.name]
+        if world.name() in self._worlds:
+            del self._worlds[world.name()]
         return None
 
     def get(self, worldname):

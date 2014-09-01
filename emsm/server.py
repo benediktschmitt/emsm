@@ -443,7 +443,7 @@ class ServerManager(object):
         """
         Removes the ServerWrapper *server* from the internal map.
         """
-        if server in self._server.values():
+        if server.name() in self._server.values():
             del self._server[server.name()]
         return None
 

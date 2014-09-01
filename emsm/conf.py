@@ -183,7 +183,7 @@ class ServerConfiguration(ConfigParser):
         "\n"
         "[vanilla_latest]\n"
         "server = minecraft_server.jar\n"
-        "url = http://s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar\n"
+        "url = http://s3.amazonaws.com/Minecraft.Download/versions/1.7.10/minecraft_server.1.7.10.jar\n"
         "start_cmd = java -jar {server} nogui.\n"
         "\n"
         "[bukkit_latest]\n"
