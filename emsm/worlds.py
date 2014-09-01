@@ -472,6 +472,9 @@ class WorldWrapper(object):
             >>> world.overwrite_properties(motd="Hello world!")
             >>> world.overwrite_properties(port="42424")
             >>> world.overwrite_properties(motd="Hello world!", port="42424")
+
+        Todo:
+            * Rename this method to ``overwrite_server_properties``.
         """
         filename = self.worldpath_to_ospath("server.properties") 
 
@@ -484,6 +487,22 @@ class WorldWrapper(object):
         with open(filename, "w") as file:
             file.write(properties_str)
         return None
+
+    def address(self):
+        """
+        Returns the network address of the minecraft server, that runs
+        this world.
+
+        Todo:
+            * This may be server dependant, so move it to the server
+              class.
+        """
+        properties = self.server_properties()
+        
+        ip = properties.get("server-ip", "")
+        port = properties.get("server-port", "")
+        port = int(port) if port.isdigit() else 25565
+        return (ip, port)
 
     
     def pids(self):
