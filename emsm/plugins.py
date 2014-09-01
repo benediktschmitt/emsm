@@ -256,7 +256,7 @@ class PluginManager(object):
         # Check if the plugin is tested and compatible with the current
         # EMSM version.
         if self._plugin_is_outdated(plugin_type):
-            PluginOutdatedError(name)
+            raise PluginOutdatedError(name)
 
         # Save the plugin module and class.
         # A plugin instance is created later, when it is first needed.

@@ -348,6 +348,32 @@ class WorldWrapper(object):
         """
         return self._server
 
+    def set_server(self, server):
+        """
+        Changes the server that runs this world.
+
+        Parameters:
+            * server
+                The ServerWrapper instance of the new server.
+
+        Exceptions:
+            * WorldIsOnlineError
+        """
+        if self.is_online():
+            raise WorldIsOnlineError(self)
+
+        # Break, if we have nothin to do.
+        if server is self._server:
+            return None
+
+        self._server = server
+        self._conf["server"] = server.name()
+
+        log.info("assigned '{}' server to the world '{}'."\
+                 .format(server.name(), self._name)
+                 )
+        return None
+
     def name(self):
         """
         The name of the world.

@@ -373,16 +373,9 @@ class ServerWrapper(object):
 
         # Get the worlds which are configured to run with this server.
         worlds = self._app.worlds().get_by_pred(lambda w: w.server() is self)
-
         for world in worlds:
             # Replace the server wrapper.
-            world.server = new_server
-
-            # Replace the configuration value.
-            # Note, that we check if there is a *default* value for the
-            # server wrapper set.
-            if "server" in world.conf():
-                world.conf()["server"] = new_server._name
+            world.set_server(new_server)
 
         # Remove the server
         # ^^^^^^^^^^^^^^^^^
@@ -394,7 +387,7 @@ class ServerWrapper(object):
             pass
 
         # The server configuration.
-        self._app.conf.server.remove_section(self._name)
+        self._app.conf().server().remove_section(self._name)
 
         # Finish
         # ^^^^^^

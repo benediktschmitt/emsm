@@ -90,10 +90,8 @@ Select the server with the *common* arguments **--server** or **--all-server**.
 import os
 
 # local
-from emsm import worlds
-from emsm import server
+import emsm
 from emsm.base_plugin import BasePlugin
-from emsm.lib import userinput
 
 
 # Data
@@ -133,7 +131,7 @@ class MyServer(object):
             * ServerWrapper.is_online()
         """
         # Get all worlds powered by this server.
-        worlds = self._app.worlds.get_by_pred(
+        worlds = self._app.worlds().get_by_pred(
             lambda w: w.server() is self._server
             )
         online_worlds = list(filter(lambda w: w.is_online(), worlds))
@@ -202,11 +200,11 @@ class MyServer(object):
         try:
             print("\t", "stopping all running worlds ...")
             for world in worlds:
-                print("\t\t", world.name())                
+                print("\t\t", world.name())
                 world.stop(force_stop=force_stop, message=stop_message)
                 
         # A world could not be stopped.
-        except world_wrapper.WorldStopFailed as err:
+        except emsm.worlds.WorldStopFailed as err:
             print("\t", "FAILURE: Could not stop the world '{}'."\
                   .format(err.world.name()))
             
@@ -215,7 +213,7 @@ class MyServer(object):
             print("\t", "downloading server executable ...")
             try:
                 self._server.update()
-            except server.ServerUpdateFailure as err:
+            except emsm.server.ServerUpdateFailure as err:
                 print("\t\t", "FAILURE: Could not download the server "\
                               "executable. (check the url)")
                 
@@ -225,7 +223,7 @@ class MyServer(object):
             for world in worlds:
                 try:
                     world.start()
-                except worlds.WorldStartFailed as err:
+                except emsm.worlds.WorldStartFailed as err:
                     print("\t\t", "FAILURE:", world.name())
                 else:
                     print("\t\t", world.name())
@@ -247,7 +245,7 @@ class MyServer(object):
         # ^^^^^^^^^^^
         
         # We need a server that can replace this one.
-        other_server_names = self._app.server.get_names()
+        other_server_names = self._app.server().get_names()
         other_server_names.pop(other_server_names.index(self._server.name()))
 
         # Break if there is no other server available.
@@ -256,17 +254,19 @@ class MyServer(object):
             return None
 
         # Let the user choose the new server.
-        tmp = userinput.choose(
+        tmp = emsm.lib.userinput.choose(
             prompt = "Which server should replace this one?",
             choices = other_server_names
             )
         new_server_name = other_server_names[tmp[0]]
-        new_server = self._app.server.get(new_server_name)
+        new_server = self._app.server().get(new_server_name)
         
         # Final question
         # ^^^^^^^^^^^^^^
 
-        if not userinput.ask("Are you sure, that you want to uninstall the server?"):
+        if not emsm.lib.userinput.ask(
+            "Are you sure, that you want to uninstall the server?"
+            ):
             return None
 
         # Uninstall
@@ -274,17 +274,16 @@ class MyServer(object):
         
         try:
             self._server.uninstall(new_server)
-        except server_wrapper.ServerIsOnlineError as error:
+        except emsm.server.ServerIsOnlineError as error:
             print("\t", "FAILURE: The server is still online.")
         return None
 
     
 class Server(BasePlugin):
-    """
-    Command line interface for the EMSM ServerWrapper.
-    """
+    
+    VERSION = "3.0.0-beta"
 
-    version = "2.0.0"
+    DESCRIPTION = __doc__
     
     def __init__(self, application, name):
         """
