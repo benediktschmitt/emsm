@@ -41,12 +41,13 @@ import filelock
 from . import argparse_
 from . import base_plugin
 from . import conf
-from .license import LICENSE
 from . import logging_
 from . import paths
 from . import plugins
 from . import server
 from . import worlds
+from . import license_
+from . import version
 
 
 # Data
@@ -94,10 +95,6 @@ class Application(object):
 
     This class manages the initialisation and the complete run of the EMSM.
     """
-
-    # Todo: Put the version number in an own file or module.
-    VERSION = "2.0.4-beta"
-    LICENSE = LICENSE
 
     def __init__(self):
         """
@@ -238,7 +235,7 @@ class Application(object):
         Initialises all components of the EMSM.
         """
         log.info("----------")
-        log.info("setting the EMSM up ...")
+        log.info("setting the EMSM {} up ...".format(version.VERSION))
         
         # Read the configuration, so that we get to know some startup
         # parameters like the file lock *timeout* or the EMSM user.

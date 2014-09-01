@@ -31,6 +31,10 @@ import argparse
 import subprocess
 import logging
 
+# local
+from .license_ import LICENSE
+from .version import VERSION
+
 
 # Data
 # ------------------------------------------------
@@ -224,12 +228,12 @@ class ArgumentParser(object):
         self._argparser.add_argument(
             "--version",
             action = "version",
-            version = "EMSM {}".format(self._app.VERSION)
+            version = "EMSM {}".format(VERSION)
             )
         self._argparser.add_argument(
             "--license",
             action = LicenseAction,
-            license_ = self._app.LICENSE
+            license_ = LICENSE
             )
 
         # The selectable worlds.

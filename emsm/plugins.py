@@ -33,6 +33,7 @@ import logging
 import importlib.machinery
 
 # local
+from .version import VERSION
 from .base_plugin import BasePlugin
 
 
@@ -191,7 +192,7 @@ class PluginManager(object):
         Web:
             * http://semver.org
         """        
-        app_version = self._app.VERSION.split(".")
+        app_version = VERSION.split(".")
         plugin_version = plugin.VERSION.split(".")
 
         # The version number is invalid.
