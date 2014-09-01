@@ -275,6 +275,10 @@ class Application(object):
             * PluginManager.run()
             * PluginManager.finish()
         """
+        # Parse the arguments.
+        self._argparser.args(cache=False)
+
+        # Dispatch the plugins.
         self._plugins.run()
         self._plugins.finish()
 
