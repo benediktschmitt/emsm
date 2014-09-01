@@ -63,9 +63,16 @@ class LicenseAction(argparse.Action):
             nargs = 0,
             help = "show the program's license and exit"
             )
+
+        # Format the license string.        
+        if license_ is None:
+            license_ = str()
+            
+        # Make sure the license string endswith a '\n' line break.
+        if not license_.endswith("\n"):
+            license_ += "\n"
         
-        self.license = license_ if license is not None else str()
-        self.license.strip()
+        self.license = license_
         return None
 
     def __call__(self, parser, namespace, values, option_string=None):
