@@ -112,6 +112,10 @@ class Application(object):
         self._worlds = worlds.WorldManager(self)
         self._server = server.ServerManager(self)
         self._plugins = plugins.PluginManager(self)
+
+        # The exit code can be changed by plugins. This is useful when the
+        # plugin does or can not throw a SystemExit() exception.
+        self._exit_code = 0
         return None
 
     def paths(self):
@@ -168,6 +172,30 @@ class Application(object):
         """
         return self._plugins
 
+    def exit_code(self):
+        """
+        Returns the exit code of the application.
+        """
+        return self._exit_code
+
+    def set_exit_code(self, code):
+        """
+        Sets the exit code to *code*.
+
+        Exceptions:
+            * TypeError
+                if *code* is not an int.
+            * ValueError
+                if *code* < 0.
+        """
+        if not isinstance(code, int):
+            raise TypeError("*code* is not an int.")
+        if code < 0:
+            raise ValueError("*code* is < 0.")
+
+        self._exit_code = code
+        return None
+    
     def _switch_user(self):
         """
         Switches the *uid* and *gui* of the current EMSM process to
@@ -295,9 +323,13 @@ class Application(object):
         Do not mix this method up with the PluginManager.finish() method.
         These are not related.
 
+        Returns:
+            * The exit code
+
         See also:
             * run()
+            * exit_code()
         """
         log.info("EMSM finished.")
         self._lock.release()
-        return None
+        return self._exit_code
