@@ -228,17 +228,14 @@ class HelloDolly(BasePlugin):
             )
         return None
 
-    def uninstall(self):
+    def _uninstall(self):
         """
         If you created data not stored in ``data_dir()`` or used also the
         *worlds.conf* or *server.conf* configuration files, you should ask the
         user here, if he wants to remove these files and settings too.
-        """
-        # Don't forget to call the BasePlugins uninstall method. This will
-        # remove (if wished) the data directory of the plugin and the
-        # configuration.
-        super().uninstall()
 
+        Note the difference between ``_uninstall()`` and ``uninstall()``.
+        """
         # Your uninstallation stuff here
         # ...
         return None

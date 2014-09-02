@@ -174,13 +174,11 @@ class InitD(BasePlugin):
             )
         return None
 
-    def uninstall(self):
+    def _uninstall(self):
         """
         Makes sure the configuration options added to the *world.conf* are
         removed.
         """
-        super().uninstall()
-
         # Clean the worlds.conf up.
         world_conf = self.app().conf().worlds()
         for section in world_conf:
