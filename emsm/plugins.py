@@ -32,6 +32,9 @@ import sys
 import logging
 import importlib.machinery
 
+# third party
+import blinker
+
 # local
 from .version import VERSION
 from .base_plugin import BasePlugin
@@ -135,6 +138,12 @@ class PluginManager(object):
 
         # Maps the module name to the plugin instance.
         self._plugins = dict()
+
+        # Unload the plugin when it has been uninstalled.
+        #
+        # See also:
+        #   * BasePlugin.uninstall()
+        BasePlugin.plugin_uninstalled.connect(self._uninstall)
         return None
 
     def get_module(self, plugin_name):
@@ -337,26 +346,16 @@ class PluginManager(object):
         log.info("the plugin '{}' has been unloaded.".format(plugin_name))
         return None
 
-    def uninstall(self, plugin_name):
+    def _uninstall(self, plugin):
         """
-        Uninstalls the plugin with the name *plugin_name*.
-
-        During uninstallation, ``BasePlugin.uninstall()`` is called and
-        then the plugin is unloaded by calling ``remove_plugin()``.
-
-        See also:
-            * BasePlugin.uninstall()
-            * remove_plugin()
+        Called, when the plugin has been uninstalled.
         """
-        plugin = self._plugins.get(plugin_name)
-
-        # Break if there is not plugin with the given name.
-        if plugin is None:
+        # Break if we do not own this plugin.
+        if not plugin in self._plugins.values():
             return None
 
-        # Uninstall the plugin.
-        plugin.uninstall()
-        self.unload(plugin_name=plugin_name, call_finish=False)
+        # Unload the plugin.
+        self.remove_plugin(plugin_name=plugin.name(), call_finish=False)
         return None
     
     def setup(self):
