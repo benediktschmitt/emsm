@@ -1,7 +1,7 @@
 Configuration
 =============
 
-The :file:`configuration/` directory contains all configuration files.
+The :file:`conf/` directory contains all configuration files.
    
 main.conf
 ---------
@@ -14,11 +14,9 @@ plugins.
    [emsm]
    # User that should run all of your minecraft worlds.
    user = minecraft
-   # The log level (see also: https://docs.python.org/3/howto/logging.html)
-   loglevel = "WARNING"
    # Maximum time that is waited until another EMSM instance releases
    # the file lock. 
-   # -1 means no timeout, wait if necessairy an infinite time.
+   # A negative values means no timeout.
    timeout = -1
    
 Each plugin has its own section with its name. E.g.:
@@ -29,9 +27,8 @@ Each plugin has its own section with its name. E.g.:
    archive_format = bztar
    restore_message = This world is about to be resetted to an earlier state.
    restore_delay = 5
-   auto_sync = yes
    max_storage_size = 30
-   mirrors = 
+   include_server = yes
    
 Please take a look at the documentation of the plugins [#plugins_doc]_ for
 further information.
@@ -51,7 +48,7 @@ You can declare them into the :file:`server.conf` configuration file:
 
 *  **server**
 
-   This is the name of the executable in the directory ``emsm_root/server``.
+   This is the name of the executable in the directory ``EMSM_ROOT/server``.
    
 *  **url**
 
@@ -75,7 +72,7 @@ You can declare them into the :file:`server.conf` configuration file:
       ...
       server = minecraft_server.jar
       # start_cmd is expanded to:
-      #   'java -jar /path/to/emsm/server/minecraft_server.jar nogui.'
+      #   'java -jar EMSM_ROOT/server/minecraft_server.jar nogui.'
       start_cmd = java -jar {server} nogui.
       
    .. note:: Escaping **{}**

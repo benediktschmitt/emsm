@@ -63,7 +63,7 @@ This is usually done with the :mod:`plugins` plugin:
 
     $ foo@bar: ls
     hellodolly.py ...
-    $ foo@bar: plugin.py -s hellodolly.py
+    $ foo@bar: plugin.py --source hellodolly.py
     $ foo@bar: ls
     hellodolly.py hellodolly.tar.bz2 ...
    
@@ -84,7 +84,7 @@ Documentation
 ------------- 
 
 Acutally, EMSM uses sphinx *autodoc* feature to create the documentation for
-the plugins. So what, you see here is the docstring of the ``hello_dolly.py``
+the plugins. So what, you see here is the docstring of the ``hellodolly.py``
 module.
 """
 

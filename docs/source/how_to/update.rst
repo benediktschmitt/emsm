@@ -6,7 +6,8 @@ EMSM
 
 .. note::
    
-   The EMSM will deny the initialisation of a plugin if it's outdated.
+   The EMSM will deny the initialisation of a plugin if it's outdated. You can
+   check the logfiles to see which plugins are outdated.
    
 #. Check, if you already have the latest version:
 

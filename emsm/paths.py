@@ -58,7 +58,7 @@ class Pathsystem(object):
     The EMSM directory structure looks like this:
 
         |- EMSM_ROOT
-           |- configuration
+           |- conf
               |- main.conf
               |- server.conf
               |- worlds.conf

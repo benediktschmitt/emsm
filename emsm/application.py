@@ -277,7 +277,7 @@ class Application(object):
         log.info("waiting for the file lock ...")
         
         lock_timeout = self._conf.main()["emsm"].getint("timeout", 0)
-        lock_timeout = lock_timeout if lock_timeout != 0 else None
+        lock_timeout = lock_timeout if lock_timeout > 0 else None
         self._lock.acquire(lock_timeout, 0.05)
 
         # Now we have the file lock, so we can acquire the emsm.log file.

@@ -18,7 +18,7 @@ Remove the user created during the installation:
 
    $ deluser --remove-home minecraft
    
-Remove the :file:`bin_script` and the :file:`initd_script`:
+Remove the :file:`/usr/bin/minecraft` link and the :file:`initd_script`:
 
 .. code-block:: bash
 

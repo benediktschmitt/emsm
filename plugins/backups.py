@@ -105,7 +105,7 @@ Backup archive structure
 The backup archive for the world *foo* that is run by the vanilla
 minecraft server *minecraft_server.jar* has this structure:
 
-.. code-block::
+.. code-block:: none
 
     o
     |- world_conf.json        # section in worlds.conf

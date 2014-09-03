@@ -88,7 +88,7 @@ CORE_PLUGINS = ["backups", "guard", "initd", "plugins", "server",
 # we can find the modules.
 # We also add the EMSM/application path, to avoid ImportErrors when the
 # plugin modules are included (otherwise, they can't include emsm modules).
-sys.path.append(os.path.join(EMSM_ROOT, "emsm"))
+sys.path.append(EMSM_ROOT)
 sys.path.extend(PLUGIN_SEARCH_PATHS)
 
 def list_plugins(search_path):

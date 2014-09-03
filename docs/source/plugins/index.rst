@@ -18,8 +18,8 @@ It's very easy to create your own plugin.
 #. You can read the :mod:`hellodolly` tutorial for a quick introduction.
 #. If you want to know more and you're fit in Python, I suggest you read the 
    source code of the EMSM for a full overview. I guess this will not take more 
-   than 1h of your time. Simply start with the :file:`application.py` module and
-   follow the calls.   
+   than 1h of your time. Simply start with the :file:`EMSM_ROOT/minecraft.py` module 
+   and follow the calls.   
    
 New plugins
 -----------

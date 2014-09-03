@@ -38,13 +38,13 @@ Manual installation
       $ mv emsm-master/* ./
       $ rm -r emsm-master master.tar.gz
       $ chown -R minecraft:minecraft /home/minecraft 
-      
-#. Copy the :file:`bin_script` into the :file:`/usr/bin` directory and make it
-   executable:
+
+#. Create a link in :file:`/usr/bin/` so that you can call the EMSM easily from
+   your command line:
    
    .. code-block:: bash
-   
-      $ cp emsm/bin_script.sh /usr/bin/minecraft
+      
+      $ ln -s /home/minecraft/minecraft.py /usr/bin
       $ chmod +x /usr/bin/minecraft
       
 #. Copy the :file:`initd_script` into the :file:`/etc/init.d` folder:
@@ -61,8 +61,7 @@ Manual installation
 
       $ minecraft 
       
-   This will create the other subdirectories and the configuration files. If 
-   the :file:`bin-script` does not work, take a look at the next section.
+   This will create the other subdirectories and the configuration files.
        
 Known issues
 ------------
@@ -71,38 +70,10 @@ Running EMSM under another user
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you run the application under another user than *minecraft*, you
-have to edit the :file:`main.conf` configuration file:
+have to edit the :file:`conf/main.conf` configuration file before the first 
+EMSM start:
    
 .. code-block:: ini
 
    [emsm]
    user = foobar
-
-Furthermore, you have to edit the :file:`bin_script` as described in the 
-next section.
-
-The *bin_script* does not work
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-You probably have to adapt the ``USER`` and ``LOCATION`` variable:
-
-.. code-block:: bash
-
-   #!/bin/bash
-
-   # The user that should run your minecraft worlds.
-   USER=minecraft
-
-   # The root directory of the EMSM. This directory contains the *emsm* directory.
-   LOCATION=/home/$USER
-
-   # ...
-   
-If the script still does not work, please report it on 
-:ref:`GitHub <contribute>` and use
-
-.. code-block:: bash
-
-      $ python3 /home/minecraft/emsm/application.py 
-   
-to invoke the EMSM until the bug is fixed.
