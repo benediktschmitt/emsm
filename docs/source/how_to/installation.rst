@@ -15,7 +15,7 @@ Manual installation
    .. code-block:: bash
    
       $ apt-get update
-      $ apt-get install screen openjdk-7-jre-headless python3
+      $ apt-get install screen openjdk-7-jre-headless python3 python3-pip
       
 #. Create the user that should run the application:
 
@@ -38,6 +38,12 @@ Manual installation
       $ mv emsm-master/* ./
       $ rm -r emsm-master master.tar.gz
       $ chown -R minecraft:minecraft /home/minecraft 
+      
+#. The EMSM needs some PyPi packages like *blinker*, so install them:
+ 
+   .. code-block:: bash
+   
+      $ pip-3.2 install -r emsm/requirements.txt
 
 #. Create a link in :file:`/usr/bin/` so that you can call the EMSM easily from
    your command line:
