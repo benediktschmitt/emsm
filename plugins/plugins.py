@@ -50,6 +50,10 @@ Arguments
 
     Removes the plugin from the EMSM. Please make sure, that no other plugin
     depends on this one.
+
+.. option:: --list
+
+    Lists all loaded plugins.
     
 
 Package structure
@@ -432,6 +436,13 @@ class Plugins(BasePlugin):
             choices = plugin_names,
             help = "Uninstall the plugin."
             )
+
+        parser.add_argument(
+            "--list",
+            action = "count",
+            dest = "list",
+            help = "Lists all loaded plugins."
+            )
         return None
 
     def run(self, args):
@@ -444,6 +455,25 @@ class Plugins(BasePlugin):
         if args.uninstall:
             plugin = self.app().plugins().get_plugin(args.uninstall)
             plugin.uninstall()
+
+        if args.list:
+            self._list_plugins()
+        return None
+
+    def _list_plugins(self):
+        """
+        Lists all loaded plugins.
+        """
+        plugins = self.app().plugins().get_plugin_names()
+        plugins.sort()
+        
+        if not plugins:
+            print("plugins - list:")
+            print("\t", "- no plugins loaded -")
+        else:
+            print("plugins - list:")
+            for name in plugins:
+                print("\t", "* {}".format(name))
         return None
 
     
