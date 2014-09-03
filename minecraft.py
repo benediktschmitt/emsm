@@ -47,4 +47,4 @@ if __name__ == "__main__":
         app.handle_exception()
         raise
     finally:
-        app.finish()
+        exit(app.finish())
