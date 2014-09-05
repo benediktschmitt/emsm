@@ -93,13 +93,16 @@ class ServerUpdateFailure(ServerError):
     Raised if a server update failed.
     """
 
-    def __init__(self, server):
+    def __init__(self, server, msg=None):
         self.server = server
+        self.msg = msg
         return None
 
     def __str__(self):
         temp = "The update of the server '{}' failed."\
-               .format(self.server.name)
+               .format(self.server.name())
+        if self.msg is not None:
+            temp += " " + self.msg
         return temp
 
     
@@ -175,6 +178,11 @@ class ServerWrapper(object):
         log.info("initialising server '{}' ...".format(name))
         
         self._app = app
+        
+        # The name of the server executable.
+        self._name = name
+
+        # Get the configuration.
         self._conf = app.conf().server()[name]
         self._check_conf()
 
@@ -183,9 +191,6 @@ class ServerWrapper(object):
         self._server = os.path.join(
             app.paths().server_dir(), self._conf["server"]
             )
-
-        # The name of the server executable.
-        self._name = name
 
         # The download url of the server.
         self._url = self._conf["url"]
@@ -213,22 +218,16 @@ class ServerWrapper(object):
             if a configuration option has an invalid type.
         """
         # server
-        if not "server" in self._conf:
-            raise KeyError("conf:server not set")
+        if not "server" in self._conf or not self._conf["server"]:
+            raise ValueError("{} - conf:server not set".format(self._name))
 
         # url
-        if not "url" in self._conf:
-            raise KeyError("conf:url not set")
+        if not "url" in self._conf or not self._conf["url"]:
+            raise KeyError("{} - conf:url not set".format(self._name))
         
-        try:
-            urllib.parse.urlparse(self._conf["url"])
-        except urllib.error:
-            # Todo: Raise a TypeError instead?
-            raise ValueError("conf:url is not a url")
-
         # start_cmd
-        if not "start_cmd" in self._conf:
-            raise KeyError("conf:start_cmd not set")
+        if not "start_cmd" in self._conf or not self._conf["start_cmd"]:
+            raise KeyError("{} - conf:start_cmd not set".format(self._name))
         return None
 
     def conf(self):
@@ -331,8 +330,11 @@ class ServerWrapper(object):
                 self._url,
                 reporthook=reporthook
                 )
-        except (OSError, urllib.error.URLError):
-            raise ServerUpdateFailure(self)
+        except Exception as err:
+            log.exception(err, exc_info=True)
+
+            # Reraise a new exception, with a small helpful message.
+            raise ServerUpdateFailure(self, msg="Try to check the url.")
         else:
             shutil.move(temp_server_file, self._server)
             log.info("downloaded server '{}'.".format(self._name))

@@ -272,14 +272,16 @@ class WorldWrapper(object):
         log.info("initialising world '{}' ...".format(name))
         
         self._app = app
+        
+        # The name of the world.
+        self._name = name
+
+        # Get the configuration.
         self._conf = app.conf().worlds()[name]
         self._check_conf()
 
         # The ServerWrapper for the server that powers this world.
         self._server = app.server().get(self._conf["server"])
-
-        # The name of the world.
-        self._name = name
 
         # The directory that contains the world data.
         self._directory = app.paths().world_dir(name)
@@ -300,21 +302,26 @@ class WorldWrapper(object):
             self._conf["port"] = str(get_unused_port())
 
         if not self._conf["port"].isdecimal():
-            raise TypeError("conf:port is not an integer")
+            raise TypeError("{} - conf:port is not an integer"\
+                            .format(self._name))
         if not 0 <= int(self._conf["port"]) <= 65535:
-            raise ValueError("conf:port is not in range [0, 65535]")
+            raise ValueError("{} - conf:port is not in range [0, 65535]"\
+                             .format(self._name))
 
         # stop timeout
         if not self._conf["stop_timeout"].isdecimal():
-            raise TypeError("conf:stop_timeout is not an integer")
+            raise TypeError("{} - conf:stop_timeout is not a positive integer"\
+                            .format(self._name))
 
         # stop delay
         if not self._conf["stop_delay"].isdecimal():
-            raise TypeError("conf:stop_delay is not an integer")
+            raise TypeError("{} - conf:stop_delay is not a positive integer"\
+                            .format(self._name))
 
         # server
         if not self._conf["server"] in self._app.server().get_names():
-            raise ValueError("conf:server does not exist")
+            raise ValueError("{} - conf:server does not exist"\
+                             .format(self._name))
         return None
 
     def worldpath_to_ospath(self, rel_path):
