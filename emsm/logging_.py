@@ -52,7 +52,7 @@ class Logger(object):
     :class:`emsm.application.Application` has acquired the **file lock**.
     The queued records are then pushed to the :file:`emsm.log`.
 
-    The EMSM logging stategy requires, that each module uses his own
+    The EMSM logging stategy requires, that each module uses its own
     logger instance:
 
     .. code-block:: python
@@ -95,7 +95,7 @@ class Logger(object):
 
     def setup(self):
         """
-        Opens the :meth:`emsm.log` and pushes all queued log recods to the log
+        Opens the :file:`emsm.log` and pushes all queued log recods to the log
         file.
 
         .. hint::

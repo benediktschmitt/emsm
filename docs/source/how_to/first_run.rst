@@ -1,11 +1,6 @@
 First run
 =========
 
-.. sidebar:: Core plugins
-
-   Please take also a look at the :ref:`core plugins <core_plugins>`. The
-   documentation is not big, but contains everything you need to know.
-
 There are some common arguments and run types you should know:
 
 *  The **dry-run**. Only the service routines will be called:

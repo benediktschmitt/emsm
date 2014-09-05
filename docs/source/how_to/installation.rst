@@ -69,6 +69,8 @@ Manual installation
       
 #. Add the EMSM application to your PATH:
 
+   .. code-block:: bash
+
       $ ln -s /opt/minecraft/minecraft.py /usr/bin
       
 #. Intall the *init.d* service:
@@ -108,7 +110,7 @@ Running EMSM under another user
 
 If you run the application under another user than *minecraft*, you
 have to edit the :file:`conf/main.conf` configuration file before you call the
-EMSM the first time or you will get an ``WrongUserError``:
+EMSM the first time otherwise you will get an ``WrongUserError``:
    
 .. code-block:: ini
 

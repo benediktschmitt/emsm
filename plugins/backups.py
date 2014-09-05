@@ -99,6 +99,18 @@ Arguments
 
     Opens a menu, where the user can select which backup he wants to restore.
 
+Cron
+----
+
+You should create a cronjob to create daily backups:
+
+.. code-block:: none
+
+    # m h dom mon dow user command
+    # Creates a backup of all worlds everyday at 2:00h
+    * 2 *   *   *   root minecraft -W backups --create
+    
+
 Backup archive structure
 ------------------------
 

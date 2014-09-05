@@ -11,18 +11,18 @@ API
    * 
 
 If you want to know, how the EMSM works, you are probably faster by reading 
-source code than this API documentation. The source is written to be read 
+the source code than this API documentation. The code is written to be read 
 by other persons and quite easy to understand. Since the EMSM does not use
 threads, you can simply follow the function calls, starting in 
-:file:`EMSM_ROOT/minecraft.py`. I guess it won't last longer than **2 hours**
+:file:`EMSM_ROOT/minecraft.py`. I guess it won't last longer than **1.5 hours**
 to read and understand how the EMSM works.
 
-Depencies
----------
+About the depencies
+-------------------
 
 The EMSM uses `screen <https://www.gnu.org/software/screen/manual/screen.html>`_
 to run the minecraft server in the background.
 
 It also depends on some Python packages, like `blinker <https://pythonhosted.org/blinker>`_
 and `filelock <https://pypi.python.org/pypi/filelock/>`_, which are available 
-on PyPi.
+via PyPi.

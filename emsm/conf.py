@@ -62,6 +62,10 @@ class ConfigParser(configparser.ConfigParser):
     """
     Extends the standard Python :class:`configparser.ConfigParser` by some
     useful methods.
+
+    :param str path:
+        The path to the configuration file. This file is used, when you call
+        :meth:`read` or :meth:`write`.
     """
 
     #: Written at the begin of the configuration file.
@@ -69,9 +73,6 @@ class ConfigParser(configparser.ConfigParser):
 
     def __init__(self, path):
         """
-        Parameters:
-            * path
-                The path to the configuration file.
         """
         super().__init__(
             allow_no_value = False,
@@ -90,8 +91,6 @@ class ConfigParser(configparser.ConfigParser):
 
     def read(self):
         """
-        **OVERRIDE**
-
         Reads the configuration from :meth:`path`.
         """
         try:
@@ -103,8 +102,6 @@ class ConfigParser(configparser.ConfigParser):
 
     def write(self):
         """
-        **OVERRIDE**
-
         Writes the configuration into :meth:`path`.
         """
         # Get the comment prefix.
@@ -130,18 +127,18 @@ class MainConfiguration(ConfigParser):
     This file includes the configuration for the EMSM Application and the
     plugins.
 
-    The EMSM uses the ``[emsm]`` section and each plugin has its own section
+    The EMSM owns the ``[emsm]`` section and each plugin has its own section
     with the plugin name.
 
     .. code-block:: ini
 
         [emsm]
         user = minecraft
-        timeout = -1
+        timeout = 0
 
         [backups]
         include_server = ...
-        ...
+        # ...
     """
 
     _EPILOG = (
@@ -286,10 +283,6 @@ class Configuration(object):
     def read(self):
         """
         Reads all configration files.
-
-        .. seealso::
-        
-            * :meth:`ConfigParser.read`
         """
         log.info("reading configuration ...")
         
@@ -301,11 +294,7 @@ class Configuration(object):
 
     def write(self):
         """
-        Writes all configuration files.
-
-        .. seealso::
-        
-            * :meth:`ConfigParser.write`
+        Saves all configuration values.
         """
         log.info("writing configuration ...")
         

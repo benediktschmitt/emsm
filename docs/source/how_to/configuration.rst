@@ -30,8 +30,8 @@ Each plugin has its own section. E.g.:
    max_storage_size = 30
    include_server = yes
    
-Please take a look at the documentation of the plugins [#plugins_doc]_ for
-further information.
+Please take a look at the documentation of the :ref:`plugins` for further
+information.
 
 server.conf
 -----------
@@ -164,5 +164,3 @@ Some plugins like :mod:`initd` provide extra configuration options:
    [foo]
    # InitD has to be enabled for each world or once in the DEFAULT section.
    enable_initd = yes
-   
-.. [#plugins_doc] :ref:`plugins`, :ref:`core_plugins`

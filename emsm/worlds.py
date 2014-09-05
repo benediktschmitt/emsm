@@ -110,7 +110,7 @@ class WorldError(Exception):
 
 class WorldStatusError(WorldError):    
     """
-    Raised, if an action can not be done because of the
+    Raised, if a task can not be done because of the
     current status of the world (online or not online).
     """
     
@@ -233,10 +233,11 @@ def get_unused_port(min_port=10000, max_port=65535, interface=""):
 class WorldWrapper(object):
     """
     Provides methods to handle a minecraft world like
-    start, stop, force-stop, ...
+    :meth:`start`, :meth:`stop`, :meth:`restart`, ...
 
     The WorldWrapper is initialised using the configuration options in the
-    section *name* in the :file:`server.conf` configuration file.
+    section with the name *name* in the :file:`server.conf` configuration
+    file.
     """
     
     # Screen prefix for the minecraft-server sessions.
@@ -318,10 +319,10 @@ class WorldWrapper(object):
 
     def worldpath_to_ospath(self, rel_path):
         """
-        Converts the *rel_path*, that is relative to the root directory of
-        the minecraft world, into the absolute path of the operating system.
+        Converts *rel_path*, that is relative to the root directory of the
+        minecraft world, into the absolute path of the operating system.
 
-        Example:
+        **Example:**
 
         .. code-block:: python
         
@@ -329,7 +330,7 @@ class WorldWrapper(object):
             >>> foo.name()
             "foo"
             >>> foo.worldpath_to_ospath("server.properties")
-            "/home/minecraft/worlds/foo/server.properties"
+            "/opt/minecraft/worlds/foo/server.properties"
             
         .. seealso::
         
@@ -349,7 +350,8 @@ class WorldWrapper(object):
 
     def server(self):
         """
-        The :class:`~emsm.server.ServerWrapper` for that runs this world.
+        The :class:`~emsm.server.ServerWrapper` for the server that runs
+        this world.
         """
         return self._server
 
@@ -411,8 +413,8 @@ class WorldWrapper(object):
 
         .. todo::
         
-            * Check if this value is also server dependant and move the
-              functionlity of getting the correct log path to the server.
+            Check if this value is also server dependant and move the
+            functionlity of getting the correct log path to the server.
         """
         # MC 1.7+
         filename = self.worldpath_to_ospath("logs/latest.log")
@@ -472,10 +474,10 @@ class WorldWrapper(object):
     
     def overwrite_properties(self, **kwargs):
         """
-        Overwrites the server.properties file with the values
+        Overwrites the :file:`server.properties` file with the values
         of the keyword arguments.
 
-        Example:
+        **Example:**
 
         .. code-block:: python
         
@@ -485,7 +487,7 @@ class WorldWrapper(object):
 
         .. todo::
         
-            * Rename this method to ``overwrite_server_properties``.
+            Rename this method to ``overwrite_server_properties``.
         """
         filename = self.worldpath_to_ospath("server.properties") 
 
@@ -506,8 +508,8 @@ class WorldWrapper(object):
 
         .. todo::
         
-            * This may be server dependant, so move it to the server
-              class.
+            This may be server dependant, so move it to the ServerWrapper
+            class.
         """
         properties = self.server_properties()
         
@@ -629,7 +631,7 @@ class WorldWrapper(object):
 
     def open_console(self):
         """
-        Opens **all** screen sessions whichs pid is :meth:`pids`.
+        Opens **all** screen sessions whichs pid is in :meth:`pids`.
 
         :raises WorldIsOfflineError:
             if the world is offline.
@@ -724,14 +726,14 @@ class WorldWrapper(object):
         Starts the world if the world is offline. If the world is already
         online, nothing happens.
 
-        :raises WorldStartFailed:
-            if the world could not be started.
-
         **Signals:**
         
             * :attr:`world_about_to_start`
             * :attr:`world_started`
             * :attr:`world_start_failed`
+            
+        :raises WorldStartFailed:
+            if the world could not be started.
         """
         global _SCREEN
 
@@ -889,7 +891,7 @@ class WorldWrapper(object):
         Restarts the server.
 
         :param bool force_restart:
-            Forces the stop of the server by calling kill_processes() if
+            Forces the stop of the server by calling :meth:`kill_processes`` if
             necessairy.
         :param dict stop_args:
             If provided, these values are passed to :meth:`stop`.
@@ -902,7 +904,6 @@ class WorldWrapper(object):
             * :attr:`world_about_to_start`
             * :attr:`world_started`
             * :attr:`world_start_failed`
-
 
         :raises WorldStopFailed:
             if the world could not be stopped.

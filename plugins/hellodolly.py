@@ -57,7 +57,7 @@ Installation
 We want to distribute our plugin because we think it brings so much joy
 to all players. So let's create a small package.
 
-This is usually done with the :mod:`plugins` plugin:
+This is usually done with the :mod:`plugins.plugins` plugin:
 
 .. code-block:: bash
 

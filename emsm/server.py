@@ -83,7 +83,7 @@ log = logging.getLogger(__file__)
 
 class ServerError(Exception):
     """
-    Base class for all module exceptions.
+    Base class for all exceptions in this module.
     """
     pass
 
@@ -261,7 +261,9 @@ class ServerWrapper(object):
         The raw, unformatted command that starts the server. This may
         still contain placeholders like ``'{server}'``.
 
-        .. seealso:: :meth:`start_cmd`
+        .. seealso::
+
+            * :meth:`start_cmd`
         """
         return self._raw_start_cmd
     
@@ -269,8 +271,9 @@ class ServerWrapper(object):
         """
         Returns the formatted shell command needed to start the server.
 
+        .. seealso::
 
-        .. seealso:: :meth:`raw_start_cmd`
+            * :meth:`raw_start_cmd`
         """
         # In server.conf:
         #
@@ -312,7 +315,9 @@ class ServerWrapper(object):
             passed to :func:`urllib.request.urlretrieve`.
 
         :raises ServerIsOnlineError:
+            if at least one world is still online using this server.
         :raises ServerUpdateFailure:
+            if the download of the server failed.
         """
         if self.is_online():
             raise ServerIsOnlineError(self)
@@ -340,6 +345,7 @@ class ServerWrapper(object):
         If the server is already installed, nothing happens.
 
         :raises ServerUpdateFailure:
+            if the download of the server failed.
         """
         if self.is_installed():
             return None
@@ -363,8 +369,8 @@ class ServerWrapper(object):
 
         .. todo::
         
-            * This method should not raise a ServerIsOnlineError. It should
-              stop all running worlds and restart them with the new server.
+            This method should not raise a ServerIsOnlineError. It should
+            stop all running worlds and restart them with the new server.
         """
         log.info("uninstalling the server '{}' ...".format(self._name))
         
@@ -459,14 +465,14 @@ class ServerManager(object):
 
     def get(self, servername):
         """
-        Returns the corresponding ServerWrapper if there is one. Otherwise
-        ``None``.
+        Returns the :class:`ServerWrapper` with the name *servername* and
+        ``None``, if there is not such a server.
         """
         return self._server.get(servername)
 
     def get_all(self):
         """
-        Returns a list with all loaded ServerWrapper.
+        Returns a list with all loaded :class:`ServerWrapper`.
         """
         return list(self._server.values())
 

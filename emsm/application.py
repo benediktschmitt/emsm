@@ -73,7 +73,7 @@ class ApplicationException(Exception):
 
 class WrongUserError(ApplicationException):
     """
-    Raised if the EMSM is configured to run under another user.
+    Raised if the EMSM is executed by the wrong user.
     """
 
     def __init__(self, required_user):
@@ -107,7 +107,7 @@ class Application(object):
             app.handle_exception()
             raise
         finally:
-            exit(app.finish())     
+            exit(app.finish())
     """
 
     def __init__(self):
@@ -261,6 +261,9 @@ class Application(object):
     def setup(self):
         """
         Initialises all components of the EMSM.
+
+        This method will block, until the EMSM filelock could be acquired or
+        the configuration timeout value is reached.
         """
         log.info("----------")
         log.info("setting the EMSM {} up ...".format(version.VERSION))
@@ -321,11 +324,13 @@ class Application(object):
         """
         Performs some clean up and background stuff.
 
-        Do not mix this method up with the
-        :meth:`emsm.plugins.PluginManager.finish` method. These are not
-        related.
-
         :returns: :meth:`exit_code`
+        
+        .. note:: 
+
+            Do not mix this method up with the
+            :meth:`emsm.plugins.PluginManager.finish` method. These are not
+            related.
 
         .. seealso::
 

@@ -71,7 +71,7 @@ log = logging.getLogger(__file__)
 
 class PluginException(Exception):
     """
-    Base exception for all exceptions in this module.
+    Base class for all exceptions in this module.
     """
     pass
 
@@ -80,9 +80,9 @@ class PluginImplementationError(PluginException):
     """
     Raised if a plugin is not correct implemented.
 
-    For example, when the plugin does not inherit BasePlugin or
-    the module does not contain the ``PLUGIN`` variable, which
-    is the name of the plugin class in the module.
+    For example, when the plugin does not inherit
+    :class:`~emsm.base_plugin.BasePlugin` or the module does not contain the
+    ``PLUGIN`` variable, which is the name of the plugin class in the module.
     """
 
     def __init__(self, plugin, msg):
@@ -123,7 +123,7 @@ class PluginManager(object):
     
     .. seealso::
     
-        * :class:`emsm.base_plugin.BasePlugin`
+        * :class:`~emsm.base_plugin.BasePlugin`
     """
 
     def __init__(self, app):
@@ -150,14 +150,14 @@ class PluginManager(object):
     def get_module(self, plugin_name):
         """
         Returns the Python module object that contains the plugin with the
-        name *plugin_name* or None if there is no plugin with that name.
+        name *plugin_name* or ``None`` if there is no plugin with that name.
         """
         return self._plugin_modules.get(plugin_name)
     
     def get_plugin_type(self, plugin_name):
         """
         Returns the plugin class for the plugin with the name *plugin_name* or
-        None, if there is no plugin with that name.
+        ``None``, if there is no plugin with that name.
         """
         return self._plugin_types.get(plugin_name)
     
@@ -222,7 +222,7 @@ class PluginManager(object):
         .. note::
 
             The *path* is no longer added to :attr:`sys.path` (EMSM Vers. >= 3).
-                
+        
         :raises PluginOutdatedError:
             when the plugin is outdated.
         :raises PluginImplementationError:
@@ -278,7 +278,7 @@ class PluginManager(object):
         Imports all Python modules in the :file:`directory`.
 
         Files that do not contain a valid EMSM plugin, are ignored. You can
-        check the log files to see which plugins were excluded.
+        check the log files to see which plugins have been ignored.
 
         .. seealso::
         
@@ -321,9 +321,9 @@ class PluginManager(object):
         Unloads the plugin with the name *plugin_name*.
 
         :param str plugin_name:
-            The name of the plugin that should be removed.
+            The name of the plugin that should be unloaded.
         :param bool call_finish:
-            If true, the :meth:`emsm.base_plugin.BasePlugin.finish` method of
+            If true, the :meth:`~emsm.base_plugin.BasePlugin.finish` method of
             the plugin is called, before it is unloaded.
         """
         log.info("unloading plugin '{}' ...".format(plugin_name))
@@ -350,7 +350,9 @@ class PluginManager(object):
         """
         Called, when the plugin has been uninstalled.
 
-        .. seealso:: :attr:`emsm.base_plugin.BasePlugin.plugin_uninstalled`
+        .. seealso::
+
+            * :attr:`emsm.base_plugin.BasePlugin.plugin_uninstalled`
         """
         # Break if we do not own this plugin.
         if not plugin in self._plugins.values():
@@ -364,7 +366,9 @@ class PluginManager(object):
         """
         Imports all plugins from the application's plugin directory.
 
-        .. seealso:: :meth:`emsm.paths.Pathsystem.plugins_dir`
+        .. seealso::
+
+            * :meth:`emsm.paths.Pathsystem.plugins_dir`
         """
         plugins_dir = self._app.paths().plugins_dir()
         self.import_from_directory(plugins_dir)

@@ -58,7 +58,7 @@ log = logging.getLogger(__file__)
 
 class LicenseAction(argparse.Action):
     """
-    Prints the given license *license_* and exists with code 0.
+    Prints the given license *license_* and exists.
     """
 
     def __init__(self, option_strings, license_=None, dest=argparse.SUPPRESS,
@@ -73,11 +73,11 @@ class LicenseAction(argparse.Action):
             help = "show the program's license and exit"
             )
 
-        # Format the license string.        
+        # Format the license string.  
         if license_ is None:
             license_ = str()
             
-        # Make sure the license string endswith a '\n' line break.
+        # Make sure the license string ends with a '\n' line break.
         if not license_.endswith("\n"):
             license_ += "\n"
         
@@ -86,7 +86,7 @@ class LicenseAction(argparse.Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         """
-        Prints *.license* and exists.
+        Prints :attr:`license` and exists.
         """
         parser.exit(message=self.license)
         return None
@@ -94,7 +94,7 @@ class LicenseAction(argparse.Action):
     
 class LongHelpAction(argparse.Action):
     """
-    Prints the *description* under Linux and exits with the exit code 0.
+    Prints the *description* and exits.
     """
 
     def __init__(self, option_strings, description=None, dest=argparse.SUPPRESS,
@@ -115,8 +115,7 @@ class LongHelpAction(argparse.Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         """
-        Prints the *.description* using *less* under Linux if available and
-        the standard Python *print()* if not.
+        Prints the :attr:`description`.
         """
         # We print the docstring under linux using *less*, if available.
         was_printed = False
@@ -148,16 +147,16 @@ class ArgumentParser(object):
 
     This class handles the *root* EMSM argument parser. The root parser
     only has a few global EMSM commands like ``-w``, ``-s``. Each plugin has
-    its own subparser.
+    its own subparser:
 
     .. code-block:: bash
 
         $ foo@bar: minecraft [emsm args] (plugin_name) [plugin args]
 
-    Example:
+    **Example:**
 
     .. code-block:: bash
-    
+        
         $ foo@bar: # Call the *worlds* plugin with the world *foo* as target.
         $ foo@bar: minecraft -w foo worlds --status
     """
@@ -197,8 +196,12 @@ class ArgumentParser(object):
         namespace object that contains the result.
 
         :param bool cache:
-            If ``True``, and the arguements have already been parsed, the
+            If ``True``, and the arguments have already been parsed, the
             result of the previous parse is returned.
+
+        .. seealso::
+
+            * :meth:`argparse.ArgumentParser.parse_args`
         """
         if self._args is None or not cache:
             log.info("parsing arguments ...".format(self._args))
@@ -216,19 +219,12 @@ class ArgumentParser(object):
 
     def setup(self):
         """
-        Adds the global EMSM arguemnts to the root argument parser.
+        Adds the global EMSM arguments to the root argument parser.
 
         This method has to be called, when the
-        :class:`~emsm.worlds.WorldManager` and :class:`~emsm.worlds.ServerManager`
+        :class:`~emsm.worlds.WorldManager` and :class:`~emsm.server.ServerManager`
         have been loaded, since we require the names of the available worlds
         and server.
-
-        .. seealso::
-         
-            * :meth:`emsm.worlds.WorldManager.get_names`
-            * :meth:`emsm.server.ServerManager.get_names`
-            * :meth:`emsm.application.Application.server`
-            * :meth:`emsm.application.Application.worlds`
         """
         log.info("adding emsm arguments ...")
         
