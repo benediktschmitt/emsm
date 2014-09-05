@@ -232,7 +232,7 @@ class Application(object):
         # We failed to switch the user and group.
         except OSError as err:
             log.critical(err, exc_info=True)
-            raise WrongUserError(err)
+            raise WrongUserError(username)
         return None
      
     def handle_exception(self):
