@@ -81,7 +81,7 @@ class PluginImplementationError(PluginException):
     Raised if a plugin is not correct implemented.
 
     For example, when the plugin does not inherit BasePlugin or
-    the module does not contain the ``PLUGIN`` variable which
+    the module does not contain the ``PLUGIN`` variable, which
     is the name of the plugin class in the module.
     """
 
@@ -116,13 +116,14 @@ class PluginOutdatedError(PluginException):
 
 class PluginManager(object):
     """
-    Manages and contains all plugins.
+    Loads and manages all plugins.
 
-    The prupose of this class is to load and dispatch the plugins.
+    If you want to write a plugin and search for the docs, take a look at the
+    :mod:`plugins.hellodolly` plugin.
     
-    See also:
-        * BasePlugin()
-        * hello_dolly.py
+    .. seealso::
+    
+        * :class:`emsm.base_plugin.BasePlugin`
     """
 
     def __init__(self, app):
@@ -162,13 +163,14 @@ class PluginManager(object):
     
     def plugin_is_available(self, plugin_name):
         """
-        Returns true, if the plugin with the name *plugin_name* is available.
+        Returns ``True``, if the plugin with the name *plugin_name* is
+        available.
         """
         return plugin_name in self._plugin_modules
 
     def get_plugin_names(self):
         """
-        Returns the names of all available plugins.
+        Returns the names of all loaded plugins.
         """
         return list(self._plugin_modules.keys())
     
@@ -183,9 +185,10 @@ class PluginManager(object):
         """
         Returns all currently loaded plugin instances.
 
-        See also:
-            * get_plugin_names()
-            * get_plugin()
+        .. seealso::
+        
+            * :meth:`get_plugin_names`
+            * :meth:`get_plugin`
         """
         return self._plugins.values()
 
@@ -193,11 +196,10 @@ class PluginManager(object):
         """
         Returns ``True`` if the *plugin* is outdated and not compatible with
         the current EMSM version.
-
-        See also:
-            * Application.VERSION
-
-        Web:
+        
+        .. seealso::
+        
+            * :mod:`emsm.version`
             * http://semver.org
         """        
         app_version = VERSION.split(".")
@@ -215,22 +217,20 @@ class PluginManager(object):
 
     def import_plugin(self, path):
         """
-        Loads the plugin which is implemented in the module at *path*.
+        Loads the plugin located at *path*.
 
-        Note:
-            * The *path* is no longer added to ``sys.path`` (EMSM Vers. >= 3).
-              Check if your plugin needs to import from the ``plugins`` folder.
+        .. note::
 
-        Parameters:
-            * path
-                The path of the module, that contains a plugin.
+            The *path* is no longer added to :attr:`sys.path` (EMSM Vers. >= 3).
                 
-        Exceptions:
-            * PluginOutdatedError
-            * PluginImplementationError
+        :raises PluginOutdatedError:
+            when the plugin is outdated.
+        :raises PluginImplementationError:
+            when the plugin is not correct implemented.
 
-        See also:
-            * _plugin_is_outdated()
+        .. seealso::
+        
+            * :meth:`_plugin_is_outdated`
         """
         # The module name is the name of the plugin.
         # I assume, that a modulename always ends with '.py'.
@@ -275,13 +275,14 @@ class PluginManager(object):
 
     def import_from_directory(self, directory):
         """
-        Imports all Python modules in the *directory*.
+        Imports all Python modules in the :file:`directory`.
 
-        Python modules that contain no plugins or invalid plugins create
-        a log entry and are ignored.
+        Files that do not contain a valid EMSM plugin, are ignored. You can
+        check the log files to see which plugins were excluded.
 
-        See also:
-            * import_plugin()
+        .. seealso::
+        
+            * :meth:`import_plugin`
         """
         def file_is_plugin(path):
             """
@@ -319,12 +320,11 @@ class PluginManager(object):
         """
         Unloads the plugin with the name *plugin_name*.
 
-        Parameters:
-            * plugin_name
-                The name of the plugin that should be removed.
-            * call_finish
-                If true, the *finish()* method of the plugin is called, before
-                it is removed.
+        :param str plugin_name:
+            The name of the plugin that should be removed.
+        :param bool call_finish:
+            If true, the :meth:`emsm.base_plugin.BasePlugin.finish` method of
+            the plugin is called, before it is unloaded.
         """
         log.info("unloading plugin '{}' ...".format(plugin_name))
         
@@ -349,6 +349,8 @@ class PluginManager(object):
     def _uninstall(self, plugin):
         """
         Called, when the plugin has been uninstalled.
+
+        .. seealso:: :attr:`emsm.base_plugin.BasePlugin.plugin_uninstalled`
         """
         # Break if we do not own this plugin.
         if not plugin in self._plugins.values():
@@ -360,10 +362,9 @@ class PluginManager(object):
     
     def setup(self):
         """
-        Imports all plugins from the application's defult plugin directory.
+        Imports all plugins from the application's plugin directory.
 
-        See also:
-            * Pathsystem.plugins()
+        .. seealso:: :meth:`emsm.paths.Pathsystem.plugins_dir`
         """
         plugins_dir = self._app.paths().plugins_dir()
         self.import_from_directory(plugins_dir)
@@ -397,11 +398,12 @@ class PluginManager(object):
     
     def run(self):
         """
-        Calls BasePlugin.run() of the plugin that has been selected with the
-        command line arguments.
+        Calls :meth:`~emsm.base_plugin.BasePlugin.run` of the plugin that has
+        been selected by the command line arguments.
 
-        See also:
-            * ArgumentParser.args()
+        .. seealso::
+        
+            * :meth:`emsm.argparse_.ArgumentParser.args`
         """
         # Get the name of the selected plugin.
         args = self._app.argparser().args()
@@ -420,10 +422,8 @@ class PluginManager(object):
 
     def finish(self):
         """
-        Calls BasePlugin.finish() for each loaded plugin
-
-        See also:
-            * BasePlugin.finish()
+        Calls :meth:`~emsm.base_plugin.BasePlugin.finish` for each loaded
+        plugin.
         """
         log.info("finish plugins ...")
         

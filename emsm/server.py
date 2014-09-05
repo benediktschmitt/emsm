@@ -150,22 +150,27 @@ class ServerIsOfflineError(ServerStatusError):
 class ServerWrapper(object):    
     """
     Wraps a minecraft server (executable), NOT a world.
+
+    The ServerWrapper is initialized using the options in the
+    :file:`server.conf` configuration file.
+
+    :param emsm.application.Application app:
+        The parent EMSM application
+    :param str name:
+        The name of the server in the :file:`server.conf` configuration
+        file.
+
+    .. seealso::
+
+        * :class:`emsm.conf.ServerConfiguration`
     """
 
-    # Emmited when the server is uninstalled.
+    #: Signal that is emitted, when a server has been uninstalled.
     server_uninstalled = blinker.signal("server_uninstalled")
     
 
     def __init__(self, app, name):
         """
-        Constructs the server wrapper by using the configuration values
-        in ``app.conf.server[name]``.
-        
-        Params:
-            * app
-                The parent EMSM application object.
-            * name
-                The name of this server in the *server.conf*.
         """
         log.info("initialising server '{}' ...".format(name))
         
@@ -197,15 +202,15 @@ class ServerWrapper(object):
         """
         Validates the configuration values.
 
-        See also:
-            * Application.conf.server
+        .. seealso:
+        
+            * Application.conf().server()
             * conf()
 
-        Exceptions:
-            * ValueError
-                if a configuration option has an invalid value.
-            * TypeError
-                if a configuration option has an invalid type.
+        :raises ValueError:
+            if a configuration option has an invalid value.
+        :raises TypeError:
+            if a configuration option has an invalid type.
         """
         # server
         if not "server" in self._conf:
@@ -227,6 +232,10 @@ class ServerWrapper(object):
         return None
 
     def conf(self):
+        """
+        Returns a dictionary like object that contains the configuration of this
+        ServerWrapper.
+        """
         return self._conf
 
     def server(self):
@@ -252,8 +261,7 @@ class ServerWrapper(object):
         The raw, unformatted command that starts the server. This may
         still contain placeholders like ``'{server}'``.
 
-        See also:
-            * start_cmd()
+        .. seealso:: :meth:`start_cmd`
         """
         return self._raw_start_cmd
     
@@ -261,8 +269,8 @@ class ServerWrapper(object):
         """
         Returns the formatted shell command needed to start the server.
 
-        See also:
-            * raw_start_cmd
+
+        .. seealso:: :meth:`raw_start_cmd`
         """
         # In server.conf:
         #
@@ -298,14 +306,13 @@ class ServerWrapper(object):
     def update(self, reporthook=None):
         """
         Downloads the server_jar into a temporary file and copies the
-        file if the download was succesful to the server directory.
+        file, if the download was succesful, to the server directory.
 
-        Parameters:
-            *reporthook* is the reporthook in *urllib.request.urlretrieve*.
+        :param reporthook:
+            passed to :func:`urllib.request.urlretrieve`.
 
-        Exceptions:
-            * ServerIsOnlineError
-            * ServerUpdateFailure
+        :raises ServerIsOnlineError:
+        :raises ServerUpdateFailure:
         """
         if self.is_online():
             raise ServerIsOnlineError(self)
@@ -328,11 +335,11 @@ class ServerWrapper(object):
 
     def install(self):
         """
-        Installs the server. (This method basically calls ``update()``).
+        Installs the server which basically means to call :meth:`update` if
+        necessairy.
         If the server is already installed, nothing happens.
 
-        Exceptions:
-            * ServerUpdateFailure
+        :raises ServerUpdateFailure:
         """
         if self.is_installed():
             return None
@@ -345,14 +352,17 @@ class ServerWrapper(object):
         Removes the server and its configuration. The worlds currently run
         by this server will be powered by *new_server* after the next start.
 
-        Exceptions:
-            * ServerIsOnlineError
-            * TypeError
-                if *new_server* is not a ServerWrapper instance.
-            * ValueError
-                if *new_server* is not **another** ServerWrapper instance.                
+        The signal :attr:`server_uninstalled` is emitted, when the
+        uninstallation is complete.
 
-        Todo:
+        :raises ServerIsOnlineError:
+        :raises TypeError:
+            if *new_server* is not a ServerWrapper instance.
+        :raises ValueError:
+            if *new_server* is not **another** ServerWrapper instance.                
+
+        .. todo::
+        
             * This method should not raise a ServerIsOnlineError. It should
               stop all running worlds and restart them with the new server.
         """
@@ -399,7 +409,7 @@ class ServerWrapper(object):
 
 class ServerManager(object):
     """
-    A container for all server wrappers used by a running EMSM application.
+    A container for all :class:`ServerWrapper` used by an EMSM application.
     """
 
     def __init__(self, app):
@@ -416,13 +426,14 @@ class ServerManager(object):
         """
         Loads all server declared in the server configuration file.
 
-        If a server has not been downloaded yet, ``server.update()`` is
-        called.
+        If a server has not been downloaded yet, :meth:`ServerWrapper.update`
+        is called.
 
-        See also:
-            * Application.conf.server
-            * ServerWrapper.is_installed()
-            * ServerWrapper.update()
+        .. seealso::
+        
+            * :meth:`emsm.application.Application.conf`
+            * :meth:`ServerWrapper.is_installed`
+            * :meth:`ServerWrapper.install`
         """
         log.info("loading all server wrappers ...")
         
@@ -432,8 +443,7 @@ class ServerManager(object):
             self._server[server.name()] = server
 
             # Install the server if not yet done.
-            if not server.is_installed():
-                server.install()
+            server.install()
         return None
 
     # container
@@ -441,7 +451,7 @@ class ServerManager(object):
 
     def _remove(self, server):
         """
-        Removes the ServerWrapper *server* from the internal map.
+        Removes the :class:`ServerWrapper` *server* from the internal map.
         """
         if server.name() in self._server.values():
             del self._server[server.name()]
@@ -463,7 +473,10 @@ class ServerManager(object):
     def get_by_pred(self, pred=None):
         """
         Almost equal to:
-            >>> filter(pred, sm.get_all())
+
+        .. code-block:: python
+        
+            >>> filter(pred, ServerManager.get_all())
             ...
         """
         return list(filter(pred, self._server.values()))

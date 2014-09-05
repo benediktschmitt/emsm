@@ -57,25 +57,27 @@ class BasePlugin(object):
     This is the base class for all plugins.
     """
 
-    # Integer with the init priority of the plugin.
-    # A higher value results in a later initialisation.
+    #: Integer with the init priority of the plugin.
+    #: A higher value results in a later initialisation.
     INIT_PRIORITY = 0
 
-    # Integer with the finish priority of the plugin.
-    # A higher value results in a later call of the finish method.
+    #: Integer with the finish priority of the plugin.
+    #: A higher value results in a later call of the finish method.
     FINISH_PRIORITY = 0
 
-    # The EMSM version number of the EMSM version that worked correctly
-    # with that plugin.
+    #: The last version number of the EMSM version that worked correctly
+    #: with that plugin.
     VERSION = "0.0.0"
 
-    # The plugin can be downloaded from this resource.
+    #: The plugin package can be downloaded from this resource.
+    #:
+    #: .. seealso:: :mod:`plugins.plugins`
     DOWNLOAD_URL = None
 
-    # This string is displayed when the ``--long-help`` argument is used.
+    #: This string is displayed when the ``--long-help`` argument is used.
     DESCRIPTION = None
 
-    # Emitted, when the plugin has been uninstalled.
+    #: Signal, that is emitted, when a plugin has been uninstalled.
     plugin_uninstalled = blinker.signal("plugin_uninstalled")
 
     def __init__(self, app, name):
@@ -101,7 +103,8 @@ class BasePlugin(object):
 
     def app(self):
         """
-        Returns the parent EMSM Application that owns this plugin.
+        Returns the parent EMSM :class:`~emsm.application.Application`
+        that owns this plugin.
         """
         return self.__app
 
@@ -134,12 +137,10 @@ class BasePlugin(object):
         Returns the directory that contains all data created by the plugin
         to manage its EMSM job.
 
-        Parameters:
-            * create
-                If the directory does not exist, it will be created.
+        :param bool create:
+            If the directory does not exist, it will be created.
 
-        Example:
-            * The *backups* plugin stores all backups here.
+        .. seealso:: :meth:`emsm.paths.Pathsystem.plugin_data_dir`
         """
         data_dir = self.__app.paths().plugin_data_dir(self.__name)
 
@@ -155,10 +156,10 @@ class BasePlugin(object):
         
     def argparser(self):
         """
-        Returns the argparse.ArgumentParser that is used by this plugin.
+        Returns the :class:`argparse.ArgumentParser` that is used by this
+        plugin.
 
-        See also:
-            * ArgumentParser.plugin_parser()
+        .. seealso:: :meth:`emsm.argparse_.ArgumentParser.plugin_parser`
         """
         return self.__argparser
 
@@ -175,21 +176,26 @@ class BasePlugin(object):
     def uninstall(self):
         """
         Called when the plugin should be uninstalled. This method
-        is interactive and requires the user to confirm which data
-        should be removed.
+        is interactive and requires the user to confirm if and which
+        data should be removed.
 
-        Subclasses should implement ``_uninstall()`` to remove the
-        stuff they made.
+        Subclasses should implement :meth:`_uninstall` to remove the
+        stuff they created.
+
+        When the uninstallation is complete, the signal
+        :attr:`plugin_uninstalled` is emitted.
 
         The base class method removes:
+        
             * The plugin module (the *.py* file in *plugins*)
             * The plugin data directory
             * The plugin configuration
 
-        See also:
-            * data_dir()
-            * conf()
-            * _uninstall()
+        .. see also::
+        
+            * :meth:`data_dir`
+            * :meth:`conf`
+            * :meth:`_uninstall`
         """
         log.info("uninstalling '{}' ...".format(self.__name))
 
@@ -239,18 +245,19 @@ class BasePlugin(object):
         The *main* method of the plugin. This method is called if the plugin
         has been invoked by the command line arguments.
 
-        Parameters:
-            * args
+        :params argparse.Namespace args:
                 is an argparse.Namespace instance that contains the values
                 of the parsed command line arguments.
 
-        Override:
+        Subclass:
+
             * You may override this method.
 
-        See also:
-            * argparser()
-            * ArgumentParser.args()
-            * PluginManager.run()
+        .. seealso::
+         
+            * :meth:`argparser`
+            * :meth:`emsm.argparse_.ArgumentParser.args`
+            * :meth:`emsm.plugins.PluginManager.run`
         """
         return None
 
@@ -259,10 +266,12 @@ class BasePlugin(object):
         Called when the EMSM application is about to finish. This method can
         be used for background jobs or clean up stuff.
 
-        Override:
+        Subclass:
+        
             * You may override this method.
             
-        See also:
-            * PluginManager.finish()
+        .. seealso::
+        
+            * :meth:`emsm.plugins.PluginManager.finish`
         """
         return None

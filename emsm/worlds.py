@@ -89,7 +89,7 @@ __all__ = [
     "WorldStartFailed",
     "WorldStopFailed",
     "WorldCommandTimeout",
-    "WorldWrapper"
+    "WorldWrapper",
     "WorldManager"
     ]
 
@@ -234,38 +234,39 @@ class WorldWrapper(object):
     """
     Provides methods to handle a minecraft world like
     start, stop, force-stop, ...
+
+    The WorldWrapper is initialised using the configuration options in the
+    section *name* in the :file:`server.conf` configuration file.
     """
     
     # Screen prefix for the minecraft-server sessions.
     # DO NOT CHANGE THIS VALUE IF A WORLD IS ONLINE!
-    SCREEN_PREFIX = "minecraft_"
+    _SCREEN_PREFIX = "minecraft_"
 
-    # Emitted when a world has been uninstalled.
+    #: Signal, that is emitted when a world has been uninstalled.
     world_uninstalled = blinker.signal("world_uninstalled")
 
-    # Emitted when a world is about to start.
+    #: Signal, that is emitted when a world is about to start.
     world_about_to_start = blinker.signal("world_about_to_start")
 
-    # Emitted when a world has been started.
+    #: Signal, that is emitted when a world has been started.
     world_started = blinker.signal("world_started")
 
-    # Emitted when a world could not be started.
+    #: Signal, that is emitted when a world could not be started.
     world_start_failed = blinker.signal("world_start_failed")
 
-    # Emitted when a world is about to be stopped.
+    #: Signal, that is emitted when a world is about to be stopped.
     world_about_to_stop = blinker.signal("world_about_to_stop")
 
-    # Emitted when a world has been stopped.
+    #: Signal, that is emitted when a world has been stopped.
     world_stopped = blinker.signal("world_stopped")
 
-    # Emitted when a world could not be stopped.
+    #: Signal, that is emitted when a world could not be stopped.
     world_stop_failed = blinker.signal("world_stop_failed")
     
         
     def __init__(self, app, name):
         """
-        If auto_install is true, the directory of the world will
-        be created if it does not exist.
         """
         log.info("initialising world '{}' ...".format(name))
         
@@ -288,11 +289,10 @@ class WorldWrapper(object):
         Checks if the configuration contains only valid values and
         types (float, int, ...).
 
-        Exceptions:
-            * ValueError
-                If a configration option has an invalid value.
-            * TypeError
-                If a configuration option has an invalid type.
+        :raises ValueError:
+            If a configration option has an invalid value.
+        :raises TypeError:
+            If a configuration option has an invalid type.
         """
         # port
         if self._conf["port"] == "<auto>":
@@ -321,15 +321,19 @@ class WorldWrapper(object):
         Converts the *rel_path*, that is relative to the root directory of
         the minecraft world, into the absolute path of the operating system.
 
-        See also:
-            * directory
-
         Example:
+
+        .. code-block:: python
+        
             >>> # I assume the EMSM root is: "/home/minecraft"
             >>> foo.name()
             "foo"
             >>> foo.worldpath_to_ospath("server.properties")
             "/home/minecraft/worlds/foo/server.properties"
+            
+        .. seealso::
+        
+            * :meth:`directory`
         """
         return os.path.join(self._directory, rel_path)
     
@@ -337,27 +341,27 @@ class WorldWrapper(object):
         """
         The configuration section of this world.
 
-        See also:
-            * Application.conf.worlds
+        .. seealso::
+        
+            * :class:`~emsm.conf.WorldsConfiguration`
         """
         return self._conf
 
     def server(self):
         """
-        The ServerWrapper for the server that runs this world.
+        The :class:`~emsm.server.ServerWrapper` for that runs this world.
         """
         return self._server
 
     def set_server(self, server):
         """
-        Changes the server that runs this world.
+        Changes the server that runs this world. The world has to be offline.
 
-        Parameters:
-            * server
-                The ServerWrapper instance of the new server.
+        :param emsm.server.ServerWrapper server:
+            The new server
 
-        Exceptions:
-            * WorldIsOnlineError
+        :raises WorldIsOnlineError*
+            if the world is online.
         """
         if self.is_online():
             raise WorldIsOnlineError(self)
@@ -378,27 +382,26 @@ class WorldWrapper(object):
         """
         The name of the world.
 
-        This is the name of the configuration section and the folder name
-        in the ``worlds`` directory.
+        This is the name of the configuration section in :file:`worlds.conf` and
+        the folder name in the :file:`worlds` directory.
         """
         return self._name
 
     def screen_name(self):
         """
-        Returns the name of the screen session that runs the server of this
+        Returns the name of the screen sessions that run the server of this
         world.
-
-        See also:
-            * SCREEN_PREFIX
-            * name
         """
-        return WorldWrapper.SCREEN_PREFIX + self._name
+        return WorldWrapper._SCREEN_PREFIX + self._name
 
     def directory(self):
         """
         Returns the directory that contains all world data generated by the
         minecraft server.
-        Contains usually the ``server.properties`` file and a ``world`` folder.
+
+        If the world is run by the *mojang* minecraft server, this directory
+        contains the :file:`server.properties`, :file:`whitelist.json`, ...
+        files.
         """
         return self._directory
 
@@ -406,7 +409,8 @@ class WorldWrapper(object):
         """
         Returns the path to the log file of the world.
 
-        Todo:
+        .. todo::
+        
             * Check if this value is also server dependant and move the
               functionlity of getting the correct log path to the server.
         """
@@ -422,10 +426,12 @@ class WorldWrapper(object):
         Returns the log of the world since the last start. If the
         logfile does not exist, an empty string will be returned.
 
-        Todo:
+        .. todo::
+        
             * The *start* keyword which signalises a server restart in the
               log is server independant and should be moved to the
               ServerWrapper features.
+            * The whole *latest_log* thing should be moved to the ServerWrapper.
         """
         # Matches all lines in the log, that signalize the start of
         # a server.
@@ -444,7 +450,8 @@ class WorldWrapper(object):
     
     def server_properties(self):
         """
-        Returns a dictionary with the content of the ``server.properties`` file.
+        Returns a dictionary with the content of the
+        :file:`server.properties` file.
         """
         filename = self.worldpath_to_ospath("server.properties")
 
@@ -469,11 +476,15 @@ class WorldWrapper(object):
         of the keyword arguments.
 
         Example:
+
+        .. code-block:: python
+        
             >>> world.overwrite_properties(motd="Hello world!")
             >>> world.overwrite_properties(port="42424")
             >>> world.overwrite_properties(motd="Hello world!", port="42424")
 
-        Todo:
+        .. todo::
+        
             * Rename this method to ``overwrite_server_properties``.
         """
         filename = self.worldpath_to_ospath("server.properties") 
@@ -493,7 +504,8 @@ class WorldWrapper(object):
         Returns the network address of the minecraft server, that runs
         this world.
 
-        Todo:
+        .. todo::
+        
             * This may be server dependant, so move it to the server
               class.
         """
@@ -508,10 +520,7 @@ class WorldWrapper(object):
     def pids(self):
         """
         Returns a list with the pids of the screen sessions with the name
-        *self.screen_name*.
-
-        See also:
-            * screen_name()
+        :meth:`screen_name`.
         """
         # Get sessions
         # XXX: screen -ls seems to exit always with the exit code 1.
@@ -537,18 +546,12 @@ class WorldWrapper(object):
     def is_online(self):
         """
         Returns ``True`` if the world is currently running.
-
-        See also:
-            * get_pids()
         """
         return bool(self.pids())
 
     def is_offline(self):
         """
         Returns ``True`` if the world is currently **not** running.
-
-        See also:
-            * get_pids()
         """
         return not self.is_online()
 
@@ -557,8 +560,12 @@ class WorldWrapper(object):
         Sends the given command to all screen sessions with the world's screen
         name.
 
-        Exceptions:
-            * WorldIsOfflineError
+        :raises WorldIsOfflineError:
+            if the world is offline.
+
+        .. warning::
+
+            There is no guarantee, that the server reacted to the command.
         """
         pids = self.pids()
 
@@ -582,14 +589,15 @@ class WorldWrapper(object):
     def send_command_get_output(self, server_cmd, timeout=10,
                                 poll_intervall=0.2):
         """
-        Like ``send_commmand()`` but checks every *poll_intervall*
+        Like :meth:`send_commmand` but checks every *poll_intervall*
         seconds, if content has been added to the logfile and returns the
         change. If no change could be detected after *timeout* seconds,
         an error will be raised.
 
-        Exceptions:
-            * WorldIsOfflineError
-            * WorldCommandTimeout
+        :raises WorldIsOfflineError:
+            if the world is offline.
+        :raises WorldCommandTimeout:
+            if the world did not react within *timeout* seconds.
         """
         # Save the current size of the logfile to detect changes.
         try:
@@ -621,10 +629,10 @@ class WorldWrapper(object):
 
     def open_console(self):
         """
-        Opens all screen sessions that match a pid in ``get_pids()``.
+        Opens **all** screen sessions whichs pid is :meth:`pids`.
 
-        Exceptions:
-            * WorldIsOfflineError
+        :raises WorldIsOfflineError:
+            if the world is offline.
         """
         pids = self.pids()
 
@@ -655,12 +663,14 @@ class WorldWrapper(object):
 
     def is_installed(self):
         """
-        Returns true if the directory of the world exists, otherwise false.
+        Returns ``True`` if the :meth:`directory` of the world exists,
+        otherwise ``False``.
 
-        See also:
-            * directory()
-            * install()
-            * uninstall()
+        .. seealso::
+        
+            * :meth:`directory`
+            * :meth:`install`
+            * :meth:`uninstall`
         """
         return os.path.exists(self._directory) \
                and os.path.isdir(self._directory)
@@ -669,8 +679,9 @@ class WorldWrapper(object):
         """
         Creates the directory of the world.
 
-        See also:
-            * directory()
+        .. seealso::
+        
+            * meth:`directory`
         """ 
         try:
             os.makedirs(self._directory, exist_ok=True)
@@ -681,12 +692,12 @@ class WorldWrapper(object):
 
     def uninstall(self):
         """
-        Stops the world (see ``kill_processes()``) and removes the world
-        directory.
+        Stops the world and removes the world directory.
 
-        See also:
-            * kill_processes()
-            * directory()
+        .. seealso::
+        
+            * :meth:`kill_processes`
+            * :meth:`directory`
         """
         self.kill_processes()
 
@@ -713,16 +724,14 @@ class WorldWrapper(object):
         Starts the world if the world is offline. If the world is already
         online, nothing happens.
 
-        See also:
-            * overwrite_properties()
+        :raises WorldStartFailed:
+            if the world could not be started.
 
-        Exceptions:
-            * WorldStartFailed
-
-        Signals:
-            * world_about_to_start
-            * world_started
-            * world_start_failed
+        **Signals:**
+        
+            * :attr:`world_about_to_start`
+            * :attr:`world_started`
+            * :attr:`world_start_failed`
         """
         global _SCREEN
 
@@ -769,18 +778,19 @@ class WorldWrapper(object):
     
     def kill_processes(self):
         """
-        Kills all processes with a pid in ``pids()``.
+        Kills all processes with a pid in :meth:`pids`.
 
-        See also:
-            * pids()
-
-        Exceptions:
-            * WorldStopFailed
-
-        Signals:
-            * world_about_to_stop
-            * world_stopped
-            * world_stop_failed
+        **Signals:**       
+        
+            * :attr:`world_about_to_stop`
+            * :attr:`world_stopped`
+            * :attr:`world_stop_failed`
+            
+        :raises WorldStopFailed: if the process could not be killed.
+       
+        .. seealso::
+        
+            * :meth:`pids`
         """
         pids = self.pids()
         
@@ -807,30 +817,30 @@ class WorldWrapper(object):
         """
         Stops the server.
         
-        Parameters:
-            * message
-                Send to the world before the ``stop`` command is executed.
-            * delay
-                Time in seconds that is waited between seding the *message*
-                and executing the ``stop`` command.
-            * timeout
-                Maximum time in seconds waited for the server stop after
-                executing the ``stop`` command.
-            * force_stop
-                If true and the server could not be stopped,
-                ``kill_processes()`` is called.
+        :param str message:
+            Send to the world before the :meth:`stop` command is executed.
+        :param float delay:
+            Time in seconds that is waited between seding the *message*
+            and executing the :meth`stop` command.
+        :param float timeout:
+            Maximum time in seconds waited for the server stop after
+            executing the :meth:`stop` command.
+        :param bool force_stop:
+            If true and the server could not be stopped,
+            :meth:`kill_processes` is called.
 
-        See also:
-            * kill_processes()
-            * is_offline()
-            
-        Exceptions:
-            * WorldStopFailed
+        **Signals:**
+        
+            * :attr:`world_about_to_stop`
+            * :attr:`world_stopped`
+            * :attr:`world_stop_failed`
 
-        Signals:
-            * world_about_to_stop
-            * world_stopped
-            * world_stop_failed
+        :raises WorldStopFailed: if the world coul not be stopped.
+
+        .. seealso::
+
+            * :meth:`kill_processes`
+            * :meth:`is_offline`
         """
         # Break if the world is already offline.
         if self.is_offline():
@@ -878,29 +888,31 @@ class WorldWrapper(object):
         """
         Restarts the server.
 
-        Parameters:
-            * force_restart
-                Forces the stop of the server by calling kill_processes() if
-                necessairy.
-            * stop_args
-                Is a dictionary and if provided, these values are passed
-                to ``stop()``.
+        :param bool force_restart:
+            Forces the stop of the server by calling kill_processes() if
+            necessairy.
+        :param dict stop_args:
+            If provided, these values are passed to :meth:`stop`.
 
-        Exceptions:
-            * WorldStopFailed
-            * WorldStartFailed
+        **Signals:**
+        
+            * :attr:`world_about_to_stop`
+            * :attr:`world_stopped`
+            * :attr:`world_stop_failed`            
+            * :attr:`world_about_to_start`
+            * :attr:`world_started`
+            * :attr:`world_start_failed`
 
-        Signals:
-            * world_about_to_stop
-            * world_stopped
-            * world_stop_failed
-            * world_about_to_start
-            * world_started
-            * world_start_failed
 
-        See also:
-            * stop()
-            * start()
+        :raises WorldStopFailed:
+            if the world could not be stopped.
+        :raises WorldStartFailed:
+            if the world could not be restarted.
+            
+        .. seealso::
+        
+            * :meth:`stop`
+            * :meth:`start`
         """
         if stop_args is None:
             stop_args = dict()
@@ -912,7 +924,7 @@ class WorldWrapper(object):
     
 class WorldManager(object):
     """
-    Works as a container for the WorldWrapper instances.
+    Works as a container for the :class:`WorldWrapper` instances.
     """
 
     def __init__(self, app):
@@ -927,10 +939,12 @@ class WorldManager(object):
 
     def load_worlds(self):
         """
-        Loads all worlds declared in the configuration file.
+        Loads all worlds declared in the :file:`worlds.conf` configuration
+        file.
 
-        See also:
-            * Application.conf.worlds
+        .. seealso::
+        
+            * :class:`~emsm.conf.WorldsConfiguration`
         """
         conf = self._app.conf().worlds()
         for section in conf.sections():
@@ -947,7 +961,7 @@ class WorldManager(object):
 
     def _remove(self, world):
         """
-        Removes the WorldWrapper *world* from the internal map.
+        Removes the :class:`WorldWrapper` *world* from the internal map.
         """
         if world.name() in self._worlds:
             del self._worlds[world.name()]
@@ -955,8 +969,8 @@ class WorldManager(object):
 
     def get(self, worldname):
         """
-        Returns the WorldWrapper for the world with the name *worldname* or
-        None if there is no world with that name.
+        Returns the :class:`WorldWrapper` for the world with the name
+        *worldname* or ``None`` if there is no world with that name.
         """
         return self._worlds.get(worldname)
 
@@ -968,21 +982,29 @@ class WorldManager(object):
 
     def get_by_pred(self, pred=None):
         """
-        Filters the list using the predicate *pred*.
+        Filters the worlds using the predicate *pred*.
 
-        Example:        
+        **Example:**
+
+        .. code-block:: python
+        
             >>> # All running worlds
             >>> wm.get_by_pred(lambda w: w.is_online())
             ...
 
-        See also:
-            * get_all()
+        .. seealso::
+        
+            * :meth:`get_all`
         """
         return list(filter(pred, self._worlds.values()))
 
     def get_selected(self):
         """
         Returns all worlds that have been selected per command line argument.
+
+        .. seealso::
+
+            * :meth:`emsm.argparse_.ArgumentParser.args`
         """
         args = self._app.argparser().args()
         

@@ -59,7 +59,7 @@ __all__ = [
     "Application"
     ]
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(__file__)
 
 
 # Exceptions
@@ -91,9 +91,23 @@ class WrongUserError(ApplicationException):
 
 class Application(object):
     """
-    The whole EMSM application.
+    This class manages the initialisation and the complete run process
+    of the EMSM.
 
-    This class manages the initialisation and the complete run of the EMSM.
+    An EMSM application should be executed in a code structure similar to this
+    one:
+
+    .. code-block:: python
+
+        app = Application()
+        try:
+            app.setup()
+            app.run()
+        except Exception as err:
+            app.handle_exception()
+            raise
+        finally:
+            exit(app.finish())     
     """
 
     def __init__(self):
@@ -120,73 +134,60 @@ class Application(object):
 
     def paths(self):
         """
-        Returns the used Pathsystem instance.
-
-        See also:
-            * Pathsystem()
+        Returns the used :class:`~emsm.paths.Pathsystem` instance.
         """
         return self._paths
 
     def conf(self):
         """
-        Returns the used Configuration instance.
-
-        See also:
-            * Configuration
+        Returns the used :class:`~emsm.conf.Configuration` instance.
         """
         return self._conf
 
     def argparser(self):
         """
-        Returns the EMSM ArgumentParser used internally.
-
-        See also:
-            * ArgumentParser
+        Returns the EMSM :class:`~emsm.argparse_.ArgumentParser` that is used
+        internally.
         """
         return self._argparser
 
     def worlds(self):
         """
-        Returns the used WorldManager instance.
-
-        See also:
-            * WorldManager
+        Returns the used :class:`~emsm.worlds.WorldManager` instance.
         """
         return self._worlds
 
     def server(self):
         """
-        Returns the used ServerManager instance.
-
-        See also:
-            * ServerManager
+        Returns the used :class:`~emsm.server.ServerManager` instance.
         """
         return self._server
     
     def plugins(self):
         """
-        Returns the used PluginManager instance.
-
-        See also:
-            * PluginManager
+        Returns the used :class:`~emsm.plugins.PluginManager` instance.
         """
         return self._plugins
 
     def exit_code(self):
         """
         Returns the exit code of the application.
+
+        .. seealso:: :meth:`set_exit_code`
         """
         return self._exit_code
 
     def set_exit_code(self, code):
         """
-        Sets the exit code to *code*.
+        Sets the exit code to *code*. This is the exit code, that is used for
+        the Python :func:`exit` function.
 
-        Exceptions:
-            * TypeError
-                if *code* is not an int.
-            * ValueError
-                if *code* < 0.
+        :raises TypeError:
+            if *code* is not an int.            
+        :raises ValueError:
+            if *code* < 0.
+
+        .. seealso:: :meth:`exit_code`
         """
         if not isinstance(code, int):
             raise TypeError("*code* is not an int.")
@@ -199,17 +200,16 @@ class Application(object):
     def _switch_user(self):
         """
         Switches the *uid* and *gui* of the current EMSM process to
-        match the expected user described in the configuration (*main.conf*).
+        match the expected user defined in the configuration (*main.conf*).
 
-        Exception:
-            * WrongUserError
-                if the wrong user is currently executing the EMSM
-                and changing the *uid* and *gid* failed.
-                
-        See also:
-            * Configuration.main()
-            * os.setuid()
-            * os.setgid()
+        :raises WrongUserError:
+            if the effective user that executes the EMSM could not be changed.
+
+        .. seealso::
+
+            * :meth:`emsm.conf.Configuration.main`
+            * :func:`os.setuid`
+            * :func:`os.setgid`
         """
         username = self._conf.main()["emsm"]["user"]
 
@@ -237,7 +237,7 @@ class Application(object):
      
     def handle_exception(self):
         """
-        Checks ``sys.exc_info()`` if there is currently an uncaught exception
+        Checks :func:`sys.exc_info` if there is currently an uncaught exception
         and logs it.
         """
         exc_info = sys.exc_info()
@@ -300,9 +300,10 @@ class Application(object):
         """
         Runs the plugins.
 
-        See also:
-            * PluginManager.run()
-            * PluginManager.finish()
+        .. seealso::
+        
+            * :meth:`emsm.plugins.PluginManager.run()`
+            * :meth:`emsm.plugins.PluginManager.finish()`
         """
         # Parse the arguments.
         self._argparser.args(cache=False)
@@ -318,17 +319,18 @@ class Application(object):
 
     def finish(self):
         """
-        For clean up and background stuff.
+        Performs some clean up and background stuff.
 
-        Do not mix this method up with the PluginManager.finish() method.
-        These are not related.
+        Do not mix this method up with the
+        :meth:`emsm.plugins.PluginManager.finish` method. These are not
+        related.
 
-        Returns:
-            * The exit code
+        :returns: :meth:`exit_code`
 
-        See also:
-            * run()
-            * exit_code()
+        .. seealso::
+
+            * :meth:`run`
+            * :meth:`exit_code`
         """
         log.info("EMSM finished.")
         self._lock.release()

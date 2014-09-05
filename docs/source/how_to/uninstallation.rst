@@ -4,24 +4,39 @@ Uninstallation
 .. attention:: 
    
    Before you uninstall the EMSM, please make sure, that you have at least
-   a backup of the :file:`worlds` folder!
+   a backup of the :file:`worlds` folder if you don't want to loose all of
+   your worlds.
 
-First of all, stop all worlds:
+#. First of all, stop all worlds:
    
-.. code-block:: bash
+   .. code-block:: bash
+      
+      $ minecraft -W worlds --force-stop
+      
+#. Remove the EMSM directory:
+
+   .. code-block:: bash
+      
+      $ rm -rf /opt/minecraft
    
-   $ minecraft -W worlds --force-stop
+#. Remove the user created during the installation:
+
+   .. code-block:: bash
+
+      $ deluser minecraft
+      $ delgroup minecraft
    
-Remove the user created during the installation:
+#. Remove the :file:`/usr/bin/minecraft` link:
 
-.. code-block:: bash
+   .. code-block:: bash
 
-   $ deluser --remove-home minecraft
+      $ rm /usr/bin/minecraft
    
-Remove the :file:`/usr/bin/minecraft` link and the :file:`initd_script`:
+#. Uninstall the InitD service:
 
-.. code-block:: bash
-
-   $ rm /usr/bin/minecraft
-   $ update-rc.d -f minecraft remove
-   $ rm /etc/init.d/minecraft
+   .. code-block:: bash
+   
+      $ update-rc.d -f minecraft remove
+      $ rm /etc/init.d/minecraft
+      
+#. You may have created some cron tabs, don't forget them.

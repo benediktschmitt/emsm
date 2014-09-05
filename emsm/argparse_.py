@@ -22,6 +22,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+"""
+This module contains the :class:`ArgumentParser` class which wraps a standard
+Python :class:`argparse.ArgumentParser` for the EMSM.
+"""
+
 
 # Modules
 # ------------------------------------------------
@@ -53,7 +58,7 @@ log = logging.getLogger(__file__)
 
 class LicenseAction(argparse.Action):
     """
-    Prints the given license and exists with code 0.
+    Prints the given license *license_* and exists with code 0.
     """
 
     def __init__(self, option_strings, license_=None, dest=argparse.SUPPRESS,
@@ -89,8 +94,7 @@ class LicenseAction(argparse.Action):
     
 class LongHelpAction(argparse.Action):
     """
-    Prints the *description* using *less* under Linux and exits with
-    the exit code 0.
+    Prints the *description* under Linux and exits with the exit code 0.
     """
 
     def __init__(self, option_strings, description=None, dest=argparse.SUPPRESS,
@@ -140,15 +144,19 @@ class LongHelpAction(argparse.Action):
     
 class ArgumentParser(object):
     """
-    Wraps an argparse.ArgumentParser instance.
+    Wraps an :class:`argparse.ArgumentParser` instance.
 
-    This class adds handles the *root* argument parser. The root parser
-    only has a few global emsm commands like *-w*, *-s*. Each plugin has
-    its own parser.
+    This class handles the *root* EMSM argument parser. The root parser
+    only has a few global EMSM commands like ``-w``, ``-s``. Each plugin has
+    its own subparser.
+
+    .. code-block:: bash
 
         $ foo@bar: minecraft [emsm args] (plugin_name) [plugin args]
 
     Example:
+
+    .. code-block:: bash
     
         $ foo@bar: # Call the *worlds* plugin with the world *foo* as target.
         $ foo@bar: minecraft -w foo worlds --status
@@ -179,7 +187,7 @@ class ArgumentParser(object):
 
     def argparser(self):
         """
-        Returns the wrapped argparse.ArgumentParser.
+        Returns the wrapped :class:`argparse.ArgumentParser` instance.
         """
         return self._argparser
 
@@ -188,10 +196,9 @@ class ArgumentParser(object):
         Parses (if not yet done) the command line arguments and returns a
         namespace object that contains the result.
 
-        Parameters:
-            * cache
-                if true and the arguments have already been parsed, the
-                result of the previouds parsing is returned.
+        :param bool cache:
+            If ``True``, and the arguements have already been parsed, the
+            result of the previous parse is returned.
         """
         if self._args is None or not cache:
             log.info("parsing arguments ...".format(self._args))
@@ -203,8 +210,7 @@ class ArgumentParser(object):
 
     def plugin_parser(self, plugin_name):
         """
-        Returns the parser for the plugin with the name *plugin_name* and
-        creates the parser if necessairy.
+        Returns the subparser for the plugin with the name *plugin_name*.
         """
         return self._plugin_subparsers.add_parser(plugin_name)
 
@@ -212,15 +218,17 @@ class ArgumentParser(object):
         """
         Adds the global EMSM arguemnts to the root argument parser.
 
-        This method has to called, when the WorldManager and ServerManager
-        has been loaded, since we require the names of the available worlds
+        This method has to be called, when the
+        :class:`~emsm.worlds.WorldManager` and :class:`~emsm.worlds.ServerManager`
+        have been loaded, since we require the names of the available worlds
         and server.
 
-        See also:
-            * WorldManager.get_names()
-            * ServerManager.get_names()
-            * Application.server
-            * Application.world
+        .. seealso::
+         
+            * :meth:`emsm.worlds.WorldManager.get_names`
+            * :meth:`emsm.server.ServerManager.get_names`
+            * :meth:`emsm.application.Application.server`
+            * :meth:`emsm.application.Application.worlds`
         """
         log.info("adding emsm arguments ...")
         

@@ -20,14 +20,15 @@ import os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('.'))
-sys.path.append(os.path.abspath("../../"))
 
 # -- EMSM STUFF -----------------------------------------------------------
 
-# This will generate the .rst files in *plugins/* and *core_plugins/* by
-# extracting the docstrings of the plugins.
-import emsm_plugin_autodoc
+# This will generate the .rst autodoc files and add the EMSM_ROOT to sys.path.
+import emsm_autodoc
+##emsm_autodoc.main()
+
 import emsm
+
 
 # -- General configuration ------------------------------------------------
 
@@ -43,6 +44,9 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
 ]
+
+# Enable todo
+todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -112,7 +116,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -332,5 +336,6 @@ epub_copyright = '2013, Benedikt Schmitt'
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'http://docs.python.org/3/': None,
-    'http://docs.python.org/': None
+    'http://docs.python.org/': None,
+    'http://pythonhosted.org/blinker/': None
     }

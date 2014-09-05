@@ -45,18 +45,20 @@ __all__ = [
 # ------------------------------------------------
 class Logger(object):
     """
-    Sets the *root* logging.Logger up.
+    Sets the *root* :class:`logging.Logger` up.
 
-    The EMSM logger queues all log records until the *emsm.log* can be
-    acquired without side effects. This is the case, when the Application
-    has acquired the **file lock**. The queued records are then pushed
-    to the *emsm.log*.
+    The EMSM logger queues all log records until the :file:`emsm.log` can be
+    acquired without side effects. This is the case, when the
+    :class:`emsm.application.Application` has acquired the **file lock**.
+    The queued records are then pushed to the :file:`emsm.log`.
 
-    The logging stategy requires, that each module uses his own
+    The EMSM logging stategy requires, that each module uses his own
     logger instance:
 
+    .. code-block:: python
+
         >>> import logging
-        >>> log = logging.getLogger(__name__)
+        >>> log = logging.getLogger(__file__)
     """
 
     def __init__(self, app):
@@ -93,10 +95,12 @@ class Logger(object):
 
     def setup(self):
         """
-        Opens the *emsm.log* and pushes all queued log recods to the log file.
+        Opens the :meth:`emsm.log` and pushes all queued log recods to the log
+        file.
 
-        Hint:
-            * This method requires that the Application aquired the file lock.
+        .. hint::
+        
+            This method requires that the Application aquired the file lock.
         """
         # We use the rotating file handler so that the logfiles are
         # automatically compressed, when they are bigger than 10mb.

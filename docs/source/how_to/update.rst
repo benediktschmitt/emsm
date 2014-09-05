@@ -20,39 +20,37 @@ EMSM
 
    .. code-block:: bash
    
-      $ minecraft -W worlds --stop
+      $ minecraft -W worlds --force-stop
 
 #. Download the latest version of the EMSM and extract it in a temporary
    directory:
    
    .. code-block:: bash
 
-      $ wget http://git.io/DPH_mg -O /tmp/emsm.tar.gz
-      $ tar -xzf /tmp/emsm.tar.gz -C /tmp/
+      $ wget http://git.io/DPH_mg -O /tmp/emsm-master.tar.gz
+      $ tar -xzf /tmp/emsm-master.tar.gz -C /tmp/
    
-#. Overwrite the old :file:`emsm` and :file:`plugins` scripts. Make sure that
+#. Overwrite the old :file:`emsm` and :file:`plugin` scripts. Make sure that
    you type the * at the end of the backslashes:
    
    .. code-block:: bash
       
-      $ rm -r /home/minecraft/emsm
-      $ cp -r /tmp/emsm-master/emsm/ /home/minecraft/
-      $ cp -r -u /tmp/emsm-master/plugins/* /home/minecraft/plugins/
+      $ rm -r /opt/minecraft/emsm
+      $ cp -r /tmp/emsm-master/emsm/ /opt/minecraft/
+      $ cp -r -u /tmp/emsm-master/plugins/* /opt/minecraft/plugins/
       
 #. Make sure, that the EMSM user has **rw-access** to its directories after the 
    update:
    
    .. code-block:: bash
 
-      $ chown -R minecraft:minecraft /home/minecraft
+      $ chown -R minecraft:minecraft /opt/minecraft
       
-#. Invoke the script with no arguments to see if everything works:
+#. Call the EMSM with a passive command to see if everyting worked fine:
 
    .. code-block:: bash
 
-      $ minecraft
-      
-   When you get an error, a look in the CHANGELOG might be helpful.
+      $ minecraft plugins --list
 
 Plugins
 -------
@@ -61,8 +59,11 @@ Plugins
 
    You should take a look into the documentation of a plugin **before** you
    update it.
+   
+The core plugins are automatically included in the current EMSM version and don't
+need to be updated manually.
 
-These are your options to update a plugin:
+To update a third-party plugin, these are your options:
 
 * replace the source file and the library manually.
 * use the :mod:`package manager <plugins>`

@@ -94,5 +94,5 @@ Common taks
    .. code-block:: bash
       
       $ minecraft -S server --update
-      $ minecraft --s bukkit_latest server --update
+      $ minecraft -s bukkit_latest server --update
       $ minecraft --server bukkit_latest server --update

@@ -1,3 +1,0 @@
-# Ignore all .rst files, since they are generated automatically.
-# Except for the *index.rst* file.
-*.rst

@@ -40,5 +40,15 @@ conf/
 plugins_data/
 worlds/
 server/
-emsm.log
-emsm/app.lock
+logs/
+app.lock
+
+# EMSM docs
+docs/build
+docs/source/_themes
+
+docs/source/api/*.rst
+!docs/source/api/index.rst
+
+docs/source/plugins/*.rst
+!docs/source/plugins/index.rst

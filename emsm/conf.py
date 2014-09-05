@@ -45,6 +45,7 @@ except NameError:
 # ------------------------------------------------
 
 __all__ = [
+    "ConfigParser",
     "MainConfiguration",
     "ServerConfiguration",
     "WorldsConfiguration",
@@ -59,12 +60,12 @@ log = logging.getLogger(__file__)
 
 class ConfigParser(configparser.ConfigParser):
     """
-    Extends the standard Python configparser.ConfigParser by some
+    Extends the standard Python :class:`configparser.ConfigParser` by some
     useful methods.
     """
 
-    # Written at the begin of the configuration file.
-    EPILOG = tuple()
+    #: Written at the begin of the configuration file.
+    _EPILOG = str()
 
     def __init__(self, path):
         """
@@ -89,12 +90,9 @@ class ConfigParser(configparser.ConfigParser):
 
     def read(self):
         """
-        OVERWRITES
+        **OVERRIDE**
 
-        Reads the configuration from ``path()``.
-
-        See also:
-            * path()
+        Reads the configuration from :meth:`path`.
         """
         try:
             with open(self._path, "r") as file:
@@ -105,12 +103,9 @@ class ConfigParser(configparser.ConfigParser):
 
     def write(self):
         """
-        OVERWRITES
+        **OVERRIDE**
 
-        Writes the configuration into the file at ``path()``.
-
-        See also:
-            * path()
+        Writes the configuration into :meth:`path`.
         """
         # Get the comment prefix.
         comment_prefix = self._comment_prefixes[0]
@@ -118,7 +113,7 @@ class ConfigParser(configparser.ConfigParser):
         
         # Convert the EPILOG to comment lines.
         epilog = map(lambda s: comment_format.format(s),
-                     type(self).EPILOG.split("\n"))
+                     type(self)._EPILOG.split("\n"))
         epilog = "\n".join(epilog) + "\n\n"
 
         # Write the configuration into the file.
@@ -130,16 +125,26 @@ class ConfigParser(configparser.ConfigParser):
 
 class MainConfiguration(ConfigParser):
     """
-    Handles the *main.conf* configuration file.
+    Handles the :file:`main.conf` configuration file.
 
     This file includes the configuration for the EMSM Application and the
     plugins.
 
-    The EMSM uses the section '[emsm]' and each plugin has its own section
+    The EMSM uses the ``[emsm]`` section and each plugin has its own section
     with the plugin name.
+
+    .. code-block:: ini
+
+        [emsm]
+        user = minecraft
+        timeout = -1
+
+        [backups]
+        include_server = ...
+        ...
     """
 
-    EPILOG = (
+    _EPILOG = (
         "This file contains the settings for the EMSM core application and\n"
         "the plugins.\n"
         "\n"
@@ -156,8 +161,6 @@ class MainConfiguration(ConfigParser):
 
     def __init__(self, path):
         """
-        See also:
-            * ConfigParser
         """
         super().__init__(path)
 
@@ -170,15 +173,24 @@ class MainConfiguration(ConfigParser):
 
 class ServerConfiguration(ConfigParser):
     """
-    Handles the *server.conf* configuration file, which defines the
-    names and resources (url, executable filename, ...) for the EMSM
-    known servers.
+    Handles the :file:`server.conf` configuration file, which defines the
+    names and resources (url, executable filename, ...) for the server
+    used by the EMSM.
 
-    See also:
-        * ServerWrapper.conf()
+    .. code-block:: ini
+
+        [vanilla_1.7.10]
+        server = minecraft_server.jar
+        url = http://s3.amazonaws.com/Minecraft.Download/versions/1.7.10/minecraft_server.1.7.10.jar
+        start_cmd = java -jar {server} nogui.
+
+        [bukkit_latest]
+        server = craftbukkit.jar
+        url = http://dl.bukkit.org/latest-rb/craftbukkit.jar
+        start_cmd = java -jar {server}
     """
 
-    EPILOG = (
+    _EPILOG = (
         "TRY TO USER *http* IF *https* DOES NOT WORK.\n"
         "\n"
         "[vanilla_latest]\n"
@@ -198,11 +210,12 @@ class WorldsConfiguration(ConfigParser):
     Handles the *worlds.conf* configuration file, which defines the
     names and settings of all worlds managed by the EMSM.
 
-    See also:
-        * WorldWrapper.conf()
+    .. seealso::
+    
+        * :meth:`emsm.worlds.WorldWrapper.conf`
     """
 
-    EPILOG = (
+    _EPILOG = (
         "[the world's name]\n"
         "port = <auto> | int\n"
         "stop_timeout = int\n"
@@ -217,10 +230,6 @@ class WorldsConfiguration(ConfigParser):
 
     def __init__(self, path):
         """
-        Like ConfigParser, but populates the 'DEFAULT' section.
-
-        See also:
-            * ConfigParser
         """
         super().__init__(path)
 
@@ -236,8 +245,13 @@ class WorldsConfiguration(ConfigParser):
 
 class Configuration(object):
     """
-    Manages all configuration files of a EMSM application
+    Manages all configuration files of an EMSM application
     object.
+
+    .. seealso::
+
+        * :meth:`emsm.application.Application.conf`
+        * :meth:`emsm.paths.Pathsystem.conf_dir`
     """
 
     def __init__(self, app):
@@ -253,28 +267,19 @@ class Configuration(object):
 
     def main(self):
         """
-        The wrapper for the *main.conf* configuration file.
-
-        See also:
-            * MainConfiguration
+        Returns the :class:`MainConfiguration`.
         """
         return self._main
 
     def server(self):
         """
-        The wrapper for the *server.conf* configuration file.
-
-        See also:
-            * ServerConfiguration
+        Returns the :class:`ServerConfiguration`.
         """
         return self._server
 
     def worlds(self):
         """
-        The wrapper for the *worlds.conf* configuration file.
-
-        See also:
-            * WorldsConfiguration
+        Returns the :class:`WorldsConfiguration`.
         """
         return self._worlds
 
@@ -282,8 +287,9 @@ class Configuration(object):
         """
         Reads all configration files.
 
-        See also:
-            * ConfigParser.read()
+        .. seealso::
+        
+            * :meth:`ConfigParser.read`
         """
         log.info("reading configuration ...")
         
@@ -297,8 +303,9 @@ class Configuration(object):
         """
         Writes all configuration files.
 
-        See also:
-            * ConfigParser.write()
+        .. seealso::
+        
+            * :meth:`ConfigParser.write`
         """
         log.info("writing configuration ...")
         

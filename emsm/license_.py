@@ -23,7 +23,7 @@
 # THE SOFTWARE.
 
 """
-This module only contains the license.
+This module contains the :attr:`LICENSE` string.
 """
 
 
