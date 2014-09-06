@@ -19,13 +19,6 @@ at integrating **EMSM** with *init.d* to start/stop the server on
 (re-)boot/shutdown processes.
 
 
-## Reference
-* [Get started](#get-started)
-* [Contribution and New Plugins](#contribution-and-new-plugins)
-* [Versioning](#versioning)
-* [License](#license)
-
-
 ## Get started
 Please read the [online documentation](http://emsm.readthedocs.org) for 
 a full introduction. I tried to keep it simple and short. The EMSM will
