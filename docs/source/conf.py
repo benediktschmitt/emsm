@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.abspath('.'))
 
 # This will generate the .rst autodoc files and add the EMSM_ROOT to sys.path.
 import emsm_autodoc
-##emsm_autodoc.main()
+emsm_autodoc.main()
 
 import emsm
 
