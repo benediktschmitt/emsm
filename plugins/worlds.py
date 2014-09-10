@@ -63,7 +63,7 @@ Configuration
 **send_command_timeout**
 
     Maximum time waited for the response of the minecraft server,
-    if the *--verbose-send* command is used.
+    if the ``--verbose-send`` command is used.
       
 Arguments
 ---------
@@ -104,11 +104,11 @@ Arguments
     .. note:: Escaping commands with **spaces**
    
         If you want to send a command like ``say Hello players!``, you have to
-        escape it. Under Linux, this works:
+        escape it.
       
         .. code-block:: bash
       
-            minecraft -W worlds --send '"say Hello players!"'
+            minecraft -W worlds --send 'say Hello players!'
    
 .. option:: --verbose-send CMD
 

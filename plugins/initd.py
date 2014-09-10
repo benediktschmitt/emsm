@@ -64,7 +64,7 @@ worlds.conf
 
 **enable_initd**
    
-    Is the local value for *manage_all_worlds*.
+    If ``True``, the autostart/-stop is enabled.
 
 If you want to enable *init.d* for all worlds, use the *DEFAULT* section.
    
