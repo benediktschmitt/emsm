@@ -38,11 +38,13 @@ You can find the latest version of this plugin in the **EMSM**
 Arguments
 ---------
  
-Select the server with the *common* arguments **--server** or **--all-server**.
-
 .. option:: --usage
 
-    Prints the names of the worlds, powered by this server.
+    Prints the names of the worlds, powered by a server.
+
+.. option:: --list
+
+    Prints the names of all server supported by the EMSM.
 """
 
 
