@@ -39,6 +39,7 @@ import re
 import random
 import socket
 import logging
+import io
 
 # third party
 import blinker
@@ -192,41 +193,7 @@ class WorldCommandTimeout(WorldError):
                .format(self.world.name())
         return temp
 
-
-# Functions
-# ------------------------------------------------
-
-_FOUND_PORTS = list()
-def get_unused_port(min_port=10000, max_port=65535, interface=""):
-    """
-    Returns an unused port in the intervall *[min_, max_]* on the
-    *interface*.
-    """
-    global _FOUND_PORTS
     
-    if max_port > 65535:
-        raise ValueError("max_port has to be less than 65535") 
-    if min_port < 0:
-        raise ValueError("min_port has to be greater or equal to 0")
-
-    while True:
-        port = random.randint(min_port, max_port)
-        if port in _FOUND_PORTS:
-            continue
-        
-        # Check the port.
-        with socket.socket() as s:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)        
-            try:
-                s.bind((interface, port))
-            except OSError as error:
-                pass
-            else:
-                _FOUND_PORTS.append(port)
-                return port
-    return None
-
-
 # Classes
 # ------------------------------------------------
 
@@ -282,6 +249,8 @@ class WorldWrapper(object):
 
         # The ServerWrapper for the server that powers this world.
         self._server = app.server().get(self._conf["server"])
+        if not self._server.is_installed():
+            self._server.install()
 
         # The directory that contains the world data.
         self._directory = app.paths().world_dir(name)
@@ -297,17 +266,6 @@ class WorldWrapper(object):
         :raises TypeError:
             If a configuration option has an invalid type.
         """
-        # port
-        if self._conf["port"] == "<auto>":
-            self._conf["port"] = str(get_unused_port())
-
-        if not self._conf["port"].isdecimal():
-            raise TypeError("{} - conf:port is not an integer"\
-                            .format(self._name))
-        if not 0 <= int(self._conf["port"]) <= 65535:
-            raise ValueError("{} - conf:port is not in range [0, 65535]"\
-                             .format(self._name))
-
         # stop timeout
         if not self._conf["stop_timeout"].isdecimal():
             raise TypeError("{} - conf:stop_timeout is not a positive integer"\
@@ -414,118 +372,30 @@ class WorldWrapper(object):
         """
         return self._directory
 
-    def log_path(self):
-        """
-        Returns the path to the log file of the world.
-
-        .. todo::
-        
-            Check if this value is also server dependant and move the
-            functionlity of getting the correct log path to the server.
-        """
-        # MC 1.7+
-        filename = self.worldpath_to_ospath("logs/latest.log")
-        if os.path.exists(filename):
-            return filename
-        # Previous versions
-        return self.worldpath_to_ospath("server.log")
-
     def latest_log(self):
         """
         Returns the log of the world since the last start. If the
         logfile does not exist, an empty string will be returned.
-
-        .. todo::
-        
-            * The *start* keyword which signalises a server restart in the
-              log is server independant and should be moved to the
-              ServerWrapper features.
-            * The whole *latest_log* thing should be moved to the ServerWrapper.
         """
         # Matches all lines in the log, that signalize the start of
         # a server.
-        re_start_line = re.compile(".*(?:STARTING).*", re.IGNORECASE)
-        
+        re_start_line = self._server.log_start_re()
+        log_path = os.path.abspath(
+            os.path.join(self._directory, self._server.log_path())
+            )
+
         try:
-            last_log = str()
-            with open(self.log_path()) as log:
+            last_log = io.StringIO()
+            with open(log_path) as log:
                 for line in log:
                     if re.match(re_start_line, line):
-                        last_log = str()
-                    last_log += line
+                        last_log = io.StringIO()
+                    last_log.write(line)
+            last_log = last_log.getvalue()
         except (FileNotFoundError, IOError) as err:
             last_log = str()
         return last_log
-    
-    def server_properties(self):
-        """
-        Returns a dictionary with the content of the
-        :file:`server.properties` file.
-        """
-        filename = self.worldpath_to_ospath("server.properties")
-
-        # Use an OrderedDict to preserve the order.
-        properties = collections.OrderedDict()
-        try:
-            with open(filename) as file:
-                for line in file:
-                    line = line.split("=")
-                    if len(line) != 2:
-                        continue
-                    key = line[0].strip()
-                    val = line[1].strip()
-                    properties[key] = val
-        except (FileNotFoundError, IOError):
-            pass
-        return properties
-    
-    def overwrite_properties(self, **kwargs):
-        """
-        Overwrites the :file:`server.properties` file with the values
-        of the keyword arguments.
-
-        **Example:**
-
-        .. code-block:: python
         
-            >>> world.overwrite_properties(motd="Hello world!")
-            >>> world.overwrite_properties(port="42424")
-            >>> world.overwrite_properties(motd="Hello world!", port="42424")
-
-        .. todo::
-        
-            Rename this method to ``overwrite_server_properties``.
-        """
-        filename = self.worldpath_to_ospath("server.properties") 
-
-        properties = self.server_properties()
-        properties.update(kwargs)
-
-        properties_str = "\n".join("{}={}".format(key, val) \
-                                   for key, val in properties.items())
-        
-        with open(filename, "w") as file:
-            file.write(properties_str)
-        return None
-
-    def address(self):
-        """
-        Returns the network address of the minecraft server, that runs
-        this world.
-
-        .. todo::
-        
-            This may be server dependant, so move it to the ServerWrapper
-            class.
-        """
-        properties = self.server_properties()
-        
-        ip = properties.get("server-ip", "")
-        port = properties.get("server-port", "")
-        port = int(port) if port.isdigit() else 25565
-        return (ip, port)
-
-    
     def pids(self):
         """
         Returns a list with the pids of the screen sessions with the name
@@ -582,8 +452,11 @@ class WorldWrapper(object):
         if not pids:
             raise WorldIsOfflineError(self)
 
+        # Translate the server command for *cross-server* support.
+        server_cmd = self._server.translate_command(server_cmd)
+
         # Quote the command.
-        # The '\n' simulates pressing the ENTER key in the screen session.
+        # The '\n' simulates pressing the ENTER key in a screen session.
         server_cmd += "\n\n"
         server_cmd = shlex.quote(server_cmd)
 
@@ -608,9 +481,13 @@ class WorldWrapper(object):
         :raises WorldCommandTimeout:
             if the world did not react within *timeout* seconds.
         """
+        log_path = os.path.abspath(
+            os.path.join(self._directory, self._server.log_path())
+            )
+        
         # Save the current size of the logfile to detect changes.
         try:
-            with open(self.log_path()) as log:
+            with open(log_path) as log:
                 log.seek(0, 2)
                 offset = log.tell()
         except (FileNotFoundError, IOError):
@@ -625,8 +502,8 @@ class WorldWrapper(object):
         while (not output) and time.time() - start_time < timeout:
             time.sleep(poll_intervall)
 
-            try:           
-                with open(self.log_path()) as log:
+            try:
+                with open(log_path) as log:
                     log.seek(offset, 0)
                     output = log.read()
             except (FileNotFoundError, IOError):
@@ -728,7 +605,7 @@ class WorldWrapper(object):
         return None
 
     
-    def start(self, init_properties=None):
+    def start(self):
         """
         Starts the world if the world is offline. If the world is already
         online, nothing happens.
@@ -749,12 +626,6 @@ class WorldWrapper(object):
             return None
 
         WorldWrapper.world_about_to_start.send(self)
-
-        # Overwrite the server.properties before we start.
-        if init_properties is None:
-            init_properties = dict()
-        init_properties["server-port"] = self._conf["port"]
-        self.overwrite_properties(**init_properties)
 
         # We need to change the current working directory to the world's
         # directory so that the server starts in the correct environment.
@@ -844,7 +715,8 @@ class WorldWrapper(object):
             * :attr:`world_stopped`
             * :attr:`world_stop_failed`
 
-        :raises WorldStopFailed: if the world coul not be stopped.
+        :raises WorldStopFailed:
+            if the world could not be stopped.
 
         .. seealso::
 

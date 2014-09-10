@@ -47,7 +47,6 @@ except NameError:
 __all__ = [
     "ConfigParser",
     "MainConfiguration",
-    "ServerConfiguration",
     "WorldsConfiguration",
     "Configuration"
     ]
@@ -166,42 +165,8 @@ class MainConfiguration(ConfigParser):
         self["emsm"]["user"] = "minecraft"
         self["emsm"]["timeout"] = "0"
         return None
+
     
-
-class ServerConfiguration(ConfigParser):
-    """
-    Handles the :file:`server.conf` configuration file, which defines the
-    names and resources (url, executable filename, ...) for the server
-    used by the EMSM.
-
-    .. code-block:: ini
-
-        [vanilla_1.7.10]
-        server = minecraft_server.jar
-        url = http://s3.amazonaws.com/Minecraft.Download/versions/1.7.10/minecraft_server.1.7.10.jar
-        start_cmd = java -jar {server} nogui.
-
-        [bukkit_latest]
-        server = craftbukkit.jar
-        url = http://dl.bukkit.org/latest-rb/craftbukkit.jar
-        start_cmd = java -jar {server}
-    """
-
-    _EPILOG = (
-        "TRY TO USER *http* IF *https* DOES NOT WORK.\n"
-        "\n"
-        "[vanilla_latest]\n"
-        "server = minecraft_server.jar\n"
-        "url = http://s3.amazonaws.com/Minecraft.Download/versions/1.7.10/minecraft_server.1.7.10.jar\n"
-        "start_cmd = java -jar {server} nogui.\n"
-        "\n"
-        "[bukkit_latest]\n"
-        "server = craftbukkit.jar\n"
-        "url = http://dl.bukkit.org/latest-rb/craftbukkit.jar\n"
-        "start_cmd = java -jar {server}\n"
-        )
-    
-
 class WorldsConfiguration(ConfigParser):
     """
     Handles the *worlds.conf* configuration file, which defines the
@@ -258,7 +223,6 @@ class Configuration(object):
         self._dir = app.paths().conf_dir()
 
         self._main = MainConfiguration(os.path.join(self._dir, "main.conf"))
-        self._server= ServerConfiguration(os.path.join(self._dir, "server.conf"))
         self._worlds = WorldsConfiguration(os.path.join(self._dir, "worlds.conf"))
         return None
 
@@ -267,12 +231,6 @@ class Configuration(object):
         Returns the :class:`MainConfiguration`.
         """
         return self._main
-
-    def server(self):
-        """
-        Returns the :class:`ServerConfiguration`.
-        """
-        return self._server
 
     def worlds(self):
         """
@@ -288,7 +246,6 @@ class Configuration(object):
         
         # Don't change the order!
         self._main.read()
-        self._server.read()
         self._worlds.read()
         return None
 
@@ -299,6 +256,5 @@ class Configuration(object):
         log.info("writing configuration ...")
         
         self._main.write()
-        self._server.write()
         self._worlds.write()
         return None

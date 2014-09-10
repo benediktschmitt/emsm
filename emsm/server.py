@@ -32,6 +32,7 @@ import shlex
 import shutil
 import urllib.request
 import logging
+import re
 
 # third party
 import blinker
@@ -42,7 +43,6 @@ import blinker
 
 if not hasattr(shlex, "quote"):
     # From the Python3.3 library
-    import re
     _find_unsafe = re.compile(r'[^\w@%+=:,./-]', re.ASCII).search
     def _shlex_quote(s):
         """Return a shell-escaped version of the string *s*."""
@@ -55,7 +55,6 @@ if not hasattr(shlex, "quote"):
         # the string $'b is then quoted as '$'"'"'b'
         return "'" + s.replace("'", "'\"'\"'") + "'"
     shlex.quote = _shlex_quote
-    del re
     
 try:
     FileNotFoundError
@@ -71,7 +70,7 @@ __all__ = ["ServerError",
            "ServerStatusError",
            "ServerIsOnlineError",
            "ServerIsOfflineError",
-           "ServerWrapper",
+           "BaseServerWrapper",
            "ServerManager"
            ]
 
@@ -150,144 +149,66 @@ class ServerIsOfflineError(ServerStatusError):
 # Classes
 # ------------------------------------------------
 
-class ServerWrapper(object):    
+class BaseServerWrapper(object):
     """
     Wraps a minecraft server (executable), NOT a world.
 
-    The ServerWrapper is initialized using the options in the
+    The BaseServerWrapper is initialized using the options in the
     :file:`server.conf` configuration file.
 
     :param emsm.application.Application app:
         The parent EMSM application
-    :param str name:
-        The name of the server in the :file:`server.conf` configuration
-        file.
-
-    .. seealso::
-
-        * :class:`emsm.conf.ServerConfiguration`
     """
 
-    #: Signal that is emitted, when a server has been uninstalled.
-    server_uninstalled = blinker.signal("server_uninstalled")
-    
+    @classmethod
+    def name(self):
+        """
+        The unique name of the server.
 
-    def __init__(self, app, name):
+        **Example**:
+
+        ``"vanilla 1.8"``
+
+        **Override**:
+
+        in subclasses.
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def url(self):
+        """
+        The URL where the server executable can be downloaded from.
+
+        **Override:**
+
+        in subclases
+        """
+        raise NotImplementedError()
+    
+    def __init__(self, app):
         """
         """
-        log.info("initialising server '{}' ...".format(name))
+        # This class is abstract and can not be initialised.
+        if type(self) is BaseServerWrapper:
+            raise RuntimeError("BaseServerWrapper is an abstract class")            
+            
+        log.info("initialising server '{}' ...".format(self.name()))
         
         self._app = app
-        
-        # The name of the server executable.
-        self._name = name
-
-        # Get the configuration.
-        self._conf = app.conf().server()[name]
-        self._check_conf()
 
         # The absolute path to the server executable that is
         # wrapped by this object.
-        self._server = os.path.join(
-            app.paths().server_dir(), self._conf["server"]
-            )
-
-        # The download url of the server.
-        self._url = self._conf["url"]
-
-        # The shell command which starts the server.
-        # This string contains still some placeholders.
-        #
-        # See also:
-        #   * start_cmd()
-        self._raw_start_cmd = self._conf["start_cmd"]
+        # The filename is simply *name*.
+        self._server = os.path.join(app.paths().server_dir(), self.name())
         return None
-
-    def _check_conf(self):
-        """
-        Validates the configuration values.
-
-        .. seealso:
-        
-            * Application.conf().server()
-            * conf()
-
-        :raises ValueError:
-            if a configuration option has an invalid value.
-        :raises TypeError:
-            if a configuration option has an invalid type.
-        """
-        # server
-        if not "server" in self._conf or not self._conf["server"]:
-            raise ValueError("{} - conf:server not set".format(self._name))
-
-        # url
-        if not "url" in self._conf or not self._conf["url"]:
-            raise KeyError("{} - conf:url not set".format(self._name))
-        
-        # start_cmd
-        if not "start_cmd" in self._conf or not self._conf["start_cmd"]:
-            raise KeyError("{} - conf:start_cmd not set".format(self._name))
-        return None
-
-    def conf(self):
-        """
-        Returns a dictionary like object that contains the configuration of this
-        ServerWrapper.
-        """
-        return self._conf
 
     def server(self):
         """
         Absolute path of the server executable.
         """
         return self._server
-
-    def name(self):
-        """
-        The name of the server (configuration section name).
-        """
-        return self._name
-
-    def url(self):
-        """
-        The download url of the server.
-        """
-        return self._url
-
-    def raw_start_cmd(self):
-        """
-        The raw, unformatted command that starts the server. This may
-        still contain placeholders like ``'{server}'``.
-
-        .. seealso::
-
-            * :meth:`start_cmd`
-        """
-        return self._raw_start_cmd
-    
-    def start_cmd(self):
-        """
-        Returns the formatted shell command needed to start the server.
-
-        .. seealso::
-
-            * :meth:`raw_start_cmd`
-        """
-        # In server.conf:
-        #
-        #   [vanilla]
-        #   ...
-        #   server = minecraft_server.jar
-        #   start_cmd = java -jar {server} nogui.
-        #
-        # start_cmd is expanded to:
-        #   "java -jar emsm_root/server/minecraft_server.jar nogui."
-        cmd = self._raw_start_cmd.format(
-            server = shlex.quote(self._server)
-            )
-        return cmd
-    
+        
     def is_installed(self):
         """
         ``True`` if the executable has been downloaded and exists, otherwise
@@ -305,41 +226,6 @@ class ServerWrapper(object):
             )
         return bool(worlds)
 
-    def update(self, reporthook=None):
-        """
-        Downloads the server_jar into a temporary file and copies the
-        file, if the download was succesful, to the server directory.
-
-        :param reporthook:
-            passed to :func:`urllib.request.urlretrieve`.
-
-        :raises ServerIsOnlineError:
-            if at least one world is still online using this server.
-        :raises ServerUpdateFailure:
-            if the download of the server failed.
-        """
-        if self.is_online():
-            raise ServerIsOnlineError(self)
-
-        # Download the server.
-        log.info("downloading server '{}' from '{}' ..."\
-                 .format(self._name, self._url)
-                 )
-        try:
-            temp_server_file, http_message = urllib.request.urlretrieve(
-                self._url,
-                reporthook=reporthook
-                )
-        except Exception as err:
-            log.exception(err, exc_info=True)
-
-            # Reraise a new exception, with a small helpful message.
-            raise ServerUpdateFailure(self, msg="Try to check the url.")
-        else:
-            shutil.move(temp_server_file, self._server)
-            log.info("downloaded server '{}'.".format(self._name))
-        return None
-
     def install(self):
         """
         Installs the server which basically means to call :meth:`update` if
@@ -352,117 +238,298 @@ class ServerWrapper(object):
         if self.is_installed():
             return None
 
-        self.update()
-        return None
-
-    def uninstall(self, new_server):
-        """
-        Removes the server and its configuration. The worlds currently run
-        by this server will be powered by *new_server* after the next start.
-
-        The signal :attr:`server_uninstalled` is emitted, when the
-        uninstallation is complete.
-
-        :raises ServerIsOnlineError:
-        :raises TypeError:
-            if *new_server* is not a ServerWrapper instance.
-        :raises ValueError:
-            if *new_server* is not **another** ServerWrapper instance.                
-
-        .. todo::
-        
-            This method should not raise a ServerIsOnlineError. It should
-            stop all running worlds and restart them with the new server.
-        """
-        log.info("uninstalling the server '{}' ...".format(self._name))
-        
-        if self.is_online():
-            raise ServerIsOnlineError(self)
-
-        if not new_server is None:
-            if not isinstance(new_server, ServerWrapper):
-                raise TypeError("*new_server* has to be a ServerWrapper")                
-            if new_server is self:
-                raise ValueError("*new_server* has to be **another** "
-                                 "ServerWrapper")
-
-        # World reconfiguration
-        # ^^^^^^^^^^^^^^^^^^^^^
-
-        # Get the worlds which are configured to run with this server.
-        worlds = self._app.worlds().get_by_pred(lambda w: w.server() is self)
-        for world in worlds:
-            # Replace the server wrapper.
-            world.set_server(new_server)
-
-        # Remove the server
-        # ^^^^^^^^^^^^^^^^^
-
-        # The server file.
+        # Download the server.
+        log.info("downloading server '{}' from '{}' ..."\
+                 .format(type(self).name(), type(self).url())
+                 )
         try:
-            os.remove(self._server)
-        except FileNotFoundError:
+            temp_server_file, http_message = urllib.request.urlretrieve(
+                type(self).url(),
+                )
+        except:
             pass
-
-        # The server configuration.
-        self._app.conf().server().remove_section(self._name)
-
-        # Finish
-        # ^^^^^^
-
-        log.info("uninstalled server '{}'.".format(self._name))
-        ServerWrapper.server_uninstalled.send(self)
+        else:
+            shutil.move(temp_server_file, self._server)
+            log.info("downloaded server '{}'.".format(type(self).name()))
         return None
 
+    def start_cmd(self):
+        """
+        **ABSTRACT**
+        
+        Returns the bash command string, that must be executed, to start the
+        server.
+
+        If there are paths in the returned command, they must be absolute.
+        """
+        raise NotImplementedError()
+
+    def translate_command(self, cmd):
+        """
+        **ABSTRACT**
+        
+        Translates the vanilla server command *cmd* to a command with the same
+        meaning, but which can be understood by the server.
+
+        **Example:**
+
+            .. code-block:: python
+
+                >>> # A BungeeCoord wrapper would do this:
+                >>> bungeecord.translate_command("stop")
+                "end"
+                >>> bungeecord.translate_command("say Hello World!")
+                "alert Hello World!"
+        """
+        return NotImplementedError()
+
+    def log_path(cls, self):
+        """
+        **ABSTRACT**
+        
+        Returns the path of the server log file of a world.
+
+        If a relative path is returned, the base path is the world
+        directory.
+        """
+        raise NotImplementedError()
+
+    def log_start_re(self):
+        """
+        **ABSTRACT**
+        
+        Returns a regex, that matches the first line in the log file,
+        after a server restart.
+        """
+        raise NotImplementedError()
+    
+
+# Vanilla
+# '''''''
+
+class VanillaBase(BaseServerWrapper):
+    """
+    Base class for all vanilla server versions.
+    """
+
+    def start_cmd(self):
+        return "java -jar {} nogui.".format(shlex.quote(self._server))
+
+    def translate_command(self, cmd):
+        return cmd
+    
+    
+class Vanilla_1_2(VanillaBase):
+
+    @classmethod
+    def name(self):
+        return "vanilla 1.2"
+
+    @classmethod
+    def url(self):
+        return "http://s3.amazonaws.com/Minecraft.Download/versions/1.2.5/minecraft_server.1.2.5.jar"
+    
+    def log_path(self):
+        return "./server.log"
+
+    def log_start_re(self):
+        return re.compile("^.*Starting minecraft server version 1\.2.*")
+
+
+class Vanilla_1_3(VanillaBase):
+
+    @classmethod
+    def name(self):
+        return "vanilla 1.3"
+
+    @classmethod
+    def url(self):
+        return "http://s3.amazonaws.com/Minecraft.Download/versions/1.3.2/minecraft_server.1.3.2.jar"
+    
+    def log_path(self):
+        return "./server.log"
+
+    def log_start_re(self):
+        return re.compile("^.*Starting minecraft server version 1\.3.*")
+
+
+class Vanilla_1_4(VanillaBase):
+
+    @classmethod
+    def name(self):
+        return "vanilla 1.4"
+
+    @classmethod
+    def url(self):
+        return "http://s3.amazonaws.com/Minecraft.Download/versions/1.4.7/minecraft_server.1.4.7.jar"
+    
+    def log_path(self):
+        return "./server.log"
+
+    def log_start_re(self):
+        return re.compile("^.*Starting minecraft server version 1\.4.*")
+
+
+class Vanilla_1_5(VanillaBase):
+    
+    @classmethod
+    def name(self):
+        return "vanilla 1.5"
+
+    @classmethod
+    def url(self):
+        return "http://s3.amazonaws.com/Minecraft.Download/versions/1.5.2/minecraft_server.1.5.2.jar"
+    
+    def log_path(self):
+        return "./server.log"
+
+    def log_start_re(self):
+        return re.compile("^.*Starting minecraft server version 1\.5.*")
+
+
+class Vanilla_1_6(VanillaBase):
+    
+    @classmethod
+    def name(self):
+        return "vanilla 1.6"
+
+    @classmethod
+    def url(self):
+        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.6.4/minecraft_server.1.6.4.jar"
+    
+    def log_path(self):
+        return "./server.log"
+
+    def log_start_re(self):
+        return re.compile("^.*Starting minecraft server version 1\.6.*")
+
+
+class Vanilla_1_7(VanillaBase):
+    
+    @classmethod
+    def name(self):
+        return "vanilla 1.7"
+
+    @classmethod
+    def url(self):
+        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.7.10/minecraft_server.1.7.10.jar"
+    
+    def log_path(self):
+        return "./logs/latest.log"
+
+    def log_start_re(self):
+        return re.compile("^.*Starting minecraft server version 1\.7.*")
+
+
+class Vanilla_1_8(VanillaBase):
+    
+    @classmethod
+    def name(self):
+        return "vanilla 1.8"
+
+    @classmethod
+    def url(self):
+        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.8/minecraft_server.1.8.jar"
+    
+    def log_path(self):
+        return "./logs/latest.log"
+
+    def log_start_re(self):
+        return re.compile("^.*Starting minecraft server version 1\.8.*")
+
+
+# Craftbukkit
+# '''''''''''
+
+class BukkitBase(BaseServerWrapper):
+
+    def start_cmd(self):
+        return "java -jar {}".format(shlex.quote(self._server))
+
+    def translate_command(self, cmd):
+        return cmd
+
+# Bungeecord
+# ''''''''''
+
+class BungeeCordServerWrapper(BaseServerWrapper):
+    """
+    Wraps only the **latest** BungeeCord version.
+
+    Unfortunetly, the BungeeCord server uses the git commit hash value
+    as its version number. So it would be too many work to keep track of the
+    versions.
+    """
+
+    @classmethod
+    def name(self):
+        return "bungeecord"
+
+    @classmethod
+    def url(self):
+        return "http://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar"
+
+    def start_cmd(self):
+        return "java -jar {}".format(shlex.quote(self._server))
+    
+    def translate_command(self, cmd):
+        cmd = cmd.strip()
+        if cmd.startswith("say "):
+            cmd = "alert " + cmd[len("say "):]
+        elif cmd == "stop":
+            cmd = "end"
+        return cmd
+
+    def log_path(self):
+        return "./proxy.log.0"
+
+    def log_start_re(self):
+        return re.compile("^.*Enabled BungeeCord version git:.*")
+
+
+# MC-Server
+# '''''''''
+
+class MCServer(BaseServerWrapper):
+    pass
+
+
+# Server DB
+# ------------------------------------------------
 
 class ServerManager(object):
     """
-    A container for all :class:`ServerWrapper` used by an EMSM application.
+    Manages all server wrappers, owned by an EMSM application.
+
+    The ServerManager helps to avoid double instances of the same server
+    wrapper.
     """
 
     def __init__(self, app):
+        """
+        """
         self._app = app
-
-        # Maps the server names to the ServerWrapper instance
-        # server.name => server
+        
+        # Maps *server.name()* to *server*
         self._server = dict()
-
-        ServerWrapper.server_uninstalled.connect(self._remove)
+        self._load()
         return None
 
-    def load_server(self):
+    def _load(self):
         """
-        Loads all server declared in the server configuration file.
-
-        If a server has not been downloaded yet, :meth:`ServerWrapper.update`
-        is called.
-
-        .. seealso::
-        
-            * :meth:`emsm.application.Application.conf`
-            * :meth:`ServerWrapper.is_installed`
-            * :meth:`ServerWrapper.install`
+        Loads all subclasses of BaseServerWrapper in ``self._server_cls``.
         """
-        log.info("loading all server wrappers ...")
-        
-        conf = self._app.conf().server()
-        for section in conf.sections():
-            server = ServerWrapper(self._app, section)
-            self._server[server.name()] = server
+        for cls in globals().values():
+            if type(cls).__name__ != "type"\
+               or not issubclass(cls, BaseServerWrapper):
+                continue
 
-            # Install the server if not yet done.
-            server.install()
-        return None
-
-    # container
-    # --------------------------------------------
-
-    def _remove(self, server):
-        """
-        Removes the :class:`ServerWrapper` *server* from the internal map.
-        """
-        if server.name() in self._server.values():
-            del self._server[server.name()]
+            try:
+                name = cls.name()
+            except NotImplementedError as err:
+                pass
+            else:
+                self._server[name] = cls(self._app)
         return None
 
     def get(self, servername):

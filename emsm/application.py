@@ -290,7 +290,6 @@ class Application(object):
         # waiting for the file lock.
         self._conf.read()
 
-        self._server.load_server()
         self._worlds.load_worlds()
         
         self._plugins.setup()

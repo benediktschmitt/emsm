@@ -71,10 +71,10 @@ Arguments
 .. option:: --configuration
    
     Prints the section of the world in the :file:`worlds.conf`.
-   
-.. option:: --properties
 
-    Prints the content of the :file:`server.properties` file.
+.. option:: --directory
+
+    Prints the directory path that contains the world.
    
 .. option:: --log
 
@@ -237,18 +237,15 @@ class MyWorld(object):
             print("\t", key, "=", value)
         return None
     
-    def print_server_properties(self):
+    def print_directory(self):
         """
-        Prints the content of the ``server.properties`` file.
+        Prints the path to the world's directory.
 
         See also:
-            * WorldWrapper.server_properties()
-        """
-        properties = self._world.server_properties().items()
-        
-        print("{} - server.properties:".format(self._world.name()))
-        for key, value in sorted(properties):
-            print("\t", key, "=", value)
+            * WorldWrapper.directory()
+        """        
+        print("{} - directory:".format(self._world.name()))
+        print("\t", self._world.directory())
         return None
 
     def print_latest_log(self, start_line=0, line_limit=20):
@@ -569,10 +566,10 @@ class Worlds(BasePlugin):
             help = "Prints the configuration section."
             )
         parser.add_argument(
-            "--properties",
+            "--directory",
             action = "count",
-            dest = "properties",
-            help = "Prints the content of the server.properties file."
+            dest = "directory",
+            help = "Prints the path to the world's directory."
             )
         
         parser.add_argument(
@@ -698,8 +695,8 @@ class Worlds(BasePlugin):
             if args.configuration:
                 world.print_conf()
 
-            if args.properties:
-                world.print_server_properties()
+            if args.directory:
+                world.print_directory()
 
             # log
             if args.log is not None\
