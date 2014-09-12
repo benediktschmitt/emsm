@@ -1,21 +1,5 @@
 ![emsm_logo](http://emsm.readthedocs.org/en/latest/_static/emsm_48x48.png)
 
-# **dev** branch
-The [dev branch](https://github.com/benediktschmitt/emsm/tree/dev) is stable
-and ready to be used.
-
-Small changelog:
-
-* No ``server.conf`` - the EMSM contains now a server database
-* No ``/usr/bin`` script needed anymore - the EMSM downgrades its privileges if necessairy
-* No public attributes in the EMSM core API anymore
-* Added API documentation
-* Cleaned up code base - now more readable than it already was
-* Reworked the ServerWrapper to support other mc server like BungeeCord
-
-When you want to try the EMSM v3, check out the docs for the *dev* branch
-at [read the docs](http://emsm.readthedocs.org/en/dev/).
-
 # EMSM
 The **Extendable Minecraft Server Manager** (EMSM) handles
 **multiple minecraft worlds** and **server versions**. The application is 
@@ -35,6 +19,23 @@ periodical backups. It also provides a core plugin to check the availability
 of the server and restart them if its configured to do so. Another plugin aims 
 at integrating **EMSM** with *init.d* to start/stop the server on
 (re-)boot/shutdown processes.
+
+
+# **dev** branch
+The [dev branch](https://github.com/benediktschmitt/emsm/tree/dev) is stable
+and ready to be used.
+
+Small changelog:
+
+* No ``server.conf`` - the EMSM contains now a server database
+* No ``/usr/bin`` script needed anymore - the EMSM downgrades its privileges if necessairy
+* No public attributes in the EMSM core API anymore
+* Added API documentation
+* Cleaned up code base - now more readable than it already was
+* Reworked the ServerWrapper to support other mc server like BungeeCord
+
+When you want to try the EMSM v3, check out the docs for the *dev* branch
+at [read the docs](http://emsm.readthedocs.org/en/dev/).
 
 
 ## Reference
