@@ -34,7 +34,7 @@ Manual installation
    .. code-block:: bash
       
       $ addgroup --system --no-create-home --disabled-login --group minecraft
-      $ addgroup --system --no-create-home --disabled-login --ingroup minecraft minecraft
+      $ adduser --system --no-create-home --disabled-login --ingroup minecraft minecraft
       
 #. Create the EMSM root directory and switch to it:
    
@@ -65,13 +65,13 @@ Manual installation
 
    .. code-block:: bash
    
-      $ chmod +x /usr/bin/minecraft
+      $ chmod +x /opt/minecraft/minecraft.py
       
 #. Add the EMSM application to your PATH:
 
    .. code-block:: bash
 
-      $ ln -s /opt/minecraft/minecraft.py /usr/bin
+      $ ln -s /opt/minecraft/minecraft.py /usr/bin/minecraft
       
 #. Intall the *init.d* service:
 

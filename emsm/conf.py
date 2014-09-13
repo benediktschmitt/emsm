@@ -179,7 +179,6 @@ class WorldsConfiguration(ConfigParser):
 
     _EPILOG = (
         "[the world's name]\n"
-        "port = <auto> | int\n"
         "stop_timeout = int\n"
         "stop_message = string\n"
         "stop_delay = int\n"
@@ -197,7 +196,6 @@ class WorldsConfiguration(ConfigParser):
 
         # Populate the defaults section.
         defaults = self.defaults()
-        defaults["port"] = "<auto>"
         defaults["stop_timeout"] = "10"
         defaults["stop_delay"] = "5"
         defaults["stop_message"] = "The server is going down.\n"\
