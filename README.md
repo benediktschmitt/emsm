@@ -21,23 +21,6 @@ at integrating **EMSM** with *init.d* to start/stop the server on
 (re-)boot/shutdown processes.
 
 
-# **dev** branch
-The [dev branch](https://github.com/benediktschmitt/emsm/tree/dev) is stable
-and ready to be used.
-
-Small changelog:
-
-* No ``server.conf`` - the EMSM contains now a server database
-* No ``/usr/bin`` script needed anymore - the EMSM downgrades its privileges if necessairy
-* No public attributes in the EMSM core API anymore
-* Added API documentation
-* Cleaned up code base - now more readable than it already was
-* Reworked the ServerWrapper to support other mc server like BungeeCord
-
-When you want to try the EMSM v3, check out the docs for the *dev* branch
-at [read the docs](http://emsm.readthedocs.org/en/dev/).
-
-
 ## Reference
 * [Highlights](#highlights)
 * [Documentation](#documentation)
