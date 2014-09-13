@@ -148,7 +148,6 @@ class MainConfiguration(ConfigParser):
         "\n"
         "[emsm]\n"
         "user = minecraft\n"
-        "loglevel = WARNING\n"
         "timeout = -1\n"
         "\n"
         "The configuration section of each plugin is titled with the plugins\n"

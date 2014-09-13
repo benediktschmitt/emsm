@@ -77,7 +77,7 @@ Manual installation
 
    .. code-block:: bash
    
-      $ cp /opt/minecraft/emsm/initd_script /etc/init.d/minecraft
+      $ cp /opt/minecraft/emsm/initd_script.sh /etc/init.d/minecraft
       $ chmod +x /etc/init.d/minecraft
       $ update-rc.d minecraft defaults
 
