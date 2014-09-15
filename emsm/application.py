@@ -270,12 +270,21 @@ class Application(object):
         
         # Read the configuration, so that we get to know some startup
         # parameters like the file lock *timeout* or the EMSM user.
+        # Note, that we don't need anything to **read** the configuration,
+        # since the EMSM simply uses default values if the configuration
+        # files are not available, so *self._paths.create()* can be called
+        # later.
         self._conf.read()
 
         # Try to switch the EMSM user and the EMSM root directory before doing
         # anything else.
         self._switch_user()
         os.chdir(self._paths.root_dir())
+
+        # Create the EMSM directories.
+        # Note, that we must do this after *switch_user* to make sure, that
+        # EMSM user owns the directories.
+        self._paths.create()
 
         # Wait for the file lock to avoid running multiple EMSM applications
         # at the same time.

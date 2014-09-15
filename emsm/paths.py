@@ -118,12 +118,9 @@ class Pathsystem(object):
         self._worlds_dir = os.path.join(self._root_dir, "worlds")
         self._emsm_dir = os.path.join(self._root_dir, "emsm")
         self._log_dir = os.path.join(self._root_dir, "logs")
-
-        # Create all folders.
-        self._create()
         return None
 
-    def _create(self):
+    def create(self):
         """
         Creates the folders used by the EMSM Application.
         """
