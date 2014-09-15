@@ -272,8 +272,10 @@ class Application(object):
         # parameters like the file lock *timeout* or the EMSM user.
         self._conf.read()
 
-        # Try to switch the user before doing anything else.
+        # Try to switch the EMSM user and the EMSM root directory before doing
+        # anything else.
         self._switch_user()
+        os.chdir(self._paths.root_dir())
 
         # Wait for the file lock to avoid running multiple EMSM applications
         # at the same time.
