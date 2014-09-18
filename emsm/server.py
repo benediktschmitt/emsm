@@ -32,6 +32,7 @@ import shlex
 import shutil
 import urllib.request
 import logging
+import subprocess
 import re
 
 # third party
@@ -87,18 +88,18 @@ class ServerError(Exception):
     pass
 
 
-class ServerUpdateFailure(ServerError):
+class ServerInstallationFailure(ServerError):
     """
-    Raised if a server update failed.
+    Raised if a server installation failed.
     """
 
     def __init__(self, server, msg=None):
         self.server = server
-        self.msg = msg
+        self.msg = str(msg)
         return None
 
     def __str__(self):
-        temp = "The update of the server '{}' failed."\
+        temp = "The installation of the server '{}' failed."\
                .format(self.server.name())
         if self.msg is not None:
             temp += " " + self.msg
@@ -114,7 +115,7 @@ class ServerStatusError(ServerError):
     def __init__(self, server, status, msg = str()):
         self.server = server
         self.status = status
-        self.msg = msg
+        self.msg = str(msg)
         return None
 
     def __str__(self):
@@ -163,26 +164,22 @@ class BaseServerWrapper(object):
     @classmethod
     def name(self):
         """
+        **ABSTRACT**
+        
         The unique name of the server.
 
         **Example**:
 
         ``"vanilla 1.8"``
-
-        **Override**:
-
-        in subclasses.
         """
         raise NotImplementedError()
 
     @classmethod
     def url(self):
         """
+        **ABSTRACT**
+        
         The URL where the server executable can be downloaded from.
-
-        **Override:**
-
-        in subclases
         """
         raise NotImplementedError()
     
@@ -228,30 +225,18 @@ class BaseServerWrapper(object):
 
     def install(self):
         """
-        Installs the server which basically means to call :meth:`update` if
-        necessairy.
-        If the server is already installed, nothing happens.
+        **ABSTRACT**
 
-        :raises ServerUpdateFailure:
-            if the download of the server failed.
+        Installs the server by downloading it to :meth:`server`. If the
+        server is already installed, nothing should happen.
+
+        This method is called during the EMSM start phase if
+        :meth:`is_installed` returns ``False``.
+
+        :raises ServerInstallationFailure:
+            * when the installation failed.
         """
-        if self.is_installed():
-            return None
-
-        # Download the server.
-        log.info("downloading server '{}' from '{}' ..."\
-                 .format(type(self).name(), type(self).url())
-                 )
-        try:
-            temp_server_file, http_message = urllib.request.urlretrieve(
-                type(self).url(),
-                )
-        except:
-            pass
-        else:
-            shutil.move(temp_server_file, self._server)
-            log.info("downloaded server '{}'.".format(type(self).name()))
-        return None
+        raise NotImplementedError()
 
     def start_cmd(self):
         """
@@ -273,13 +258,13 @@ class BaseServerWrapper(object):
 
         **Example:**
 
-            .. code-block:: python
+        .. code-block:: python
 
-                >>> # A BungeeCoord wrapper would do this:
-                >>> bungeecord.translate_command("stop")
-                "end"
-                >>> bungeecord.translate_command("say Hello World!")
-                "alert Hello World!"
+            >>> # A BungeeCoord wrapper would do this:
+            >>> bungeecord.translate_command("stop")
+            "end"
+            >>> bungeecord.translate_command("say Hello World!")
+            "alert Hello World!"
         """
         return NotImplementedError()
 
@@ -317,6 +302,22 @@ class VanillaBase(BaseServerWrapper):
 
     def translate_command(self, cmd):
         return cmd
+
+    def install(self):
+        """
+        """
+        if self.is_installed():
+            return None
+        
+        # Simply download the minecraft jar from mojang and copy the .jar in
+        # the EMSM_ROOT/server directory.
+        try:
+            tmp_path, http_resp = urllib.request.urlretrieve(self.url())
+        except Exception as err:
+            raise ServerInstallationFailure(self, err)
+        else:
+            shutil.move(tmp_path, self.server())
+        return None
     
     
 class Vanilla_1_2(VanillaBase):
@@ -438,16 +439,114 @@ class Vanilla_1_8(VanillaBase):
         return re.compile("^.*Starting minecraft server version 1\.8.*")
 
 
-# Craftbukkit
-# '''''''''''
+# MinecraftForger
+# '''''''''''''''
 
-class BukkitBase(BaseServerWrapper):
 
-    def start_cmd(self):
-        return "java -jar {}".format(shlex.quote(self._server))
+class MinecraftForgeBase(BaseServerWrapper):
+    """
+    Base class for the minecraft forge server.
+    """
 
     def translate_command(self, cmd):
         return cmd
+
+    def install(self):
+        """
+        """
+        if self.is_installed():
+            return None
+        
+        try:
+            # We need to download the *installer* first.
+            try:
+                tmp_path, http_resp = urllib.request.urlretrieve(self.url())
+            except Exception as err:
+                raise ServerInstallationFailure(err)
+            else:
+                
+                # Now, we have to run the installer.
+                if os.path.exists(self.server()):
+                    shutil.rmtree(self.server())            
+                os.makedirs(self.server())
+                
+                os.chdir(self.server())
+                if not os.path.samefile(self.server(), os.curdir):
+                    msg = "Could not chdir to {}".format(self.server())
+                    raise ServerInstallationFailure(self, msg)
+
+                sys_install_cmd = "java -jar {} --installServer"\
+                                      .format(tmp_path)
+                sys_install_cmd = shlex.split(sys_install_cmd)
+                try:
+                    p = subprocess.Popen(
+                        sys_install_cmd,
+                        stdout = subprocess.PIPE,
+                        stderr = subprocess.PIPE
+                        )
+
+                    # Store the output of the installer in the logfiles.
+                    out, err = p.communicate()
+                    out = out.decode()
+                    err = err.decode()
+                    log.info(out)
+
+                    # Check, if the installer exited with return code 0 and
+                    # throw an exception if not.
+                    if p.returncode:
+                        msg = "Installer returned with '{}'."\
+                              .format(p.returncode)
+                        raise ServerInstallationFailure(self, msg)
+                except Exception as err:
+                    raise ServerInstallationFailure(self, err)
+        except:
+            # Try to undo the installation.
+            if os.path.exists(self.server()):
+                shutil.rmtree(self.server())
+        return None
+
+
+class MinecraftForge_1_6(MinecraftForgeBase, Vanilla_1_6):
+
+    @classmethod
+    def name(self):
+        return "minecraft forge 1.6"
+
+    @classmethod
+    def url(self):
+        return "http://files.minecraftforge.net/minecraftforge/minecraftforge-installer-1.6.4-9.11.1.916.jar"
+
+    def start_cmd(self):
+        filenames = [filename \
+                     for filename in os.listdir(self.server()) \
+                     if re.match("^minecraftforge-universal-1\.6.*.jar$", filename)]
+        filename = filenames[0]
+        
+        start_cmd =  "java -jar {} nogui."\
+                    .format(shlex.quote(os.path.join(self._server, filename)))
+        return start_cmd
+    
+            
+class MinecraftForge_1_7(MinecraftForgeBase, Vanilla_1_7):
+
+    @classmethod
+    def name(self):
+        return "minecraft forge 1.7"
+
+    @classmethod
+    def url(self):
+        return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.7.10-10.13.0.1180/forge-1.7.10-10.13.0.1180-installer.jar"
+    
+    def start_cmd(self):
+        filenames = [filename \
+                     for filename in os.listdir(self.server()) \
+                     if re.match("^forge-1\.7.*.jar$", filename)]
+        filename = filenames[0]
+        
+        start_cmd =  "java -jar {} nogui."\
+                    .format(shlex.quote(os.path.join(self._server, filename)))
+        return start_cmd
+    
 
 # Bungeecord
 # ''''''''''
@@ -469,6 +568,22 @@ class BungeeCordServerWrapper(BaseServerWrapper):
     def url(self):
         return "http://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar"
 
+    def install(self):
+        """
+        """
+        if self.is_installed():
+            return None
+        
+        # Simply download the latest build and save it in the EMSM_ROOT/server
+        # directory.
+        try:
+            tmp_path, http_resp = urllib.request.urlretrieve(self.url())
+        except Exception as err:
+            raise ServerInstallationFailure(err)
+        else:
+            shutil.move(tmp_path, self.server())
+        return None
+        
     def start_cmd(self):
         return "java -jar {}".format(shlex.quote(self._server))
     

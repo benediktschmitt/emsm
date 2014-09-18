@@ -76,6 +76,8 @@ configuration file. Each section represents another world.
    `GitHub <https://github.com/benediktschmitt/emsm/issues>`_.
    
    * bungeecord
+   * minecraft forge 1.6
+   * minecraft forge 1.7
    * vanilla 1.2
    * vanilla 1.3
    * vanilla 1.4
