@@ -26,8 +26,7 @@
 About
 -----
 
-Controls each time the **EMSM** is invoked if the worlds are running and 
-reachable from outside.
+Monitors selected worlds (*--world*, *-w*, *-W*) and reacts on issues.
 
 Download
 --------
@@ -46,8 +45,6 @@ main.conf
     [guard]
     error_action = none
     error_regex = (\[SEVERE\])
-    auto_run = no
-    guard_all_worlds = no
    
 **error_action**
 
@@ -60,57 +57,22 @@ main.conf
     
 **error_regex**
 
-    If this regex matches the log file, it caues an error handling.
-   
-**auto_run**
-
-    If yes, run each time, the EMSM is invoked.
-   
-**guard_all_worlds**
-
-    If yes, this plugin guards all worlds per default.      
-      
-worlds.conf
-^^^^^^^^^^^
-
-.. code-block:: ini
-
-    [foo]
-    enable_guard = no
-   
-**enable_guard**
-
-    Enables the guard for this plugin. Overwrites the global
-    flag *guard_all_worlds*.
-
-Summary
-^^^^^^^
-If you want to enable the plugin for almost all worlds, use the *enable_guard* 
-option in the *DEFAULT* section:
-
-.. code-block:: ini
-
-    [DEFAULT]
-    enable_guard = yes
-   
-    [foo]
-    # This world is protected.
-   
-    [bar]
-    # This world is not protected.
-    enable_guard = no   
+    If this regex matches the log file, the world is considered to be in
+    trouble.
 
 Arguments
 ---------
 
-The guard has no arguments. If invoked it simply runs the guard for ALL worlds 
-selected with the global *-W* or *-w* argument AND the worlds where 
-*enable_guard* is true. 
+The guard has no arguments. When invoked all worlds selected with the global
+EMSM commands *-W* or *-w* are checked.
+
+Please not, that the **guard** does not produce much output to ``stdout``, but
+it writes a lot to the log files.
    
 Cron
 ----
 
-This plugin is made for *cron*:
+This plugin is made for cron (therefore it does not print much):
 
 .. code-block:: text
 
@@ -118,202 +80,197 @@ This plugin is made for *cron*:
     # Runs the guard every 5 minutes for all worlds
     */5 * *   *   *   root minecraft -W guard
    
-    # Runs the guard every 5 minutes for the world, where *enable_guard* is true:
-    */5 * *   *   *   root minecraft guard   
+    # Runs the guard every 5 minutes for the world *foo*.
+    */5 * *   *   *   root minecraft -w foo guard
+
+Changelog
+---------
+
+.. versionchanged:: 3.0.0-beta
+
+    * Removed configuration options that were dedicated to enable the guard
+      for selected worlds.
+    * The new **guard** simply monitors all worlds selected with the **-W**
+      or *-w* argument.
+
+Todo
+----
+
+* Add *email* as error action option.
 """
 
 
 # Modules
 # ------------------------------------------------
+
+# std 
 import re
 import sys
 import time
 import socket
+import logging
 
 # local
-import world_wrapper
-from base_plugin import BasePlugin
-from app_lib import userinput
+import emsm
+from emsm.base_plugin import BasePlugin
 
 
 # Data
 # ------------------------------------------------
+
 PLUGIN = "Guard"
+
+log = logging.getLogger(__file__)
 
 
 # Functions
 # ------------------------------------------------
-def check_port(port, ip="", timeout=1):
+
+def check_port(adr, timeout=1, attempts=1):
     """
     Returns `true` if the tcp address *ip*:*port* is reachable.
-    """
-    adr = (ip, port)
-    s = socket.socket()
-    s.settimeout(timeout)
-    try:
-        s.connect(adr)
-    except socket.error:
-        return False
-    else:
-        return True
-    finally:
-        s.close()
 
-
-def world_is_listening(world, attempts=10, sleep_intervall=1):
+    Parameters:
+        * adr
+            The network address tuple of the target.
+        * timeout
+            Time in seconds waited until a connection attempt is
+            considered to be failed.
+        * attempts
+            Number of port checks done until the *adr* is considered
+            to be unreachable.
     """
-    Returns `true`, if the *world* is listening on it's address.
-    """
-    properties = world.get_properties()
-    ip = properties.get("server-ip", "")
-    port = properties.get("server-port", "")
-    port = int(port) if port.isdigit() else 25565
-
     for i in range(attempts):
-        if check_port(port, ip):
-            return True
-        time.sleep(sleep_intervall)
-    return False
-
-    
-# Classes
-# ------------------------------------------------   
-class Guard(BasePlugin):
-    """
-    Provides automatic error handling for minecraft worlds.
-    """
-
-    # We want to finish at the end to make sure, that the status of a world is
-    # not changed by another plugin.
-    finish_priority = 1000
-    
-    version = "2.0.0"
-
-    # It's useful to let other plugins prevent an automatical check.
-    # E.g.: *initd*
-    prevent_autorun = False
-        
-    def __init__(self, app, name):
-        BasePlugin.__init__(self, app, name)
-
-        # Configuration
-        # Whats to do if a world is offline.
-        self.error_action = self.conf.get("error_action")
-        if self.error_action not in ("none", "restart", "stop", "stderr"):
-            self.error_action = "none"
-
-        self.error_regex = self.conf.get("error_regex", "(\[SEVERE\])")
-        self.auto_run = self.conf.getboolean("auto_run", False)
-        self.guard_all_worlds = self.conf.getboolean("guard_all_worlds", False)
-               
-        self.conf["error_action"] = self.error_action
-        self.conf["error_regex"] = self.error_regex
-        self.conf["auto_run"] = "yes" if self.auto_run else "no"
-        self.conf["guard_all_worlds"] = "yes" if self.guard_all_worlds else "no"
-
-        # Argparser
-        self.argparser.description = (
-            "Watches the logfiles and checks if the worlds are running smooth.")
-        return None
-
-    def uninstall(self):
-        """
-        Remove the additional configuration options in the worlds.conf.
-        """
-        super().uninstall()
-        
-        question = "Do you want to remove the additional "\
-                   "options in worlds.conf?".format(self.name)
-        if userinput.ask(question, default=True):
-            worlds_conf = self.app.conf.worlds
-            for section in worlds_conf:
-                worlds_conf.remove_option(section, "enable_guard")
-        return None
-
-    # Run
-    # --------------------------------------------
-
-    def _enabled_guard(self, world):
-        """
-        Returns true, if the world should be guarded.
-        """
-        # Try to get the 'local' value
+        s = socket.socket()
+        s.settimeout(timeout)
         try:
-            tmp = world.conf.getboolean("enable_guard")
-        except ValueError:
+            s.connect(adr)
+        except Exception as err:
             pass
         else:
-            if tmp is not None:
-                return tmp
-        # Fallback to the the 'global' value.
-        return self.guard_all_worlds
+            return True
+        finally:
+            s.close()
+    return False
+
+
+# Classes
+# ------------------------------------------------
+
+class Guard(BasePlugin):
     
+    VERSION = "3.0.0-beta"
+
+    DESCRIPTION = __doc__
+        
+    def __init__(self, app, name):
+        """
+        """
+        BasePlugin.__init__(self, app, name)
+
+        self._setup_conf()
+        self._setup_argparser()
+        return None
+
+    def _setup_conf(self):
+        """
+        Loads the configuration.
+        """
+        conf = self.conf()
+
+        # Get the configuration options.
+        self._error_action = conf.get("error_action")
+        if self._error_action not in ("none", "restart", "stop", "stderr"):
+            self._error_action = "stderr"
+
+        self._error_regex = conf.get("error_regex", ".*\[SEVERE\].*")
+
+        # Save the used configuration options and intialise the configuration.
+        conf["error_action"] = self._error_action
+        conf["error_regex"] = self._error_regex
+        return None
+
+    def _setup_argparser(self):
+        """
+        Sets the argument parser up.
+        """
+        parser = self.argparser()
+
+        parser.description = "Monitors the worlds and reacts on issues."
+        return None
+
+    def _world_in_trouble(self, world):
+        """
+        Returns ``True`` if the world is not running smooth.
+        """
+        # 1. Check if the world is online.
+        error = world.is_offline()
+
+        # 2. Check if the world's network address is reachable.
+        if not error:
+            error = not bool(check_port(world.address(), timeout=1, attempts=5))
+
+        # 3. Check the log file for errors.
+        if not error:
+            log = world.latest_log()
+            error = bool(re.search(self._error_regex, log))
+        return error
+            
     def guard(self, world):
         """
-        Checks if the world is running.
+        Checks if the world is running *smooth* and reacts on issues.
         """
-        # 1.) Check if the world is online
-        # 2.) Make a port check
-        # 3.) Check for errors in the log file.
-        
-        error = world.is_offline()
-        # XXX Could be buggy if a world has been restarted a few seconds ago.
-        error = error or not world_is_listening(world)
-        if self.error_regex:
-            error = error or re.search(self.error_regex, world.get_log())
-        
-        if error:
-            msg = "The world '{}' is not running smooth.".format(world.name)
-            self.log.warning(msg)
-            
-            if self.error_action == "restart":
-                self.log.info("Trying to restart ...")
-                try:
-                    if world.is_online():
-                        world.stop(force_stop=True)
-                    world.start()
-                except world_wrapper.WorldError:
-                    self.log.warning("Restart failed.")
-                else:
-                    self.log.info("Restart complete.")
-                
-            elif self.error_action == "stop":
-                self.log.info("Trying to stop the world ...")
-                try:
-                    if world.is_online():
-                        world.stop(force_stop=True)
-                except world_wrapper.WorldError:
-                    self.log.warning("Stop failed.")
-                else:
-                    self.log.info("Stop complete.")
-                
-            elif self.error_action == "stderr":
-                print("{}: '{}' seems to be offline"\
-                      .format(self.name, world.name), file=sys.stderr)
+        # Break if we have nothing to do.
+        if not self._world_in_trouble(world):
+            return None
+    
+        log.warning("the world '{}' is not running correct."\
+                    .format(world.name())
+                    )
+
+        # Restart
+        if self._error_action == "restart":
+            log.info("trying to restart the world '{}' ..."\
+                     .format(world.name())
+                     )
+            try:
+                world.restart(force_restart=True)
+            except emsm.worlds.WorldStopFailed as err:
+                log.warning("restart of '{}' failed: '{}'"\
+                            .format(world.name(), err)
+                            )
+            except emsm.worlds.WorldStartFailed as err:
+                log.warning("restart of '{}' failed: '{}'"\
+                            .format(world.name(), err)
+                            )
+            else:
+                log.info("restarted the world '{}'.".format(world.name()))
+
+        # Stop
+        elif self._error_action == "stop":
+            log.info("trying to stop the world '{}' ..."\
+                     .format(world.name())
+                     )
+            try:
+                world.stop(force_stop=True)
+            except emsm.worlds.WorldStopFailed as err:
+                log.warning("could not stop the world '{}'."\
+                            .format(world.name())
+                            )
+            else:
+                log.info("stopped the world '{}'.".format(world.name()))
+
+        # Stderr
+        elif self._error_action == "stderr":
+            print("guard - {}:".format(world.name()), file=sys.stderr)
+            print("\t", "has issues", file=sys.stderr)
         return None
 
     def run(self, args):
-        # Check the selected worlds and the protected worlds.
-        selected_worlds = self.app.worlds.get_selected()
-        protected_worlds = self.app.worlds.get_by_pred(
-            lambda w: self._enabled_guard(w))
-        worlds = set()
-        worlds.update(selected_worlds)
-        worlds.update(protected_worlds)
-
-        for world in worlds:
-            self.guard(world)
-        return None
-
-    def finish(self):
         """
-        This *run_check* should be the last action before exiting the programm.
-        So I set the *finish_priority* extremly high.
         """
-        if not (self.auto_run or self.prevent_autorun):
-            return None
-        
-        worlds = self.app.worlds.get_by_pred(lambda w: self._enabled_guard(w))
+        # Run the guard for all selected worlds.
+        worlds = self.app().worlds().get_selected()
         for world in worlds:
             self.guard(world)
         return None

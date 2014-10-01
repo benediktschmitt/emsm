@@ -4,7 +4,7 @@ License
 Source Code
 -----------
 
-From the version *2.0.1-beta*, the EMSM is published under the MIT license::
+Beginning with version *2.0.1-beta*, the EMSM is published under the MIT license::
 
 	The MIT License (MIT)
 

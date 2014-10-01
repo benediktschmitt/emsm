@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/python3
 
 # The MIT License (MIT)
 # 
@@ -22,13 +22,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# The user that should run your minecraft worlds.
-USER=minecraft
+"""
+Sets an EMSM application up and starts it.
+"""
 
-# The root directory of the EMSM.
-# This directory contains the *emsm* directory.
-LOCATION=/home/$USER
 
-# Change nothing below this line.
-# -----------------------------------------------
-eval "su --shell=/bin/bash -c 'cd $LOCATION && python3 $LOCATION/emsm/application.py $@' $USER"
+# Modules
+# ------------------------------------------------
+
+# local
+import emsm
+
+
+# Main
+# ------------------------------------------------
+
+if __name__ == "__main__":
+    # Todo: Move the control flow into the Application class.
+    app = emsm.application.Application()
+    try:
+        app.setup()
+        app.run()
+    except Exception as err:
+        app.handle_exception()
+        raise
+    finally:
+        ret = app.finish()
+        exit(ret)

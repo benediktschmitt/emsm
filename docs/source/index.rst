@@ -5,8 +5,8 @@ Welcome to Extendable Minecraft Server Manager's documentation!
    :maxdepth: 1
    
    how_to/index
-   core_plugins/index
    plugins/index
+   api/index
    contribute
    license
    about
@@ -37,11 +37,11 @@ Why should you use the **EMSM**?
          
 *  **Open Source**
 
-   Licensed under the GNU GPL 3.0.
+   Licensed under the MIT License.
                   
 *  **Portable**
          
-   Needs only Python, screen and java to run. Works on all unix systems.
+   Needs only Python, screen and java to run and should work on all Linux systems.
          
 *  **Cron-Save**
 
@@ -61,7 +61,7 @@ Why should you use the **EMSM**?
    Create and manage multiple versions of your worlds with the
    :mod:`backup manager <backups>`.
 
-*  **Multiple worlds**
+*  **Multiple worlds and server**
 
    This application has been written to administrate and run multiple
    worlds and server versions to the same time.

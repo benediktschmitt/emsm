@@ -1,11 +1,6 @@
 First run
 =========
 
-.. sidebar:: Core plugins
-
-   Please take also a look at the :ref:`core plugins <core_plugins>`. The
-   documentation is not big, but contains everything you need to know.
-
 There are some common arguments and run types you should know:
 
 *  The **dry-run**. Only the service routines will be called:
@@ -43,7 +38,7 @@ Each plugin provides its own arguments, similar to *git*. There are only a few
 		$ minecraft -W [plugin ...]
 		$ minecraft --all-worlds [plugin ...]
 
-*  Select single worlds:
+*  Select world by world:
 
    .. code-block:: bash
    
@@ -57,7 +52,7 @@ Each plugin provides its own arguments, similar to *git*. There are only a few
 		$ minecraft -S [plugin ...]
 		$ minecraft --all-server [plugin ...]
 
-*  Select only a few server:
+*  Select server by server:
 
    .. code-block:: bash
    
@@ -80,6 +75,7 @@ Common taks
    
       $ minecraft -w foo worlds --restart
       $ minecraft --world foo worlds --restart
+      $ minecraft -w foo worlds --force-restart
 
 *  Stop all worlds:
    
@@ -91,6 +87,7 @@ Common taks
 *  Server update:
 
    .. code-block:: bash
-   
-      $ minecraft --s bukkit_latest server --update
+      
+      $ minecraft -S server --update
+      $ minecraft -s bukkit_latest server --update
       $ minecraft --server bukkit_latest server --update

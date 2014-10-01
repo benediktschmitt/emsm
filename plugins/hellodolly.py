@@ -44,66 +44,71 @@ You can find the latest version of *hello_dolly* on the EMSM GitHub
 
     .. literalinclude:: hellodolly.py
 
-    So, the next line is actually a small hack.
-    When the documentation is built, this module is included from
+    The next line is actually a small hack. When the documentation is
+    built, this module is included from
     ``EMSM_ROOT/docs/source/plugins/``, but the module is in
     ``EMSM_ROOT/plugins/```. 
 
-    Todo: Remove this comment and fix the literalinclude thing.
-
 .. literalinclude:: ../../../plugins/hellodolly.py
 
-Package
--------
+Installation
+------------
 
-We want to create our own plugin package, so that other users can install it
-with :mod:`plugins` easily:
+We want to distribute our plugin because we think it brings so much joy
+to all players. So let's create a small package.
+
+This is usually done with the :mod:`plugins.plugins` plugin:
 
 .. code-block:: bash
 
-    $ plugin.py -s hellodolly.py
-    $ ls
+    $ foo@bar: ls
+    hellodolly.py ...
+    $ foo@bar: plugin.py --source hellodolly.py
+    $ foo@bar: ls
     hellodolly.py hellodolly.tar.bz2 ...
    
-The package should be now in your current working directory.
+The compressed package archive should now be in your working directory.
    
 Usage
 -----
 
 .. code-block:: bash
 
-    # Will print only one row:
-    minecraft -W hellodolly
+    $ foo@bar: # Will print only one row:
+    $ foo@bar: minecraft -W hellodolly
    
-    # Prints 5 rows or less, if the configuration value is smaller:
-    minecraft -W hellodolly --rows 5
-   
+    $ foo@bar: # Prints 5 rows or less, if the configuration value is smaller:
+    $ foo@bar: minecraft -W hellodolly --rows 5
+
 Documentation
 ------------- 
 
 Acutally, EMSM uses sphinx *autodoc* feature to create the documentation for
-the plugins. So what, you see here is the docstring of the ``hello_dolly.py``
+the plugins. So what, you see here is the docstring of the ``hellodolly.py``
 module.
 """
 
 
 # Modules
 # ------------------------------------------------
+
+# std
 import os
 import random
 
 # local
-from base_plugin import BasePlugin
+import emsm
+from emsm.base_plugin import BasePlugin
 
 
-# Vars
+# Data
 # ------------------------------------------------
-# This string variable contains the name of the plugin class in this module.
+
+# This variable helps the EMSM to find the actual plugin class in this module.
 PLUGIN = "HelloDolly"
 
-
 # These are the well-known hello dolly lyrics.
-_DEFAULT_LYRICS = """Hello, Dolly
+LYRICS = """Hello, Dolly
 Well, hello, Dolly
 It's so nice to have you back where you belong
 You're lookin' swell, Dolly
@@ -130,113 +135,148 @@ Golly, gee, fellas
 Find her a vacant knee, fellas
 Dolly'll never go away
 Dolly'll never go away
-Dolly'll never go away again
-"""
+Dolly'll never go away again"""
 
 
 # Classes
 # ------------------------------------------------
-class HelloDolly(BasePlugin):
-    """
-    This plugin is inspired by the wordpress plugin *Hello Dolly*. Its primary
-    purpose is to demonstrate the implementation of a plugin.
 
-    It demonstrates the use of:
-        * self.app
-        * self.name
-        * self.log
-        * self.conf
-        * self.data_dir
-        * self.argparser
-    """
+class HelloDolly(BasePlugin):
 
     # We don't need to wait for other plugins, so we don't care
     # about the init priority. If you want that your plugin is initialised
     # earlier than others, make this value smaller.
-    #init_priority = 0
+    INIT_PRIORITY = 0
 
-    # Also, we don't care about the fact if the finish method of our
-    # plugin is called early or late. The *finish* method of plugins with
-    # a smaller *finish_priority* is called earlier.
-    #finish_priority = 0
+    # Also, we don't care about if the finish method of our plugin is called
+    # early or late. The *finish* method of plugins with a smaller
+    # *FINISH_PRIORITY* is called earlier.
+    FINISH_PRIORITY = 0
 
     # At the moment, there is no direct url to the latest version of this
-    # plugin. The plugin manager can use this url to detect new versions of
-    # your plugin and will download them (almost) automatically.
-    #download_url = ""
+    # plugin.
+    # In the future, the plugin manager could use this url to detect new
+    # versions of your plugin and will download them automatically.
+    DOWNLOAD_URL = None
     
-    # The last compatible version of the EMSM
-    version = "2.0.0"
+    # The last compatible version of the EMSM.
+    VERSION = "3.0.0-beta"
+
+    # The EMSM automatically uses the DESCRIPTION variable to set up the
+    # *--long-help* argument parser argument.
+    #
+    # We ususally use here the module's docstring. Note, that ``__doc__``
+    # does not interfere with the HelloDolly docstring ``HelloDolly.__doc__``
+    # since the HelloDolly class has no docstring.
+    DESCRIPTION = __doc__
 
     def __init__(self, application, name):
-        # We need to init the BasePlugin. It will create the references
-        # described above.
+        """
+        """
+        # We need to init the BasePlugin. This is necessairy, so that we can
+        # safely access:
+        #
+        #   * self.conf()
+        #   * self.argparser()
+        #   * ...
         BasePlugin.__init__(self, application, name)
 
-        # Configuration
+        # The configuration and argument parser are set up in own methods
+        # for readability.
+        self._setup_conf()
+        self._setup_argparser()
+        return None
 
-        # This is the number of rows that we want to allow to print at once.
-        self.max_rows = self.conf.getint("max_rows", 5)
-        self.conf["max_rows"] = str(self.max_rows)
+    def _setup_conf(self):
+        """
+        Sets the configuration up.
+        """
+        # Get the configuration dictionary for this plugin.
+        conf = self.conf()
+
+        # This is an example of the hellodolly configuration section in the
+        # main.conf configuration file:
+        #
+        # [hellodolly]
+        # max_rows = 5
+        #
         
-        # Here, we store the used lyrics.
-        self.lyrics_file = os.path.join(self.data_dir, "lyrics.txt")
+        self._max_rows = conf.getint("max_rows", 5)
+        conf["max_rows"] = str(self._max_rows)
+        return None
 
-        # If the lyrics file does not exist, we'll init it with the default
-        # lyrics.
-        if not os.path.exists(self.lyrics_file):
-            with open(self.lyrics_file, "w") as file:
-                file.write(_DEFAULT_LYRICS)
+    def _setup_argparser(self):
+        """
+        Sets the argument parser up.
+        """
+        # Get the plugin's argument parser.
+        parser = self.argparser()
 
-        # Now, we set our argparser up.
-        self.argparser.description = (
+        parser.description = (
             "Demonstrates the implementation of a plugin. Inspired by the "
             "wordpress plugin \"Hello, Dolly\"."
-            )
-        self.argparser.epilog = "https://emsm.benediktschmitt.de/"
-        self.argparser.add_argument(
+            )        
+        parser.epilog = "https://github.com/benediktschmitt/emsm"
+        parser.add_argument(
             "--rows", "-r",
-            action="store", dest="rows", type=int,
-            default=1, metavar="ROWS",
-            help="The number of lines that will be printed. "
+            action = "store",
+            dest = "rows",
+            type = int,
+            default = 1,
+            metavar = "ROWS",
+            help = "The number of lines that will be printed."
             )
         return None
 
-    def uninstall(self):
+    def _uninstall(self):
         """
-        If you created data not stored in *self.data_dir* or used also the
+        If you created data not stored in ``data_dir()`` or used also the
         *worlds.conf* or *server.conf* configuration files, you should ask the
         user here, if he wants to remove these files and settings too.
+
+        Note the difference between ``_uninstall()`` and ``uninstall()``.
         """
-        # Don't forget to call the BasePlugins uninstall method. This will
-        # remove (if wished) the data directory of the plugin and the
-        # configuration.
-        super().uninstall()
-
-        # Your stuff here. E.g.:
-        #for section in self.app.conf.worlds:
-        #    self.app.conf.worlds.remove_option(section, "my_awesome_conf")
+        # Your uninstallation stuff here
+        # ...
         return None
-
-    # run
-    # --------------------------------------------
 
     def run(self, args):
         """
         Writes lines of our lyrics into the chats of the selected worlds.
+
+        Parameters:
+            * args
+                Is a namespace that contains the parsed arguements.
         """
-        rows = args.rows if args.rows < self.max_rows else self.max_rows
+        # Get the number of lines we want to print and make sure, that
+        # the number is not greater then the max_rows configuration value.
+        rows = args.rows
+        if rows > self._max_rows:
+            rows = self._max_rows
+        if rows < 0:
+            rows = 0
+
+        # Get *rows* lyrics.
         lyrics = self.get_lyrics(rows)
+
+        # Sent the poet to every selected world.
         self.be_poetic(lyrics)
         return None
 
     def get_lyrics(self, num_rows):
         """
         Returns rows of the hello dolly lyrics.
-        """
-        with open(self.lyrics_file) as file:
-            lyrics = list(file)
 
+        Parameters:
+            * num_rows
+                The number of rows, that should be extracted from the
+                lyrics.
+        """
+        global LYRICS        
+        lyrics = LYRICS
+
+        # Get *num_rows* lines of the lyrics.
+        lyrics = lyrics.split("\n")
         if num_rows > len(lyrics):
             return lyrics
         else:
@@ -246,35 +286,24 @@ class HelloDolly(BasePlugin):
 
     def be_poetic(self, lyrics):
         """
-        Writes the lyrics to the chat of all running, selected worlds.
+        Writes the *lyrics* to the chat of all running, selected worlds.
         """
-        worlds = self.app.worlds.get_selected()
+        # Get all worlds that have been selected with *-w* or *-W*.
+        worlds = self.app().worlds().get_selected()
+
+        print("hellodolly:")
         for world in worlds:
-            if not world.is_online():
-                continue
-
-            # We can also log what we are doing. 
-            msg = "Poest visits '{}'".format(world.name)
-            self.log.debug(msg)
-            print(msg)
-            
-            for row in lyrics:
-                world.send_command("say {}".format(row))
+            if world.is_offline():
+                print("\t", world.name(), "OFFLINE")
+            else:
+                for row in lyrics:
+                    world.send_command("say {}".format(row))
+                print("\t", world.name(), "VISITED")
         return None
-
-    # end
-    # --------------------------------------------
 
     def finish(self):
         """
-        Print a row of the lyrics to the command line to greet the user.
-
-        This method is always called.
+        This method is always called, when the EMSM is about to finish.
+        It should be used for clean up or background stuff.
         """
-        # I think this is quite annoying so I commented this
-        # section out.
-        
-##        rows = self.get_lyrics(1)
-##        row = rows[0].strip()
-##        print("hello_dolly greets you:", row)
         return None

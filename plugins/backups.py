@@ -44,9 +44,6 @@ Configuration
     restore_message = This world is about to be ressetted to an earlier state.
     restore_delay = 5
     max_storage_size = 30
-    auto_sync = yes
-    mirrors =
-    include_server = yes
 
 **archive_format**
 
@@ -68,14 +65,6 @@ Configuration
     Maximum number of backups in the storage folder, before older backups
     will be removed.
 
-**auto_sync**
-
-    If yes, the backup mirrors will be sync each time the EMSM runs.
-
-**mirrors**
-
-    Comma (,) separated list of the backup directories.
-
 Arguments
 ---------
 
@@ -87,10 +76,6 @@ Arguments
 .. option:: --list
 
     Lists all available backups.
-
-.. option:: --sync
-
-    Synchronises and cleans all backup mirrors.
 
 .. option:: --create
 
@@ -107,32 +92,63 @@ Arguments
 .. option:: --restore-menu
 
     Opens a menu, where the user can select which backup he wants to restore.
+
+Cron
+----
+
+You should create a cronjob to create daily backups:
+
+.. code-block:: none
+
+    # m h dom mon dow user command
+    # Creates a backup of all worlds everyday at 2:00h
+    * 2 *   *   *   root minecraft -W backups --create
+    
+
+Backup archive structure
+------------------------
+
+A typical backup archive has this structure:
+
+.. code-block:: none
+
+    o
+    |- world_conf.json        # The EMSM configuration of the world
+    |- world                  # the minecraft world
+        |- server.log
+        |- server.properties
+        |- ...
+
+Changelog
+---------
+
+EMSM v3
+^^^^^^^
+
+    * changed package structure and dropped support for EMSM v2 backups.
 """
 
 
 # Modules
 # ------------------------------------------------
+
+# std
 import os
 import time
 import shutil
 import datetime
 import tempfile
+import logging
 import json
-import hashlib
 
 # local
-import world_wrapper
-import configuration
-from base_plugin import BasePlugin
-from app_lib import pprinttable
-from app_lib import userinput
-
-# We need only the filesize_to_string method
-from app_lib.downloadreporthook import filesize_to_string
+import emsm
+from emsm.base_plugin import BasePlugin
 
 
 # Backward compatibility
 # ------------------------------------------------
+
 try:
     FileExistsError
 except NameError:
@@ -141,14 +157,17 @@ except NameError:
 
 # Data
 # ------------------------------------------------
-PLUGIN = "BackupManager"
-# The PLUGIN_VERSION is not related to the EMSM version number.
-PLUGIN_VERSION = "2.0.0"
+
+PLUGIN = "Backups"
+
 AVLB_ARCHIVE_FORMATS = [name for name, desc in shutil.get_archive_formats()]
+
+log = logging.getLogger(__file__)
 
 
 # Functions
 # ------------------------------------------------
+
 def file_hash(path):
     """
     Returns the sha512 hash sum of the file at *path*.
@@ -161,537 +180,304 @@ def file_hash(path):
 
 # Classes
 # ------------------------------------------------
-class WorldBackupManager(object):
+
+class BackupManager(object):
     """
-    Wraps a world to manage the backups of the world.
+    Manages the backups of one world.
     """
 
-    def __init__(self, app, world,
-                 backup_dirs, archive_format, max_storage_size):
-        self.app = app
-        self.world = world
+    def __init__(self, app, world, max_storage_size, backup_dir):
+        """
+        """
+        self._app = app
+        self._world = world
+        self._backup_dir = backup_dir
+        self._max_storage_size = max_storage_size
 
-        # I assume that the BackupManager checked those values.
-        self.backup_dirs = backup_dirs
-        self.archive_format = archive_format
-        self.max_storage_size = max_storage_size
-
-        # Create the backup directories if they don't exist.
-        for path in self.backup_dirs:
-            try:
-                os.makedirs(path)
-            except FileExistsError:
-                pass
+        os.makedirs(self._backup_dir, exist_ok=True)
         return None
 
-    # about the filenames
-    # --------------------------------------------
-
-    # This backup manager uses the filenames to store the timestamp of the
-    # backup.
-    # If a filename endswith ".tmp" it is considered as a temporary file.
-
-    def get_filename_format(self):
+    def app(self):
         """
-        Returns a string that can be formatted with the datetime method
-        strftime.
-        The filename has no extension.
+        Returns that EMSM application that implicitly owns this object.
         """
-        # Something like: "%Y_%m_%d-%H_%M_%S-foo"
-        filename_format = "%Y_%m_%d-%H_%M_%S-{}".format(self.world.name)
+        return self._app
+
+    def world(self):
+        """
+        Returns the world whichs backups are managed.
+        """
+        return self._world
+
+    def backup_dir(self):
+        """
+        Returns the backup directory.
+        """
+        return self._backup_dir
+
+    def max_storage_size(self):
+        """
+        Returns the maximum number of backups that can be stored to the same
+        time. If this value is *0*, then there is no limit.
+        """
+        return self._max_storage_size
+
+    # We use the *filenames* to store the *timestamp* of a backup.
+
+    def _filename_format(self):
+        """
+        Returns a string that can be formatted with *datetime.strftime()*.
+
+        Example:
+            >>> now = datetime.datetime.now()
+            >>> fmt = bm.filename_format()
+            >>> fmt
+            %Y_%m_%d-%H_%M_%S-foobar
+            >>> now.strftime(fmt)
+            '2014_09_02-20_37_08-foobar'
+        """
+        filename_format = "%Y_%m_%d-%H_%M_%S-{}".format(self._world.name())
         return filename_format
 
-    def extract_filename(self, path):
+    def _date_from_filename(self, path):
         """
-        Extracts the filename from the path and removes the extensions.
-        E.g.:
-        /foo/bar/foo_class.tar.bz2 -> foo_class
-        """
-        temp = os.path.basename(path)
-        temp = os.path.splitext(temp)
-        while temp[1]:
-            temp = os.path.splitext(temp[0])
-        return temp[0]
+        Extracts the timestamp from the filename and returns the corresponding
+        ``datetime.datetime`` instance.
 
-    def get_date_from_filename(self, filename):
+        See also:
+            * filename_format()
         """
-        Extracts the date from the filename. Returns a datetime instance
-        if successful, else None.
+        # Extract the filename and remove any extensions.
+        path = os.path.basename(path)
+        filename = path[:path.find(".")]
 
-        E.g.:
-            .../backups/foo/2014_06_19-02-13-10-foo.zip
-            => datetime(2014, 6, 19, 2, 13, 10)
-
-            ../backups/foo/stuff.txt
-            => None
-        """
-        filename = self.extract_filename(filename)
-        filename_format = self.get_filename_format()
+        # Extract the datetime.
         try:
-            return datetime.datetime.strptime(filename, filename_format)
-        except ValueError:
+            return datetime.datetime.strptime(filename, self._filename_format())
+        except ValueError as err:
             return None
 
-    def create_filename(self, datetime_obj=None):
+    def _create_filename(self, date):
         """
-        Returns the filename of the backup that has been created at the
-        datetime index.
-        If datetime is None, the current time will be used.
-        The returned filename has no extension.
-
-        E.g.:
-        >>> create_filename(datetime(2014, 2, 2))
-        "2014_02_02-00-00-00-foo.zip"
+        Creates the filename (without extensions) for the backup that has
+        been created at the datetime *date*.
         """
-        if datetime_obj is None:
-            datetime_obj = datetime.datetime.now()
-        filename_format = self.get_filename_format()
-        filename = datetime_obj.strftime(filename_format)
+        filename = date.strftime(self._filename_format())
         return filename
 
-    # about the storage
-    # --------------------------------------------
-
-    def get_backups_in_directory(self, directory):
+    def backup_list(self):
         """
-        Returns a dictionary with all existing backups in the directory.
-        date => path
+        Returns a dictionary that maps the creation date of the backup to
+        the backup path.
         """
         backups = dict()
-        for filename in os.listdir(directory):
-            path = os.path.join(directory, filename)
+        for filename in os.listdir(self._backup_dir):
+            path = os.path.join(self._backup_dir, filename)
+            
             if not os.path.isfile(path):
                 continue
             if path.endswith(".tmp"):
                 continue
-
-            date = self.get_date_from_filename(filename)
-            if date is not None:
-                path = os.path.join(directory, filename)
-                backups[date] = path
+                        
+            date = self._date_from_filename(filename)
+            if date is None:
+                continue
+            
+            backups[date] = path
         return backups
 
-    def get_backups(self):
+    def latest_backup(self):
         """
-        Returns a dictionary with all existing backups.
+        Returns a two tuple, that contains the date and the path of the latest
+        available backup. If no backup is available, ``(None, None)`` is
+        returned.
+
+        See also:
+            * backup_list()
         """
-        backups = dict()
-        # In reversed range, backups that exist in the less prior
-        # directories will be overwritten by the backups in the storages
-        # with an higher priority.
-        for directory in reversed(self.backup_dirs):
-            temp_backups = self.get_backups_in_directory(directory)
-            backups.update(temp_backups)
-        return backups
+        backups = self.backup_list()
+        if backups:
+            date = max(backups.keys())
+            path = backups[date]
+            return (date, path)
+        else:
+            return (None, None)
 
-    def get_latest_backup(self):
+    def clean_backup_dir(self):
         """
-        Returns (date, path) of the latest backup. If no backup is available,
-        None will be returned.
+        Removes old backups that are no longer needed.
+
+        See also:
+            * max_storage_size()
         """
-        backups = self.get_backups()
-        if not backups:
-            return None
-        date = max(backups)
-        path = backups[date]
-        return (date, path)
+        # Remove some old backups if we store currently too many backups.
+        if self._max_storage_size > 0:
+            backups = list(self.backup_list().items())
+            backups.sort(reverse=True)
+            
+            while len(backups) > self._max_storage_size:
+                date, path = backups.pop()
+                os.remove(path)
 
-    def sync(self):
-        """
-        Synchronises all backup directories and removes the oldest backup
-        files until there are less or equal backups as max_storage_size.
-
-        Returns a dictionary that contains the changes for each directory.
-        """
-        # Get the backups that should remain.
-        all_backups = self.get_backups()
-
-        # Get the max_storage_size latest backups.
-        to_remain = list(all_backups.keys())
-        to_remain.sort(reverse=True)
-        to_remain = to_remain[:self.max_storage_size]
-        remaining_backups = {date: all_backups[date] for date in to_remain}
-
-        # Synchronise the directories and save the changes.
-        changes = dict()
-        for directory in self.backup_dirs:
-            backups_in_directory = self.get_backups_in_directory(directory)
-
-            changes[directory] = dict()
-            changes[directory]["added"] = list()
-            changes[directory]["removed"] = list()
-
-            # Copy new backups. Copy the backup into a temporary file
-            # and rename it, if the copy procedure was successful.
-            for date in remaining_backups:
-                if date not in backups_in_directory:
-                    src = remaining_backups[date]
-                    dst = os.path.join(
-                        directory, os.path.basename(remaining_backups[date]))
-                    tmp_dst = dst + ".tmp"
-
-                    shutil.copy(src, tmp_dst)
-                    os.rename(tmp_dst, dst)
-                    changes[directory]["added"].append(date)
-
-            # Remove old backups.
-            for date in backups_in_directory:
-                if date not in remaining_backups:
-                    path = backups_in_directory[date]
+        # Remove .tmp files.
+        # These are backups which could not be craeated successfully.
+        for filename in os.listdir(self._backup_dir):
+            path = os.path.join(self._backup_dir, filename)
+            
+            if path.endswith(".tmp"):
+                try:
                     os.remove(path)
-                    changes[directory]["removed"].append(date)
+                except OSError:
+                    pass
+        return None
 
-            # Remove temporary files from unsuccessful syncs.
-            for filename in os.listdir(directory):
-                path = os.path.join(directory, filename)
-                if path.endswith(".tmp") and os.path.isfile(path):
-                    os.remove(path)
-        return changes
-
-    # create / restore
-    # --------------------------------------------------
-
-    """
-    The backup archive for the world *foo* that is run by the vanilla
-    minecraft server *minecraft_server.jar* has this structure:
-
-        o
-        |- MANIFEST.json
-        |- configuration
-            |- worlds.json
-            |- server.json
-        |- server
-            |- minecraft_server.jar
-        |- worlds
-            |- foo
-                |- server.log
-                |- server.properties
-                |- ...
-
-    Actually, this is almost the same directory structure the EMSM uses.
-    """
-
-    def _save_world(self, manifest, backup_dir):
+    def _save_world(self, backup_dir):
         """
         Copies the world directory (world data) into the backup directory:
-            EMSM/worlds/foo -> backup_dir/worlds/foo
-
-        Creates the entries in MANIFEST:
-            * "world_name"
-            * "world_dir"
-                Relative path too *backup_dir* where the world backup is
-                stored.
-        """
-        try:
+        
+            EMSM_ROOT/worlds/foo -> backup_dir/world
+        """        
+        try:            
             # We need to disable the auto-save for the backup. I'm paranoid,
             # so I'disable auto-save in this try-catch construct.
-            if self.world.is_online():
-                self.world.send_command("save-off")
-                self.world.send_command("save-all")
+            if self._world.is_online():                
+                self._world.send_command("save-off")
+                # We use verbose send, to wait until the world has been saved.
+                self._world.send_command_get_output("save-all", timeout=10)
 
-            manifest["world_name"] = self.world.name
-            manifest["world_dir"] = os.path.join("worlds", self.world.name)
-
+            # Copy the world data to *backup_dir*.
             shutil.copytree(
-                self.world.directory,
-                os.path.join(backup_dir, manifest["world_dir"])
+                self._world.directory(),
+                os.path.join(backup_dir, "world")
                 )
         finally:
-            if self.world.is_online():
-                self.world.send_command("save-on")
-                self.world.send_command("save-all")
-        return
+            if self._world.is_online():
+                self._world.send_command("save-on")
+                self._world.send_command("save-all")
+        return None
 
-    def _restore_world(self, manifest, backup_dir):
+    def _restore_world(self, backup_dir):
         """
-        Copies the backed up world directory (world data) from backup_dir
-        into the EMSM worlds folder:
+        Copies the world directory from the backup in *backup_dir* into the
+        EMSM world folder.
 
-            if manifest is None:
-                # old version of this plugin
-                backup_dir -> EMSM/worlds/foo
-            else:
-                # new backup structure (since version 2.0)
-                backup_dir/worlds/foo -> EMSM/worlds/foo
+        Exceptions:
+            * WorldIsOnlineError
 
-        I assume, that the world is **not running**. If the world is online,
-        a ``world_wrapper.WorldIsOnlineError`` is raied.
-        """
-        if self.world.is_online():
-            raise world_wrapper.WorldIsOnlineError()
+        See also:
+            * _save_world()
+        """        
+        # Break if the world is currently online.
+        if self._world.is_online():
+            raise emsm.worlds.WorldIsOnlineError()
 
-        # Delete the world directory (``EMSM/world/...``)
-        for i in range(5):
+        # Delete the world directory (``EMSM/world/...``)        
+        for i in range(100):
             # XXX: Fixes an error with server.log.lck
-            # and shutil.rmtree(...).
+            # and shutil.rmtree(...) when the server was online.
             try:
-                shutil.rmtree(self.world.directory)
-                break
+                shutil.rmtree(self._world.directory())
             except OSError:
                 time.sleep(0.05)
+            else:
+                break
 
-        # Copy the backup to the EMSM world directory.
-        if manifest is None:
-            world_backup_dir = backup_dir
-        else:
-            world_backup_dir = os.path.join(backup_dir, manifest["world_dir"])
-        shutil.copytree(world_backup_dir, self.world.directory)
-        return None
-
-    def _save_world_configuration(self, manifest, backup_dir):
-        """
-        Saves the configuration of the world in a json file in *backup_dir*.
-
-        Creates these entries in MANIFEST:
-            * "world_conf"
-                Relative path to backup_dir with the world's configuration.
-        """
-        os.makedirs(os.path.join(backup_dir, "configuration"), exist_ok=True)
-        
-        # the world.conf section
-        manifest["world_conf"] = os.path.join("configuration", "worlds.json")
-        with open(os.path.join(backup_dir, manifest["world_conf"]), "w")\
-             as file:
-            conf = dict(self.world.conf)
-            json.dump([self.world.name, conf], file)
-        return None                
-
-    def _restore_world_configuration(self, manifest, backup_dir):
-        """
-        Restores the configuration from the world, if *manifest* is not None.
-        Otherwise, nothing happens.
-        """
-        # Before the MANIFEST has been introduced, we did not make a backup
-        # of the configuration, so break here.
-        if manifest is None:
-            return None
-
-        # Load the dumped data.
-        with open(os.path.join(backup_dir, manifest["world_conf"])) as file:
-            world_name, conf = json.load(file)
-
-        for key, val in conf.items():
-            # Note, that we overwrite the DEFAULT (see configparser) values,
-            # when doing this. So more options may occure in the world's section
-            # than at backup time.
-            self.world.conf[key] = val
-        return None
-
-    def _save_server_configuration(self, manifest, backup_dir):
-        """
-        Saves the configuration of the server in a json file in *backup_dir*.
-        
-        Creates these entries in MANIFEST:
-            * "server_conf"
-                Relative path to backup_dir with the world's server's conf.
-        """
-        os.makedirs(os.path.join(backup_dir, "configuration"), exist_ok=True)
-        
-        # the server.conf section
-        manifest["server_conf"] = os.path.join("configuration", "server.json")
-        with open(os.path.join(backup_dir, manifest["server_conf"]), "w")\
-             as file:
-            server = self.world.server
-            conf = dict(server.conf)
-            json.dump([server.name, conf], file)
-        return None
-
-    def _restore_server_conf(self, manifest, backup_dir):
-        """
-        This method only exists to explain, why it does not really exist:
-
-        If the server is not restored, we don't have to restore the
-        configuration. Furthermore, the *restore_server* method makes sure,
-        that no server with the same name is overwritten and may adapt the
-        configuration.
-        """
-        # Take a look at: ``_restore_server(...)``
-        raise NotImplementedError()
-
-    def _save_server(self, manifest, backup_dir):
-        """
-        Copies the server executable (e.g. 'craftbukkit.jar') into
-        the backup directory:
-
-            EMSM/server/craftbukkit.jar -> backup_dir/server/craftbukkit.jar
-        """
-        server_filename = os.path.basename(self.world.server.server)
-        manifest["server_exec"] = os.path.join("server", server_filename)
-
-        os.makedirs(os.path.join(backup_dir, "server"), exist_ok=True)
-        shutil.copy(
-            self.world.server.server,
-            os.path.join(backup_dir, manifest["server_exec"])
+        # Copy the world backup to the EMSM world directory.
+        shutil.copytree(
+            src = os.path.join(backup_dir, "world"),
+            dst = self._world.directory()
             )
         return None
 
-    def _restore_server(self, manifest, backup_dir):
+    def _save_world_conf(self, backup_dir):
         """
-        Restores the server executable of the world at backup time and also
-        the configuration for this server.
-
-        If a server with that name already exists, we compare the sha512 hashes
-        of both files. If they are different, we restore the server under
-        another time.
+        Saves the configuration of the world in *backup_dir/conf/world.json*.
         """
-        def emsm_server_by_filehash(server_hash):
-            """
-            If the EMSM manages a server executable, that has the same
-            hash value as *server_hash*, then the server_wrapper.ServerWrapper
-            instance for this server is returned, else None.
-            """
-            for server in self.app.server.get_all():
-                if file_hash(server.server) == server_hash:
-                    return server
-            return None
+        world_conf_backup_path = os.path.join(backup_dir, "world_conf.json")
+        with open(world_conf_backup_path, "w") as file:
+            conf = dict(self._world.conf())
+            json.dump([self._world.name(), conf], file)
+        return None                
 
-        def unify_name(server_name, server_filename):
-            """
-            Increments the number of *server_name* until no other executable
-            in EMSM/server with the name exists.
-            """
-            emsm_server = self.app.server.get_all()
-            emsm_server_names = [server.name \
-                                 for server in emsm_server]
-            emsm_server_filenames = [os.path.basename(server.server) \
-                                     for server in emsm_server]
+    def _restore_world_conf(self, backup_dir):
+        """
+        If the backup at *backup_dir* includes the world configuration, it
+        will be restored. If not, nothing happens.
+        """
+        world_conf_backup_path = os.path.join(backup_dir, "world_conf.json")
 
-            # Do not append an index, if the server_name is already unique.
-            if server_name in emsm_server_names \
-               or server_filename in emsm_server_filenames:
-                i = 1
-                while True:
-                    tmp_server_name = server_name + "_" + str(i)
-                    tmp_server_filename = server_filename + "_" + str(i)
-                    if not (tmp_server_name in emsm_server_names \
-                            or tmp_server_filename in emsm_server_filenames):
-                        break
-                    i = i + 1
-                server_name = server_name + "_" + str(i)
-                server_filename = server_filename + "_" + str(i)
-            return (server_name, server_filename)
+        # Load the configuration backup.
+        with open(world_conf_backup_path) as file:
+            _, backup_conf = json.load(file)
 
-        # We can not restore a server, if there is no *manifest* since the
-        # server backup has been introduced with the *manifest* file.
-        if manifest is None:
-            return None
-
-        # Load the backed up server.conf (server.json).
-        with open(os.path.join(backup_dir, manifest["server_conf"])) as file:
-            server_name, server_conf = json.load(file)
-
-        # If the server binary still exists, use it instead of creating a
-        # duplicate by restoring the backed up server.
-        server_hash = file_hash(
-            os.path.join(backup_dir, manifest["server_exec"]))
-        emsm_server = emsm_server_by_filehash(server_hash)
-        if not emsm_server is None:
-            server_name = emsm_server.name
-        else:
-            # We have to restore the old server.
-
-            # Make sure, that we don't overwrite another server by unifying the
-            # filename and emsm server name.
-            server_name, server_conf["server"] = \
-                         unify_name(server_name, server_conf["server"])
-
-            # Restore the configuration.
-            self.app.conf.server.add_section(server_name)
-            for key, val in server_conf.items():
-                self.app.conf.server[server_name][key] = val
-
-            # Copy the server executable from the backup directory into the
-            # EMSM server directory.
-            shutil.copy(
-                os.path.join(backup_dir, manifest["server_exec"]),
-                os.path.join(self.app.paths.server_dir, server_conf["server"])
-                )
-        
-        # world.conf
-        self.world.conf["server"] = server_name
+        # Restore the configuration.
+        #
+        # Todo:
+        #   * restore the *port* option?
+        conf = self._world.conf()
+        conf.clear()
+        conf.update(backup_conf)
         return None
 
-    def _save_manifest(self, manifest, backup_dir):
-        """
-        Dumps *manifest* as json string in the *backup_dir*:
-
-            manifest -> json_dump -> backup_dir/MANIFEST.json
-        """
-        manifest["backup_version"] = PLUGIN_VERSION
-
-        with open(os.path.join(backup_dir, "MANIFEST.json"), "w") as file:
-            json.dump(manifest, file)
-        return None
-
-    def _get_manifest(self, backup_dir):
-        """
-        If *MANIFEST.json* exists in *backup_dir*, the deserialized content
-        is returned, else None.
-        """
-        manifest_full_path = os.path.join(backup_dir, "MANIFEST.json")
-        manifest = None
-        if os.path.exists(manifest_full_path):
-            with open(manifest_full_path) as file:
-                manifest = json.load(file)
-        return manifest
-
-    def create(self, pre_backup_message=str(), post_backup_message=str()):
+    def create(self, archive_format):
         """
         Creates a backup of the world and returns the name of the created
         backup archive.
 
-        Raises: Exception
-                A lot of things can go wrong here, so catch *Exception* if you
-                want to be sure, you catch everything.
+        Parameters:
+            * archive_format
+                A string in shutil.get_archive_formats() that defines the
+                compression type.
+                
+        Exceptions:
+            * ...
         """
-        if self.world.is_online():
-            self.world.send_command("say {}".format(pre_backup_message))
-
         with tempfile.TemporaryDirectory() as tmp_data_dir:
-            # We save some meta information in the manifest dictionary, like
-            # file or directory paths, the version of this plugin, ...
-            manifest = dict()
 
-            # Save all important data.
-            self._save_world(manifest, tmp_data_dir)
-            self._save_world_configuration(manifest, tmp_data_dir)
-            self._save_server(manifest, tmp_data_dir)
-            self._save_server_configuration(manifest, tmp_data_dir)
-            self._save_manifest(manifest, tmp_data_dir)
+            # Copy all stuff that should be included into the backup in the
+            # temporary directory.
+            self._save_world(tmp_data_dir)
+            self._save_world_conf(tmp_data_dir)
 
-            # Create the archive.
-            backup_filename = self.create_filename()
-            backup_directory = self.backup_dirs[0]
+            # Put all in an archive.
+            backup_filename = self._create_filename(datetime.datetime.now())
             with tempfile.TemporaryDirectory() as tmp_archive_dir:
-                # Todo: Create the archive directly in the plugins_data dir?
-                backup = shutil.make_archive(
+                
+                # *make_archive* returns the **complete** path to the crated
+                # archive.
+                backup_path = shutil.make_archive(
                     base_name = os.path.join(tmp_archive_dir, backup_filename),
-                    format = self.archive_format,
+                    format = archive_format,
                     root_dir = tmp_data_dir,
                     base_dir = "./"
                     )
 
-                # Move the backup 'EMSM_ROOT/plugins_data/backups/{world}'
-                dst = os.path.join(backup_directory, os.path.basename(backup))
-                tmp_dst = dst + ".tmp"
-                shutil.move(backup, tmp_dst)
-                os.rename(tmp_dst, dst)
+                # Move the backup to our folder in *plugins_data_dir*:
+                #   EMSM_ROOT/plugins_data/backups/foo/
+                #
+                # We move the backup to a temporary filename, so that
+                # when something goes wrong, no corrupted backup will be
+                # stored.
+                # When the *move* was successful, we rename the file.
+                dst = os.path.join(
+                    self._backup_dir, os.path.basename(backup_path)
+                    )
+                shutil.move(src=backup_path, dst=dst + ".tmp")
+                os.rename(dst + ".tmp", dst)
 
-        if self.world.is_online():
-            self.world.send_command("say {}".format(post_backup_message))
-
-        self.sync()
-        return os.path.basename(backup)
+        self.clean_backup_dir()
+        return None
 
     def restore(self, backup_file, message=str(), delay=0):
         """
         Restores the backup of the world from the given *backup_file*. If
-        the backup archive contains the configuration and the server, they
-        are restored too.
+        the backup archive contains the server executable it will be restored
+        too if necessairy.
 
-        Raises: Exception
-                A lot of things can go wrong here, so catch *Exception* if you
-                want to be sure, you catch everything.
+        Exceptions:
+            * WorldStartFailed
+            * WorldStopFailed
+            * ... shutil.unpack_archive() exceptions ...
         """
         # Extract the backup in a temporary directory and copy then all things
         # into the EMSM directories.
@@ -702,246 +488,204 @@ class WorldBackupManager(object):
                 )
 
             # Stop the world.
-            was_online = self.world.is_online()
+            was_online = self._world.is_online()
             if was_online:
-                self.world.send_command("say {}".format(message))
+                self._world.send_command("say {}".format(message))
                 time.sleep(delay)
-                self.world.kill_processes()
+                self._world.kill_processes()
 
             # Restore the world.
-            manifest = self._get_manifest(temp_dir)
+            self._restore_world(temp_dir)
+            self._restore_world_conf(temp_dir)
 
-            self._restore_world(manifest, temp_dir)
-            self._restore_world_configuration(manifest, temp_dir)
-            self._restore_server(manifest, temp_dir)
-
+        # Restart the world if it was online before restoring.
         if was_online:
-            self.world.start()
+            self._world.start()
         return None
 
 
-class VerboseWorldBackupManager(WorldBackupManager):
-    """
-    Extends the WorldBackupManager for the command line interface.
-    """
-
-    # about the storage
-    # --------------------------------------------------
-
-    def list_backups(self):
+class UiBackupManager(BackupManager):
+    
+    def list(self):
         """
-        Prints a table with all existing backups.
+        Prints a list with all existing backups.
         """
-        backups = self.get_backups()
-
-        if backups:
-            printer = pprinttable.TablePrinter("Nr.", "<")
-            body = [(date.ctime(),
-                     filesize_to_string(os.path.getsize(path))
-                     ) for date, path in backups.items()]
-            body.sort(key=lambda e: e[0])
-            head = ["Date", "Size"]
-
-            print("{} - list-backups:".format(self.world.name))
-            printer.print(body, head)
+        backups = list(self.backup_list().items())
+        backups.sort(reverse=True)
+        
+        if not backups:
+            print("{} - list:".format(self.world().name()))
+            print("\t", "- no backups found -")
         else:
-            print("{} - list-backups: There is no backup available."\
-                  .format(self.world.name))
+            print("{} - list:".format(self.world().name()))
+            for date, path in backups:
+                size = os.path.getsize(path)
+                print("\t", date.ctime())
         return None
 
-    def sync(self, show_changes=False):
-        """
-        Synchronises the backups in the diffrent storages.
-        """
-        changes = WorldBackupManager.sync(self)
-
-        # Skip if not explicitly called.
-        if not show_changes:
-            return None
-
-        # Prints the changes in an hierarchy.
-        print("{} - sync:".format(self.world.name))
-        for directory in changes:
-            added = changes[directory]["added"]
-            removed = changes[directory]["removed"]
-
-            print(4*" ", "o", directory)
-            if not (added or removed):
-                print(8*" ", "->", "no changes")
-            if added:
-                print(8*" ", "o", "added:")
-                for e in added:
-                    print(12*" ", "o", e)
-            if removed:
-                print(8*" ", "o", "removed:")
-                for e in removed:
-                    print(12*" ",  "o", e)
-        return None
-
-    # create / restore
-    # --------------------------------------------------
-
-    def create(self):
+    def create(self, archive_format):
         """
         Creates a new backup.
         """
-        backup = WorldBackupManager.create(self)
-        print("{} - create: The backup '{}' has been created."\
-              .format(self.world.name, backup))
-        return None
+        print("{} - create:".format(self.world().name()))
 
-    def _verify_restore(self):
-        """
-        Asks the user if he really wants to restore a world.
-        """
-        question = "Do you really want to restore the world '{}'? "\
-                   "The current world will be removed! "\
-                   .format(self.world.name)
-        return userinput.ask(question, default=False)
-
-    def restore(self, backup_file, message, delay, ask=True):
-        # Verify the restore command.
-        if ask and not self._verify_restore():
-            return None
-
-        print("{} - restore: Using '{}' as backup file."\
-              .format(self.world.name, backup_file))
         try:
-            WorldBackupManager.restore(self, backup_file, message, delay)
-        except world_wrapper.WorldStopFailed:
-            print("{} - restore: failure: The world could not be stopped."\
-                  .format(self.world.name))
-        except world_wrapper.WorldStartFailed:
-            print("{} - restore: failure: The world could not be restarted."\
-                  .format(self.world.name))
-        except Exception as error:
-            print("{} - restore: failure: An unexpected error occured: {}"\
-                  .format(self.world.name, error))
+            super().create(archive_format)
+        except Exception as err:
+            print("\t", "FAILURE: an unexpected error occured:")
+            print("\t", "         {}".format(err))
+
+            # Reraise the exception, so that EMSM logs it.
             raise
         else:
-            print("{} - restore: Restore is complete."\
-                  .format(self.world.name))
+            print("\t", "done.")
+        return None
+
+    def restore(self, backup_path, message, delay):
+        """
+        """
+        print("{} - restore:".format(self.world().name()))
+        print("\t", "backup: {}".format(backup_path))
+        
+        # Verify, that the user really wants to restore the world.
+        prompt = "\t Do you really want to restore and OVERWRITE the "\
+                 "world '{}'?".format(self.world().name())
+        if not emsm.lib.userinput.ask(prompt):
+            return None
+            
+        # Restore the world.
+        try:
+            super().restore(backup_path, message, delay)
+        except emsm.worlds.WorldStopFailed:
+            print("\t", "FAILURE: the world could not be stopped.")            
+        except emsm.worlds.WorldStartFailed:
+            print("\t", "FAILURE: the world could not be restarted.")
+        except Exception as err:
+            print("\t", "FAILURE: an unexpected error occured.")
+            print("\t", "         {}".format(err))
+
+            # Reraise the exception, so that the EMSM logs it.
+            raise
+        else:
+            print("\t", "done.")
         return None
 
     def restore_latest(self, message, delay):
         """
-        Restores the latest available backup of the world.
         """
-        temp = self.get_latest_backup()
+        latest_backup = self.latest_backup()
 
-        # Break, if no backup is available.
-        if temp is None:
-            print("{} - restore-latest: failure: there's no backup available."\
-                  .format(self.world.name))
-            return None
-
-        # Continue with the restore process.
-        date, backup = temp
-        print("{} - restore-latest: latest backup created at '{}'"\
-              .format(self.world.name, date))
-        return self.restore(backup, message, delay)
+        # Break if no backup is available.
+        if latest_backup == (None, None):
+            print("{} - restore-latest:".format(self.world().name()))
+            print("\t", "FAILURE: no backup available.")
+        else:
+            date, path = latest_backup
+            
+            print("{} - restore-latest:".format(self.world().name()))
+            print("\t", "backup: {}".format(date))
+            print("\t", "path:   {}".format(path))
+            
+            self.restore(path, message, delay)
+        return None
 
     def restore_menu(self, message, delay):
         """
-        Prints a table with all existing backups and lets the user select
-        the backup that should be restored.
         """
-        backups = self.get_backups()
-        backups = list(backups.items())
-        backups.sort(key=lambda e: e[0])
+        backups = list(self.backup_list().items())
+        backups.sort(reverse=True)
 
-        # Break if there is no backup available.
+        # Break if no backup is available.
         if not backups:
-            print("{} - restore-menu: failure: there is no backup available."\
-                  .format(self.world.name))
-            return None
+            print("{} - restore-menu:".format(self.world().name()))
+            print("\t", "FAILURE: no backup available.")
+        else:
+            print("{} - restore-menu:".format(self.world().name()))
 
-        # Continue with the restore.
-        body = [(date.ctime(),
-                 filesize_to_string(os.path.getsize(path))
-                 ) for date, path in backups]
-        head = ["Date", "Size"]
-        table_printer = pprinttable.TablePrinter("Nr.", "<")
-        table_printer.print(body, head)
+            # Print the backup list.
+            for i, backup in enumerate(backups):
+                date, path = backup
+                print("\t", "{}.".format(i), date.ctime())
 
-        backup = userinput.get_value(
-            prompt="Select the backup that you want to restore: ",
-            conv_func=lambda s: int(s.strip()),
-            check_func=lambda s: s in range(len(backups))
-            )
-        date, backup = backups[backup]
-        return self.restore(backup, message, delay)
+            # Let the user select a backup.
+            i = emsm.lib.userinput.get_value(
+                prompt = "\t Which backup do you want to restore?",
+                conv_func = lambda s: int(s.strip()),
+                check_func = lambda s: 0 <= s < len(backups)
+                )
+            backup = backups[i]
 
-
-class BackupManager(BasePlugin):
-    """
-    Provides methods to create backups of the worlds and to restore them.
-    """
-
-    version = "2.0.0"
-
-    def __init__(self, application, name):
-        BasePlugin.__init__(self, application, name)
-
-        self.setup_conf()
-        self.setup_argparser()
+            # Restore the backup.
+            self.restore(backup[1], message, delay)    
         return None
 
-    def setup_conf(self):
-        # Some configurable stuff
-        self.archive_format = self.conf.get("archive_format", "bztar")
-        if not self.archive_format in AVLB_ARCHIVE_FORMATS:
-            self.archive_format = "tar"
 
-        self.restore_message = self.conf.get(
+class Backups(BasePlugin):
+
+    VERSION = "3.0.0-beta"
+
+    DESCRIPTION = __doc__
+
+    def __init__(self, app, name):
+        """
+        """
+        BasePlugin.__init__(self, app, name)
+
+        self._setup_conf()
+        self._setup_argparser()
+        return None
+
+    def _setup_conf(self):
+        """
+        Sets the configuration up.
+        """
+        conf = self.conf()
+
+        # Read
+        # ^^^^
+
+        # archive_format
+        self._archive_format = conf.get("archive_format")
+        if not self._archive_format in AVLB_ARCHIVE_FORMATS:            
+            self._archive_format = AVLB_ARCHIVE_FORMATS[0]
+
+        # restore_message
+        self._restore_message = conf.get(
             "restore_message",
-            "This world is about to be ressetted to an earlier state.")
-
-        self.restore_delay = self.conf.getint("restore_delay", 5)
-        self.restore_delay = max(0, self.restore_delay)
-
-        self.auto_sync = self.conf.getboolean("auto_sync", True)
-
-        self.max_storage_size = self.conf.getint("max_storage_size", 30)
-        self.max_storage_size = max(1, self.max_storage_size)
-
-        self.include_server = self.conf.getboolean("include_conf", False)
-
-        # We need rw access in the backup directories.
-        self.mirrors = list()
-        for path in self.conf.get("mirrors", "").split(","):
-            path = path.strip()
-            if not path:
-                continue
-            path = os.path.expanduser(path)
-            if not os.access(path.strip(), os.F_OK | os.W_OK | os.R_OK):
-                message = "The backup mirror '{}' does not exist or this "\
-                          "script has not sufficient rights in the directory."\
-                          .format(path)
-                raise configuration.ValueError_("mirrors", self.name, "", message)
-            self.mirrors.append(path)
-
-        # Let's init the configuration section.
-        self.conf["archive_format"] = str(self.archive_format)
-        self.conf["restore_message"] = str(self.restore_message)
-        self.conf["restore_delay"] = str(self.restore_delay)
-        self.conf["auto_sync"] = "yes" if self.auto_sync else "no"
-        self.conf["max_storage_size"] = str(self.max_storage_size)
-        self.conf["mirrors"] = ",\n\t".join(self.mirrors)
-
-        # Some other vars.
-        self.backup_dirs = [self.data_dir] + self.mirrors
-        return None
-
-    def setup_argparser(self):
-        self.argparser.description = (
-            "This plugin provides methods to manage the backups of the worlds."
+            "This world is about to be resetted to an earlier state."
             )
 
-        # We want to allow only one action per run.
-        me_group = self.argparser.add_mutually_exclusive_group()
+        # restore_delay
+        self._restore_delay = conf.getint("restore_delay", 5)
+        if self._restore_delay < 0:
+            self._restore_delay = 0
 
-        # Storage
+        # max_storage_size
+        self._max_storage_size = conf.getint("max_storage_size", 30)
+        if self._max_storage_size < 0:
+            self._max_storage_size = 0
+
+        # Write
+        # ^^^^^
+
+        conf.clear()
+        conf["archive_format"] = str(self._archive_format)
+        conf["restore_message"] = str(self._restore_message)
+        conf["restore_delay"] = str(self._restore_delay)
+        conf["max_storage_size"] = str(self._max_storage_size)
+        return None
+
+    def _setup_argparser(self):
+        """
+        Sets the argument parser up.
+        """
+        parser = self.argparser()
+        
+        parser.description = "A manager for the backups of the worlds"
+
+        # We want to allow only one action per run, so we put everything
+        # in a mutually exclusive group.
+        me_group = parser.add_mutually_exclusive_group()
         me_group.add_argument(
             "--list",
             action = "count",
@@ -949,27 +693,17 @@ class BackupManager(BasePlugin):
             help = "Lists all available backups."
             )
         me_group.add_argument(
-            "--sync",
-            action = "count",
-            dest = "sync",
-            help = "Synchronises and cleans the backup directories."
-            )
-
-        # Create
-        me_group.add_argument(
             "--create",
             action = "count",
             dest = "create",
-            help = "Creates a backup."
+            help = "Creates a new backup."
             )
-
-        # Restore
         me_group.add_argument(
             "--restore",
             action = "store",
             dest = "restore",
             metavar = "PATH",
-            help = "Restores the world from the given backup path."
+            help = "Restores the backup at the given path."
             )
         me_group.add_argument(
             "--restore-latest",
@@ -981,74 +715,33 @@ class BackupManager(BasePlugin):
             "--restore-menu",
             action = "count",
             dest = "restore_menu",
-            help = "Opens a menu where the backup that should be restored, "\
-            "can be selected and restores the backup."
+            help = "Opens a dialog allowing the user to select the backup "\
+                   "that should be restored."
             )
         return None
 
-    def uninstall(self):
-        super().uninstall()
-
-        question = "{} - Do you want to remove the mirror directories?"\
-                   .format(self.name)
-        if userinput.ask(question, False):
-            for path in self.mirrors:
-                shutil.rmtree(path)
-        return None
-
-    # backup manager
-    # --------------------------------------------------
-
-    def get_backup_manager(self, world):
-        """
-        Returns an initialised backup manager for the world.
-        """
-        backup_dirs = [os.path.join(path, world.name) \
-                       for path in self.backup_dirs]
-
-        world = VerboseWorldBackupManager(
-            self.app, world, backup_dirs,
-            self.archive_format, self.max_storage_size)
-        return world
-
-    # plugin
-    # --------------------------------------------------
-
     def run(self, args):
-        worlds = self.app.worlds.get_selected()
+        """
+        """
+        worlds = self.app().worlds().get_selected()
         for world in worlds:
-            world = self.get_backup_manager(world)
+            bm = UiBackupManager(
+                app = self.app(),
+                world = world,
+                max_storage_size = self._max_storage_size,
+                backup_dir = os.path.join(self.data_dir(), world.name())
+                )
 
             if args.list:
-                world.list_backups()
-
-            elif args.sync:
-                world.sync(show_changes=True)
-
+                bm.list()
             elif args.create:
-                world.create()
-
+                bm.create(self._archive_format)
             elif args.restore:
-                backup = args.restore
-                world.restore(backup, self.restore_message, self.restore_delay)
-
+                bm.restore(args.restore, self._restore_message,
+                           self._restore_delay
+                           )
             elif args.restore_latest:
-                world.restore_latest(self.restore_message, self.restore_delay)
-
+                bm.restore_latest(self._restore_message, self._restore_delay)
             elif args.restore_menu:
-                world.restore_menu(self.restore_message, self.restore_delay)
-        return None
-
-
-    def finish(self):
-        """
-        Makes sure that all backup directories are synchronised.
-        """
-        if not self.auto_sync:
-            return None
-
-        worlds = self.app.worlds.get_all()
-        for world in worlds:
-            world = self.get_backup_manager(world)
-            world.sync()
+                bm.restore_menu(self._restore_message, self._restore_delay)
         return None

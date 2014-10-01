@@ -35,10 +35,31 @@ nosetests.xml
 .project
 .pydevproject
 
-# EMSM
-configuration/
+# EMSM instance folders and files
+conf/
 plugins_data/
 worlds/
 server/
-emsm.log
-emsm/app.lock
+logs/
+app.lock
+plugins/
+
+# EMSM plugins
+!plugins/__init__.py
+!plugins/backups.py
+!plugins/guard.py
+!plugins/hellodolly.py
+!plugins/initd.py
+!plugins/plugins.py
+!plugins/server.py
+!plugins/worlds.py
+
+# EMSM docs
+docs/build
+docs/source/_themes
+
+docs/source/api/*.rst
+!docs/source/api/index.rst
+
+docs/source/plugins/*.rst
+!docs/source/plugins/index.rst

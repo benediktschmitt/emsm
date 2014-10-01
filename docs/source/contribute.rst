@@ -16,24 +16,23 @@ Bug reports
 
 When you found a bug, please create a bug report on 
 `GitHub/Issues. <https://github.com/benediktschmitt/emsm/issues>`_
-The EMSM logs all uncatched exceptions with a traceback in the log file.
-Please attach the section, that contains the corresponding traceback to the bug 
-report.
+Please attach the log file section that contains the traceback of the
+exception if possible. You can find the log at ``EMSM_ROOT/logs/emsm.log``.
 If you know how to fix the bug, you're welcome to send a *pull request.*
 
 Code
 ----
 
-If you like the EMSM and you want to contribute to the code, then do it :)
+If you like the EMSM and want to contribute to the code, then do it :)
 
-Usually, the *dev* branch is ahead of the *master* branch and commits should
-always go to *dev*.
+Note, that the *dev* branch is usually ahead of the *master* branch and commits 
+should always go to *dev*.
 
 Plugins
 -------
 
-You wrote a new plugin, great. Create a request on GitHub and I will add it to
-the plugins list.
+You wrote a new plugin? Great! Write me about it on GitHub and I will add it to the
+plugins list.
 
 To simplify the usage of your plugin, you could prepare the plugin in the
 following ways:
@@ -43,9 +42,9 @@ following ways:
    the data that comes with your plugin.
 #. Add a small `reST <http://sphinx-doc.org/>`_ docstring to your plugin.
    If you don't know how to do this, you can take a look at the source code 
-   of some other plugins.
-   The documentation should at least contain the following sections to be
-   useful:
+   of some other plugins. It's quite easy.
+   
+   A useful documentation contains at least the following sections:
   
    * About (What does your plugin?)
    * Download URL
@@ -55,5 +54,5 @@ following ways:
 Spelling Mistakes
 -----------------
 
-I guess this documentation and the source code contains a lot of spelling
+I guess the source code and this documentation contain a lot of spelling
 mistakes. Please help to reduce them.
