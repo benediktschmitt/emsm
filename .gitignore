@@ -50,7 +50,7 @@ plugins/
 !plugins/guard.py
 !plugins/hellodolly.py
 !plugins/initd.py
-!plugins/p√lugins.py
+!plugins/plugins.py
 !plugins/server.py
 !plugins/worlds.py
 
