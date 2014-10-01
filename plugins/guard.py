@@ -207,8 +207,8 @@ class Guard(BasePlugin):
         error = world.is_offline()
 
         # 2. Check if the world's network address is reachable.
-        if not error:
-            error = not bool(check_port(world.address(), timeout=1, attempts=5))
+##        if not error:
+##            error = not bool(check_port(world.address(), timeout=1, attempts=5))
 
         # 3. Check the log file for errors.
         if not error:
