@@ -102,7 +102,7 @@ You should create a cronjob to create daily backups:
 
     # m h dom mon dow user command
     # Creates a backup of all worlds everyday at 2:00h
-    * 2 *   *   *   root minecraft -W backups --create
+    0 2 *   *   *   root minecraft -W backups --create
     
 
 Backup archive structure
