@@ -342,8 +342,12 @@ class BackupManager(object):
             # so I'disable auto-save in this try-catch construct.
             if self._world.is_online():                
                 self._world.send_command("save-off")
-                # We use verbose send, to wait until the world has been saved.
-                self._world.send_command_get_output("save-all", timeout=10)
+                try:
+                    # We use verbose send, to wait until the world has been
+                    # saved.
+                    self._world.send_command_get_output("save-all", timeout=30)
+                except emsm.worlds.WorldCommandTimeout as err:
+                    pass
 
             # Copy the world data to *backup_dir*.
             shutil.copytree(
