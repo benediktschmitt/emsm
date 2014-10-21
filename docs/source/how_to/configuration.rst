@@ -33,6 +33,43 @@ Each plugin has its own section. E.g.:
 Please take a look at the documentation of the :ref:`plugins` for further
 information.
 
+server.conf
+-----------
+
+The *server.conf* allows you to adjust some properties of the internal EMSM server 
+wrapper classes. Usually, it should not be necessairy to edit this configuraiton file,
+but some times you have to.
+
+Examples
+''''''''
+
+*  These are the default EMSM settings for the mojang minecraft server 1.8:
+
+   .. code-block:: ini
+
+      [minecraft]
+      url = https://.....
+      start_command = java -jar {server_path} nogui.
+	  
+*  You want to adjust the java heap size:
+
+   .. code-block:: ini
+
+      [minecraft 1.8]
+      start_command = java -Xmx3G -jar {server_path} 
+      
+*  The EMSM database url is outdated, since the server received a patch. So you
+   simply update the *url*:
+  
+   .. code-block:: ini
+   
+      [minecraft 1.8]
+      url = https://...
+      
+   Then stop all affected worlds and remove the *server* in
+   :file:`EMSM_ROOT/server/`. When you restart the worlds, the EMSM will 
+   automatically download the server again, this time from the new url.
+
 worlds.conf
 -----------
 

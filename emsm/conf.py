@@ -165,6 +165,28 @@ class MainConfiguration(ConfigParser):
         self["emsm"]["timeout"] = "0"
         return None
 
+
+class ServerConfiguration(ConfigParser):
+    """
+    Handles the *server.conf* configuration file, which allows the user
+    to overwrite the default EMSM settings for a server wrapper like
+    the *url* or the *start command*.
+
+
+    .. seealso::
+
+        * :meth:`emsm.server.BaseServerWrapper.conf`
+    """
+
+    _EPILOG = (
+        "[server name]\n"
+        "url = string\n"
+        "start_command = string\n"
+        "\n"
+        "The EMSM comes with tested default settings for each server.\n"\
+        "so you should only overwrite these values, if you have to.\n"
+        )   
+
     
 class WorldsConfiguration(ConfigParser):
     """
@@ -220,6 +242,7 @@ class Configuration(object):
         self._dir = app.paths().conf_dir()
 
         self._main = MainConfiguration(os.path.join(self._dir, "main.conf"))
+        self._server = ServerConfiguration(os.path.join(self._dir, "server.conf"))
         self._worlds = WorldsConfiguration(os.path.join(self._dir, "worlds.conf"))
         return None
 
@@ -228,6 +251,12 @@ class Configuration(object):
         Returns the :class:`MainConfiguration`.
         """
         return self._main
+
+    def server(self):
+        """
+        Returns the :class:`ServerConfiguration`.
+        """
+        return self._server
 
     def worlds(self):
         """
@@ -243,6 +272,7 @@ class Configuration(object):
         
         # Don't change the order!
         self._main.read()
+        self._server.read()
         self._worlds.read()
         return None
 
@@ -253,5 +283,6 @@ class Configuration(object):
         log.info("writing configuration ...")
         
         self._main.write()
+        self._server.write()
         self._worlds.write()
         return None

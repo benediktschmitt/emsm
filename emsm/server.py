@@ -67,7 +67,6 @@ except:
 # ------------------------------------------------
 
 __all__ = ["ServerError",
-           "ServerUpdateFailure",
            "ServerStatusError",
            "ServerIsOnlineError",
            "ServerIsOfflineError",
@@ -174,15 +173,6 @@ class BaseServerWrapper(object):
         """
         raise NotImplementedError()
 
-    @classmethod
-    def url(self):
-        """
-        **ABSTRACT**
-        
-        The URL where the server executable can be downloaded from.
-        """
-        raise NotImplementedError()
-    
     def __init__(self, app):
         """
         """
@@ -198,6 +188,17 @@ class BaseServerWrapper(object):
         # wrapped by this object.
         # The filename is simply *name*.
         self._server = os.path.join(app.paths().server_dir(), self.name())
+
+        # The configuration section in the *server.conf* configuration file.
+        # Note, that only a server wrapper which has a name, is listed in
+        # the configuration.
+        try:
+            self.name()
+        except NotImplementedError:
+            self._conf = None
+        else:
+            app.conf().server().add_section(self.name())
+            self._conf = app.conf().server()[self.name()]
         return None
 
     def server(self):
@@ -205,6 +206,30 @@ class BaseServerWrapper(object):
         Absolute path of the server executable.
         """
         return self._server
+
+    def conf(self):
+        """
+        Returns the configuration section in the *server.conf* configuration
+        file.
+        """
+        return self._conf
+    
+    def default_url(self):
+        """
+        **ABSTRACT**
+
+        The URL where the server executable can be downloaded from.
+        """
+        raise NotImplementedError()
+    
+    def url(self):
+        """
+        Returns the url in :meth:`conf`, if available. Otherwise the value
+        of :meth:`default_url`.
+        """
+        if "url" in self._conf:
+            return self._conf.get("url")
+        return self.default_url()
         
     def is_installed(self):
         """
@@ -237,8 +262,8 @@ class BaseServerWrapper(object):
             * when the installation failed.
         """
         raise NotImplementedError()
-
-    def start_cmd(self):
+    
+    def default_start_cmd(self):
         """
         **ABSTRACT**
         
@@ -247,7 +272,19 @@ class BaseServerWrapper(object):
 
         If there are paths in the returned command, they must be absolute.
         """
-        raise NotImplementedError()
+        raise NotImplementedError()   
+    
+    def start_cmd(self):
+        """
+        Returns the value for *start_command* in :meth:`conf` if available
+        and the :meth:`default_start_cmd` otherwise.
+        """
+        if "start_command" in self._conf:
+            cmd = self._conf.get("start_command")\
+                  .format(server_path=shlex.quote(self._server))
+            return cmd
+        else:
+            return self.default_start_cmd()
 
     def translate_command(self, cmd):
         """
@@ -297,7 +334,7 @@ class VanillaBase(BaseServerWrapper):
     Base class for all vanilla server versions.
     """
 
-    def start_cmd(self):
+    def default_start_cmd(self):
         return "java -jar {} nogui.".format(shlex.quote(self._server))
 
     def translate_command(self, cmd):
@@ -326,8 +363,7 @@ class Vanilla_1_2(VanillaBase):
     def name(self):
         return "vanilla 1.2"
 
-    @classmethod
-    def url(self):
+    def default_url(self):
         return "http://s3.amazonaws.com/Minecraft.Download/versions/1.2.5/minecraft_server.1.2.5.jar"
     
     def log_path(self):
@@ -343,8 +379,7 @@ class Vanilla_1_3(VanillaBase):
     def name(self):
         return "vanilla 1.3"
 
-    @classmethod
-    def url(self):
+    def default_url(self):
         return "http://s3.amazonaws.com/Minecraft.Download/versions/1.3.2/minecraft_server.1.3.2.jar"
     
     def log_path(self):
@@ -360,8 +395,7 @@ class Vanilla_1_4(VanillaBase):
     def name(self):
         return "vanilla 1.4"
 
-    @classmethod
-    def url(self):
+    def default_url(self):
         return "http://s3.amazonaws.com/Minecraft.Download/versions/1.4.7/minecraft_server.1.4.7.jar"
     
     def log_path(self):
@@ -377,8 +411,7 @@ class Vanilla_1_5(VanillaBase):
     def name(self):
         return "vanilla 1.5"
 
-    @classmethod
-    def url(self):
+    def default_url(self):
         return "http://s3.amazonaws.com/Minecraft.Download/versions/1.5.2/minecraft_server.1.5.2.jar"
     
     def log_path(self):
@@ -394,8 +427,7 @@ class Vanilla_1_6(VanillaBase):
     def name(self):
         return "vanilla 1.6"
 
-    @classmethod
-    def url(self):
+    def default_url(self):
         return "https://s3.amazonaws.com/Minecraft.Download/versions/1.6.4/minecraft_server.1.6.4.jar"
     
     def log_path(self):
@@ -411,8 +443,7 @@ class Vanilla_1_7(VanillaBase):
     def name(self):
         return "vanilla 1.7"
 
-    @classmethod
-    def url(self):
+    def default_url(self):
         return "https://s3.amazonaws.com/Minecraft.Download/versions/1.7.10/minecraft_server.1.7.10.jar"
     
     def log_path(self):
@@ -428,8 +459,7 @@ class Vanilla_1_8(VanillaBase):
     def name(self):
         return "vanilla 1.8"
 
-    @classmethod
-    def url(self):
+    def default_url(self):
         return "https://s3.amazonaws.com/Minecraft.Download/versions/1.8/minecraft_server.1.8.jar"
     
     def log_path(self):
@@ -512,11 +542,10 @@ class MinecraftForge_1_6(MinecraftForgeBase, Vanilla_1_6):
     def name(self):
         return "minecraft forge 1.6"
 
-    @classmethod
-    def url(self):
+    def default_url(self):
         return "http://files.minecraftforge.net/minecraftforge/minecraftforge-installer-1.6.4-9.11.1.916.jar"
 
-    def start_cmd(self):
+    def default_start_cmd(self):
         filenames = [filename \
                      for filename in os.listdir(self.server()) \
                      if re.match("^minecraftforge-universal-1\.6.*.jar$", filename)]
@@ -533,11 +562,10 @@ class MinecraftForge_1_7(MinecraftForgeBase, Vanilla_1_7):
     def name(self):
         return "minecraft forge 1.7"
 
-    @classmethod
-    def url(self):
+    def default_url(self):
         return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.7.10-10.13.0.1180/forge-1.7.10-10.13.0.1180-installer.jar"
-    
-    def start_cmd(self):
+
+    def default_start_cmd(self):
         filenames = [filename \
                      for filename in os.listdir(self.server()) \
                      if re.match("^forge-1\.7.*.jar$", filename)]
@@ -564,8 +592,7 @@ class BungeeCordServerWrapper(BaseServerWrapper):
     def name(self):
         return "bungeecord"
 
-    @classmethod
-    def url(self):
+    def default_url(self):
         return "http://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar"
 
     def install(self):
@@ -583,8 +610,8 @@ class BungeeCordServerWrapper(BaseServerWrapper):
         else:
             shutil.move(tmp_path, self.server())
         return None
-        
-    def start_cmd(self):
+
+    def default_start_cmd(self):
         return "java -jar {}".format(shlex.quote(self._server))
     
     def translate_command(self, cmd):
