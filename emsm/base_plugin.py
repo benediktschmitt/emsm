@@ -83,6 +83,10 @@ class BasePlugin(object):
     #: This string is displayed when the ``--long-help`` argument is used.
     DESCRIPTION = str()
 
+    #: If ``True``, the plugin has no :meth:`argparser` and can therefore
+    #: not be invoked from the command line.
+    HIDDEN = False
+
     #: Signal, that is emitted, when a plugin has been uninstalled.
     plugin_uninstalled = blinker.signal("plugin_uninstalled")
 
@@ -100,12 +104,15 @@ class BasePlugin(object):
         self.__name = name
 
         # Get the argparser for this plugin and set it up.
-        self.__argparser = app.argparser().plugin_parser(name)  
-        self.__argparser.add_argument(
-            "--long-help",
-            action = argparse_.LongHelpAction,
-            description = type(self).DESCRIPTION
-            )
+        if type(self).HIDDEN:
+            self.__argparser = None
+        else:
+            self.__argparser = app.argparser().plugin_parser(name)  
+            self.__argparser.add_argument(
+                "--long-help",
+                action = argparse_.LongHelpAction,
+                description = type(self).DESCRIPTION
+                )
         return None
 
     def app(self):
@@ -167,6 +174,9 @@ class BasePlugin(object):
         """
         Returns the :class:`argparse.ArgumentParser` that is used by this
         plugin.
+
+        If :attr:`HIDDEN` is ``True``, *None* is returned, since the plugin
+        has no argument parser.
 
         .. seealso::
 
