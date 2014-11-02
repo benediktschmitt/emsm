@@ -300,11 +300,11 @@ class Application(object):
         # Reload the configuration again, since it may have changed while
         # waiting for the file lock.
         self._conf.read()
-
-        self._worlds.load_worlds()
         
         self._plugins.setup()
         self._plugins.init_plugins()
+        
+        self._worlds.load_worlds()
         
         self._argparser.setup()
         return None

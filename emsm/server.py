@@ -67,6 +67,7 @@ except:
 # ------------------------------------------------
 
 __all__ = ["ServerError",
+           "ServerInstallationFailure",
            "ServerStatusError",
            "ServerIsOnlineError",
            "ServerIsOfflineError",
@@ -197,7 +198,8 @@ class BaseServerWrapper(object):
         except NotImplementedError:
             self._conf = None
         else:
-            app.conf().server().add_section(self.name())
+            if not app.conf().server().has_section(self.name()):
+                app.conf().server().add_section(self.name())
             self._conf = app.conf().server()[self.name()]
         return None
 
@@ -654,24 +656,54 @@ class ServerManager(object):
         
         # Maps *server.name()* to *server*
         self._server = dict()
-        self._load()
+        self.__add_emsm_wrapper()
         return None
 
-    def _load(self):
+    def __add_emsm_wrapper(self):
         """
-        Loads all subclasses of BaseServerWrapper in ``self._server_cls``.
+        Loads all default EMSM server wrappers. These are all server wrappers
+        defined in this module.
         """
-        for cls in globals().values():
-            if type(cls).__name__ != "type"\
-               or not issubclass(cls, BaseServerWrapper):
-                continue
+        # We only add the complete wrappers. These wrappers have all
+        # virtual (abstract) methods implemented.
+        wrappers = [
+            Vanilla_1_2,
+            Vanilla_1_3,
+            Vanilla_1_4,
+            Vanilla_1_5,
+            Vanilla_1_6,
+            Vanilla_1_7,
+            Vanilla_1_8,
+            MinecraftForge_1_6,
+            MinecraftForge_1_7,
+            BungeeCordServerWrapper,
+            ]
 
-            try:
-                name = cls.name()
-            except NotImplementedError as err:
-                pass
-            else:
-                self._server[name] = cls(self._app)
+        for wrapper in wrappers:
+            self.add(wrapper)
+        return None
+
+    def add(self, server_class):
+        """
+        Makes the *server_class* visible to this manager. The class
+        must implement all abstract methods of :class:`BaseServerWrapper` or
+        unexpected errors may occure.
+
+        :raises TypeError:
+            if *server_class* does not inherit :class:`BaseServerWrapper`
+        :raises ValueError:
+            if another wrapper with the :meth:`~BaseServerWrapper.name()` of
+            *server_class* has already been registered.
+        """
+        if not issubclass(server_class, BaseServerWrapper):
+            raise TypeError("server_class has to inherit from BaseServerWrapper")
+
+        if server_class.name() in self._server:
+            raise ValueError("another server with the name '{}' has already "\
+                             "been registered.".format(server_class.name()))
+
+        # Create a new instance of the server wrapper.
+        self._server[server_class.name()] = server_class(self._app)
         return None
 
     def get(self, servername):
