@@ -34,6 +34,9 @@ import urllib.request
 import logging
 import subprocess
 import re
+import tempfile
+import glob
+import logging
 
 # third party
 import blinker
@@ -630,6 +633,89 @@ class BungeeCordServerWrapper(BaseServerWrapper):
     def log_start_re(self):
         return re.compile("^.*Enabled BungeeCord version git:.*")
 
+# Spigot (1.8+)
+# '''''''''''''
+
+class Spigot(BaseServerWrapper):
+    """
+    Wraps the **latest** Spigot version.
+    """
+
+    @classmethod
+    def name(self):
+        return "spigot"
+
+    def default_url(self):
+        return "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"
+
+    def build_dir(self):
+        if "build_dir" in self.conf():
+            return self.conf().get('build_dir')
+        return tempfile.mkdtemp(prefix='spigotmc')
+
+    def install(self):
+        """
+        """
+        if self.is_installed():
+            return None
+
+        # Download and build in /tmp
+        build_dir = self.build_dir()
+        try:
+            log.info('Installing spigot...')
+            log.info("- Building in '{0}'...".format(build_dir))
+            buildtools, http_resp = urllib.request.urlretrieve(self.url(), os.path.join(build_dir, 'BuildTools.jar'))
+            log.info("- BuildTools: '{}'...".format(buildtools))
+            ok = None
+            with subprocess.Popen(
+                    ['/usr/bin/java', '-jar', buildtools],
+                    cwd = build_dir,
+                    stdout = subprocess.PIPE,
+                    stderr = subprocess.PIPE
+            ) as proc:
+                # Store the output of the installer in the logfiles.
+                out, err = proc.communicate()
+                out = out.decode()
+                err = err.decode()
+                log.info(out)
+                log.error(err)
+
+                # Check, if the installer exited with return code 0 and
+                # throw an exception if not.
+                if proc.returncode:
+                    msg = "Installer returned with '{}'."\
+                          .format(proc.returncode)
+                    raise ServerInstallationFailure(self, msg)
+ 
+            jarfiles = glob.glob(os.path.join(build_dir, 'Spigot/Spigot-Server/target/spigot-*.jar'))
+            if (len(jarfiles) > 0):
+                jarfile = jarfiles[0]
+                shutil.move(jarfile, self.server())
+            else:
+                raise Exception('Could not find built spigot-*.jar file.')
+                
+        except Exception as err:
+            log.error(str(err))
+            raise ServerInstallationFailure(err)
+        finally:
+            if "build_dir" not in self.conf():
+                log.info("- Removing build directory {}".format(build_dir))
+                shutil.rmtree(build_dir)
+        return None
+
+    def default_start_cmd(self):
+        return "java -jar {}".format(shlex.quote(self._server))
+
+    def log_path(self):
+        return "./logs/latest.log"
+
+    def log_start_re(self):
+        return re.compile("^.*Starting minecraft server version .*")
+
+    def translate_command(self, cmd):
+        if cmd == "save":
+            cmd = "save-all"
+        return cmd
 
 # MC-Server
 # '''''''''
@@ -677,6 +763,7 @@ class ServerManager(object):
             MinecraftForge_1_6,
             MinecraftForge_1_7,
             BungeeCordServerWrapper,
+            Spigot,
             ]
 
         for wrapper in wrappers:
