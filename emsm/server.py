@@ -36,7 +36,6 @@ import subprocess
 import re
 import tempfile
 import glob
-import logging
 
 # third party
 import blinker
@@ -126,7 +125,7 @@ class ServerStatusError(ServerError):
             temp = "The server '{}' is online. {}"
         else:
             temp = "The server '{}' is offline. {}"
-        temp = temp.format(self.server.name, self.msg)
+        temp = temp.format(self.server.name(), self.msg)
         return temp    
 
 
@@ -633,6 +632,7 @@ class BungeeCordServerWrapper(BaseServerWrapper):
     def log_start_re(self):
         return re.compile("^.*Enabled BungeeCord version git:.*")
 
+
 # Spigot (1.8+)
 # '''''''''''''
 
@@ -643,12 +643,14 @@ class Spigot(BaseServerWrapper):
 
     @classmethod
     def name(self):
-        return "spigot"
+        return "spigot latest"
 
     def default_url(self):
         return "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"
 
     def build_dir(self):
+        # Todo: Is a special *build_dir* option really necessairy?
+        #       Better keep it simple and unified.
         if "build_dir" in self.conf():
             return self.conf().get('build_dir')
         return tempfile.mkdtemp(prefix='spigotmc')
@@ -661,17 +663,26 @@ class Spigot(BaseServerWrapper):
 
         # Download and build in /tmp
         build_dir = self.build_dir()
-        try:
-            log.info('Installing spigot...')
-            log.info("- Building in '{0}'...".format(build_dir))
-            buildtools, http_resp = urllib.request.urlretrieve(self.url(), os.path.join(build_dir, 'BuildTools.jar'))
-            log.info("- BuildTools: '{}'...".format(buildtools))
-            ok = None
+        
+        log.info("Installing spigot ...")
+        log.info("- Building in '{}' ...".format(build_dir))            
+        try:            
+            # Download the build tools.
+            try:
+                buildtools, http_resp = urllib.request.urlretrieve(
+                    self.url(), os.path.join(build_dir, "BuildTools.jar")
+                    )
+            except Exception as err:
+                raise ServerInstallationFailure(self, msg)
+            
+            log.info("- BuildTools: '{}' ...".format(buildtools))
+
+            # Run the BuildTools.jar file.
             with subprocess.Popen(
-                    ['/usr/bin/java', '-jar', buildtools],
-                    cwd = build_dir,
-                    stdout = subprocess.PIPE,
-                    stderr = subprocess.PIPE
+                ["java", "-jar", buildtools],
+                cwd = build_dir,
+                stdout = subprocess.PIPE,
+                stderr = subprocess.PIPE
             ) as proc:
                 # Store the output of the installer in the logfiles.
                 out, err = proc.communicate()
@@ -686,18 +697,20 @@ class Spigot(BaseServerWrapper):
                     msg = "Installer returned with '{}'."\
                           .format(proc.returncode)
                     raise ServerInstallationFailure(self, msg)
- 
-            jarfiles = glob.glob(os.path.join(build_dir, 'Spigot/Spigot-Server/target/spigot-*.jar'))
-            if (len(jarfiles) > 0):
+
+            # Move the built files to the *server()* folder.
+            jarfiles = glob.glob(
+                os.path.join(build_dir, "Spigot/Spigot-Server/target/spigot-*.jar")
+                )
+            if len(jarfiles) > 0:
                 jarfile = jarfiles[0]
                 shutil.move(jarfile, self.server())
             else:
-                raise Exception('Could not find built spigot-*.jar file.')
-                
-        except Exception as err:
-            log.error(str(err))
-            raise ServerInstallationFailure(err)
+                msg = "Could not find built spigot-*.jar file."
+                raise ServerInstallationFailure(self, msg)
+        
         finally:
+            # Remove the build directory, if it's only a temporary 
             if "build_dir" not in self.conf():
                 log.info("- Removing build directory {}".format(build_dir))
                 shutil.rmtree(build_dir)
@@ -713,9 +726,11 @@ class Spigot(BaseServerWrapper):
         return re.compile("^.*Starting minecraft server version .*")
 
     def translate_command(self, cmd):
+        # Todo: Is this really another command on spigot?
         if cmd == "save":
             cmd = "save-all"
         return cmd
+
 
 # MC-Server
 # '''''''''

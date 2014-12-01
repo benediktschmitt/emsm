@@ -115,6 +115,7 @@ configuration file. Each section represents another world.
    * bungeecord
    * minecraft forge 1.6
    * minecraft forge 1.7
+   * spigot latest
    * vanilla 1.2
    * vanilla 1.3
    * vanilla 1.4
@@ -122,6 +123,10 @@ configuration file. Each section represents another world.
    * vanilla 1.6
    * vanilla 1.7
    * vanilla 1.8
+   
+   .. hint:: 
+   
+      You can list all available server versions by ``minecraft server --list``.
    
 Example
 '''''''
