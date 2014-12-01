@@ -657,8 +657,6 @@ class Spigot(BaseServerWrapper):
         return tempfile.mkdtemp(prefix='spigotmc')
 
     def install(self):
-        """
-        """
         if self.is_installed():
             return None
 
@@ -727,9 +725,6 @@ class Spigot(BaseServerWrapper):
         return re.compile("^.*Starting minecraft server version .*")
 
     def translate_command(self, cmd):
-        # Todo: Is this really another command on spigot?
-        if cmd == "save":
-            cmd = "save-all"
         return cmd
 
 
