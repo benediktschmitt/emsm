@@ -649,10 +649,11 @@ class Spigot(BaseServerWrapper):
         return "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"
 
     def build_dir(self):
-        # Todo: Is a special *build_dir* option really necessairy?
-        #       Better keep it simple and unified.
         if "build_dir" in self.conf():
-            return self.conf().get('build_dir')
+            tmp = self.conf().get("build_dir")
+            tmp = os.path.expanduser(tmp)
+            tmp = os.path.abspath(tmp)
+            return tmp
         return tempfile.mkdtemp(prefix='spigotmc')
 
     def install(self):
@@ -673,7 +674,7 @@ class Spigot(BaseServerWrapper):
                     self.url(), os.path.join(build_dir, "BuildTools.jar")
                     )
             except Exception as err:
-                raise ServerInstallationFailure(self, msg)
+                raise ServerInstallationFailure(self, err)
             
             log.info("- BuildTools: '{}' ...".format(buildtools))
 
@@ -710,7 +711,7 @@ class Spigot(BaseServerWrapper):
                 raise ServerInstallationFailure(self, msg)
         
         finally:
-            # Remove the build directory, if it's only a temporary 
+            # Remove the build directory, if it's only a temporary dir.
             if "build_dir" not in self.conf():
                 log.info("- Removing build directory {}".format(build_dir))
                 shutil.rmtree(build_dir)

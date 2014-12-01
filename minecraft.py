@@ -48,4 +48,4 @@ if __name__ == "__main__":
         raise
     finally:
         ret = app.finish()
-        exit(ret)
+##        exit(ret)
