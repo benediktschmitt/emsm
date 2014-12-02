@@ -55,42 +55,6 @@ log = logging.getLogger(__file__)
 
 # Classes
 # ------------------------------------------------
-
-class LicenseAction(argparse.Action):
-    """
-    Prints the given license *license_* and exists.
-    """
-
-    def __init__(self, option_strings, license_=None, dest=argparse.SUPPRESS,
-                 default=argparse.SUPPRESS):
-        """
-        """
-        super().__init__(
-            option_strings = option_strings,
-            dest = dest,
-            default = default,
-            nargs = 0,
-            help = "show the program's license and exit"
-            )
-
-        # Format the license string.  
-        if license_ is None:
-            license_ = str()
-            
-        # Make sure the license string ends with a '\n' line break.
-        if not license_.endswith("\n"):
-            license_ += "\n"
-        
-        self.license = license_
-        return None
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        """
-        Prints :attr:`license` and exists.
-        """
-        parser.exit(message=self.license)
-        return None
-
     
 class LongHelpAction(argparse.Action):
     """
@@ -227,18 +191,6 @@ class ArgumentParser(object):
         and server.
         """
         log.info("adding emsm arguments ...")
-        
-        # About the EMSM.
-        self._argparser.add_argument(
-            "--version",
-            action = "version",
-            version = "EMSM {}".format(VERSION)
-            )
-        self._argparser.add_argument(
-            "--license",
-            action = LicenseAction,
-            license_ = LICENSE
-            )
 
         # The selectable worlds.
         worlds_group = self._argparser.add_mutually_exclusive_group()

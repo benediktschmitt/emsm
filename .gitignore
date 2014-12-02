@@ -47,6 +47,7 @@ plugins/
 # EMSM plugins
 !plugins/__init__.py
 !plugins/backups.py
+!plugins/emsm.py
 !plugins/guard.py
 !plugins/hellodolly.py
 !plugins/initd.py
