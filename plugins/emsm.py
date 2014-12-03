@@ -61,6 +61,8 @@ Arguments
 
 # std
 import os
+import re
+import urllib.request
 
 # local
 import emsm
@@ -75,6 +77,53 @@ PLUGIN = "EMSM"
 
 # Classes
 # ------------------------------------------------
+
+class Updater(object):
+    """
+    Manages the EMSM update.
+    """
+
+    def __init__(self, app):
+        self._app = app
+        return None
+
+    def latest_version(self):
+        """
+        Returns the latest EMSM version.
+        """
+        latest_version_py_url = "https://raw.githubusercontent.com/benediktschmitt/emsm/master/emsm/version.py"
+        with urllib.request.urlopen(latest_version_py_url) as file:
+            data = file.read()
+            data = data.decode()
+
+        # Isolte the *VERSION* variable value.
+        latest_version = re.findall(
+            "^VERSION\s*=\s*\\\"(.*?)\\\"\s*", data, re.MULTILINE
+            )
+        latest_version = latest_version[0]
+
+        # Format the 
+        latest_version = latest_version.split(".")
+        return latest_version
+
+    def update_needed(self):
+        """
+        Returns ``True`` if the current EMSM installation is out of date.
+        """
+        return None
+        
+    def update(self):
+        """
+        Updates the EMSM.
+        """
+        return None
+
+    def simulate(self):
+        """
+        Simulates the EMSM update.
+        """
+        return None
+    
 
 class EMSM(BasePlugin):
 
@@ -151,7 +200,7 @@ class EMSM(BasePlugin):
         """
         Checks if the EMSM can be updated and simulates the update.
         """
-        updater = Updater(app)
+        updater = Updater(self.app())
         updater.simulate()
         return None
         
@@ -159,7 +208,7 @@ class EMSM(BasePlugin):
         """
         Guides the user through an EMSM update.
         """
-        updater = Updater(app)
+        updater = Updater(self.app())
         updater.update()
         return None
         
