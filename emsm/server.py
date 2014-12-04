@@ -266,6 +266,45 @@ class BaseServerWrapper(object):
             * when the installation failed.
         """
         raise NotImplementedError()
+
+    def reinstall(self):
+        """
+        Tries to reinstall the server. If the reinstallation fails, the
+        old :meth:`server()` is restored and everything is like before.
+
+        :raises ServerInstallationFailure:
+            * when the installation failed.
+        :raises ServerIsOnlineError:
+            * when a world powered by this server software is online.
+        """
+        if self.is_online():
+            raise ServerIsOnlineError(self)
+
+        # Save the old self.server() path (we don't know if it is a directory
+        # or a file) in a temporary folder, so that we can move it back, if
+        # something fails.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_server_path = shutil.move(self._server, tmp_dir)
+
+            # is_installed() returns now False.
+            assert not self.is_installed()
+
+            # So we can call install() again.
+            try:
+                self.install()
+            except:
+                # Clean up the installation target directory self.server()
+                # and move the old server path back.
+                if os.path.exists():
+                    if os.path.isdir():
+                        shutil.rmtree(self._server)
+                    else:
+                        os.remove(self._server)
+                shutil.move(tmp_server_path, self._server)
+
+                # Reraise the original exception.
+                raise
+        return None        
     
     def default_start_cmd(self):
         """
