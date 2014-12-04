@@ -35,16 +35,24 @@ nosetests.xml
 .project
 .pydevproject
 
+# EMSM
+# ====
+
 # EMSM instance folders and files
+# -------------------------------
 conf/
+logs/
 plugins_data/
 worlds/
 server/
-logs/
 app.lock
-plugins/
 
-# EMSM plugins
+# EMSM Plugins
+# ------------
+#
+# The plugin folder is an instance folder. But it contains also core plugins,
+# so we ignore the whole folder and create exceptions for the core plugins.
+plugins/
 !plugins/__init__.py
 !plugins/backups.py
 !plugins/emsm.py
@@ -56,11 +64,14 @@ plugins/
 !plugins/worlds.py
 
 # EMSM docs
+# ---------
 docs/build
-docs/source/_themes
 
+# The *.rst files for the api are created automatically by autodoc. So we 
+# ignore them.
 docs/source/api/*.rst
 !docs/source/api/index.rst
 
+# autodoc (see comment above for api)
 docs/source/plugins/*.rst
 !docs/source/plugins/index.rst
