@@ -478,7 +478,7 @@ class MyWorld(object):
         try:
             self._world.restart(force_restart=force_restart)
         except emsm.worlds.WorldStopFailed:
-            if force_stop:
+            if force_restart:
                 print("\t", "FAILURE: The world could not be stopped.")
             else:
                 print("\t", "FAILURE: The world could not be stopped.")
