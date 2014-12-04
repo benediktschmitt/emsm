@@ -63,6 +63,8 @@ Arguments
 import os
 import re
 import urllib.request
+import logging
+import collections
 
 # local
 import emsm
@@ -73,6 +75,8 @@ from emsm.base_plugin import BasePlugin
 # ------------------------------------------------
 
 PLUGIN = "EMSM"
+
+log = logging.getLogger(__file__)
 
 
 # Classes
@@ -85,44 +89,82 @@ class Updater(object):
 
     def __init__(self, app):
         self._app = app
+
+        # Cache some values.
+        self._latest_version = None
         return None
+
+    # version number
+    # ^^^^^^^^^^^^^^
+
+    def _split_version(self, version):
+        """
+        Splits the version string in the following way:
+
+            >>> version
+            "3.0.1-beta"
+            >>> _split_version(version)
+            [3, 0, 1, "beta"]
+        """
+        [major, minor, patch, phase] = re.split("[.-]", version)
+        major = int(major)
+        minor = int(minor)
+        patch = int(patch)
+        return dict(major=major, minor=minor, patch=patch, phase=phase)
+
+    def current_version(self):
+        """
+        Returns the current version of the EMSM.
+        """
+        return self._split_version(emsm.version.VERSION)
 
     def latest_version(self):
         """
         Returns the latest EMSM version.
         """
+        # Check if we already downloaded this value.
+        if not self._latest_version is None:
+            return self._latest_version
+        
         latest_version_py_url = "https://raw.githubusercontent.com/benediktschmitt/emsm/master/emsm/version.py"
         with urllib.request.urlopen(latest_version_py_url) as file:
             data = file.read()
             data = data.decode()
 
-        # Isolte the *VERSION* variable value.
+        # Isolte the value of the *VERSION* variable.
         latest_version = re.findall(
             "^VERSION\s*=\s*\\\"(.*?)\\\"\s*", data, re.MULTILINE
             )
         latest_version = latest_version[0]
+        latest_version = self._split_version(latest_version)
 
-        # Format the 
-        latest_version = latest_version.split(".")
+        # Save the value to avoid multiple http requests. I assume, that the
+        # version number does not change during one EMSM run.
+        self._latest_version = latest_version
         return latest_version
 
-    def update_needed(self):
+    def version_is_outdated(self):
         """
         Returns ``True`` if the current EMSM installation is out of date.
         """
-        return None
-        
-    def update(self):
-        """
-        Updates the EMSM.
-        """
-        return None
+        latest_version = self.latest_version()
+        current_version = self.current_version()
 
-    def simulate(self):
-        """
-        Simulates the EMSM update.
-        """
-        return None
+        # Check the version *number* before checking the stadium of the
+        # software (beta, release, ...)
+        if latest_version["major"] > current_version["major"]:
+            return True
+        elif latest_version["minor"] > current_version["minor"]:
+            return True
+        elif latest_version["patch"] > current_version["patch"]:
+            return True
+
+        # EMSM has only two software development states: *beta* and *release*.
+        # A beta version of the EMSM is usually, a release candidate.
+        if latest_version["phase"] == "release" \
+           and current_version["phase"] == "beta":
+            return True
+        return False
     
 
 class EMSM(BasePlugin):
@@ -141,6 +183,9 @@ class EMSM(BasePlugin):
     def _setup_conf(self):
         """
         """
+        # When using the configuration for this plugin, make sure to not
+        # interfere with the global emsm configuration section (this section
+        # contains the *user* and *timeout* options).
         return None
 
     def _setup_argparser(self):
@@ -172,12 +217,6 @@ class EMSM(BasePlugin):
             dest = "check_update",
             help = "Simulates an EMSM update."
             )
-        me_group.add_argument(
-            "--update",
-            action = "count",
-            dest = "update",
-            help = "Updates the EMSM."
-            )
         return None
 
     def _action_version(self):
@@ -185,8 +224,7 @@ class EMSM(BasePlugin):
         Displays the current emsm version number and hash value of the last git
         commit.
         """
-        print("version:", emsm.version.VERSION)
-        print("commit hash:", None)
+        print(emsm.version.VERSION)
         return None
 
     def _action_license(self):
@@ -201,15 +239,12 @@ class EMSM(BasePlugin):
         Checks if the EMSM can be updated and simulates the update.
         """
         updater = Updater(self.app())
-        updater.simulate()
-        return None
-        
-    def _action_update(self):
-        """
-        Guides the user through an EMSM update.
-        """
-        updater = Updater(self.app())
-        updater.update()
+        if updater.version_is_outdated():
+            print("Your version it outdated.")
+            print("Current version:", updater.current_version())
+            print("Latest version:", updater.latest_version())
+        else:
+            print("Your version is up to date.")
         return None
         
     def run(self, args):
@@ -221,9 +256,4 @@ class EMSM(BasePlugin):
             self._action_license()
         elif args.check_update:
             self._action_check_update()
-        elif args.update:
-            self._action_update()
         return None
-        
-
-            
