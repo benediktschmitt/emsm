@@ -49,10 +49,6 @@ Arguments
 .. option:: --check-update
 
     Simulates an EMSM update.
-
-.. option:: --update
-
-    Updates the EMSM.
 """
 
 
