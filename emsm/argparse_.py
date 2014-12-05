@@ -45,7 +45,6 @@ from .version import VERSION
 # ------------------------------------------------
 
 __all__ = [
-    "LicenseAction",
     "LongHelpAction",
     "ArgumentParser"
     ]
