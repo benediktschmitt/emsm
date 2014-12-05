@@ -7,6 +7,7 @@ Welcome to Extendable Minecraft Server Manager's documentation!
    how_to/index
    plugins/index
    api/index
+   changelog
    contribute
    license
    about

@@ -4,6 +4,7 @@ Installation
 .. sidebar:: Download
 
    http://git.io/DPH_mg
+   
  
 Manual installation
 -------------------
@@ -19,7 +20,7 @@ Manual installation
  
    .. code-block:: bash
    
-      $ apt-get install screen openjdk-7-jre-headless python3 python3-pip
+      $ apt-get install screen openjdk-7-jre-headless python3 python3-pip git
       
    Note, that the EMSM requires at least *Python 3.2* to run.
    
@@ -43,23 +44,12 @@ Manual installation
       $ mkdir /opt/minecraft
       $ cd /opt/minecraft
 
-#. Download the latest stable EMSM version and extract it:
+#. Clone the GitHub repository:
 
    .. code-block:: bash
       
-      $ wget https://github.com/benediktschmitt/emsm/archive/master.tar.gz -O /tmp/emsm-master.tar.gz
-      $ tar -xzf /tmp/emsm-master.tar.gz -C /tmp
-      $ mv /tmp/emsm-master/* /opt/minecraft
+      $ git clone https://github.com/benediktschmitt/emsm/ /opt/minecraft
       $ chown -R minecraft:minecraft /opt/minecraft
-      
-#. If you want, you can clean the EMSM folder up. You probably don't need the source
-   of the documentation:
-   
-   .. code-block:: bash
-   
-      $ rm -r /opt/minecraft/docs
-      $ rm -r /opt/minecraft/LICENSE
-      $ rm -r /opt/minecraft/README.md
 
 #. Make sure the the EMSM is executable:
 
@@ -73,7 +63,7 @@ Manual installation
 
       $ ln -s /opt/minecraft/minecraft.py /usr/bin/minecraft
       
-#. Intall the *init.d* service:
+#. Install the :mod:`initd <plugins.initd>` service.
 
    .. code-block:: bash
    
@@ -101,6 +91,7 @@ Manual installation
          |- plugins_data
          |- server
          |- worlds
+         
        
 Known issues
 ------------

@@ -14,6 +14,7 @@ How to
    configuration
    first_run
    uninstallation
+   updates
 
 This is a quick installation guide. I guess it will not take more than 
 **ten minutes** to set the application up.
