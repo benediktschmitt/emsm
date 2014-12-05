@@ -69,7 +69,13 @@ command to update all EMSM files without overwriting local changes.
    .. code-block:: bash
    
       $ minecraft -W worlds --force-stop
+      
+#. Switch to the minecraft user (to avoid running git as root):
 
+   .. code-block:: bash
+   
+      su minecraft --shell=/bin/bash
+      
 #. Change to the EMSM root folder and pull any changes from our GitHub 
    repository:
    
@@ -78,11 +84,11 @@ command to update all EMSM files without overwriting local changes.
       $ cd /opt/minecraft
       $ git pull origin
       
-#. Make sure the *minecraft* user owns all files:
+#. Exit the *minecraft* user shell:
 
    .. code-block:: bash
    
-      $ chown -R minecraft:minecraft /opt/minecraft
+      $ exit
 
       
 Manual update
