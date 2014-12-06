@@ -108,6 +108,12 @@ class Updater(object):
         patch = int(patch)
         return dict(major=major, minor=minor, patch=patch, phase=phase)
 
+    def build_version_string(self, version):
+        """
+        Builds the version string from the version dictionary *version*.
+        """
+        return "{major}.{minor}.{patch}-{phase}".format(**version)
+
     def current_version(self):
         """
         Returns the current version of the EMSM.
@@ -236,9 +242,11 @@ class EMSM(BasePlugin):
         """
         updater = Updater(self.app())
         if updater.version_is_outdated():
-            print("Your version it outdated.")
-            print("Current version:", updater.current_version())
-            print("Latest version:", updater.latest_version())
+            print("Your version it outdated.")            
+            print("Current version:",
+                  updater.build_version_string(updater.current_version()))
+            print("Latest version: ",
+                  updater.build_version_string(updater.latest_version()))
         else:
             print("Your version is up to date.")
         return None
