@@ -503,7 +503,7 @@ class Vanilla_1_8(VanillaBase):
         return "vanilla 1.8"
 
     def default_url(self):
-        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.8/minecraft_server.1.8.jar"
+        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.8.1/minecraft_server.1.8.1.jar"
     
     def log_path(self):
         return "./logs/latest.log"
