@@ -518,10 +518,10 @@ class UiBackupManager(BackupManager):
         backups.sort(reverse=True)
         
         if not backups:
-            print("{} - list:".format(self.world().name()))
+            print("{}:".format(self.world().name()))
             print("\t", "- no backups found -")
         else:
-            print("{} - list:".format(self.world().name()))
+            print("{}:".format(self.world().name()))
             for date, path in backups:
                 size = os.path.getsize(path)
                 print("\t", date.ctime())
@@ -531,7 +531,7 @@ class UiBackupManager(BackupManager):
         """
         Creates a new backup.
         """
-        print("{} - create:".format(self.world().name()))
+        print("{}:".format(self.world().name()))
 
         try:
             super().create(archive_format)
@@ -548,7 +548,7 @@ class UiBackupManager(BackupManager):
     def restore(self, backup_path, message, delay):
         """
         """
-        print("{} - restore:".format(self.world().name()))
+        print("{}:".format(self.world().name()))
         print("\t", "backup: {}".format(backup_path))
         
         # Verify, that the user really wants to restore the world.
@@ -581,12 +581,12 @@ class UiBackupManager(BackupManager):
 
         # Break if no backup is available.
         if latest_backup == (None, None):
-            print("{} - restore-latest:".format(self.world().name()))
+            print("{}:".format(self.world().name()))
             print("\t", "FAILURE: no backup available.")
         else:
             date, path = latest_backup
             
-            print("{} - restore-latest:".format(self.world().name()))
+            print("{}:".format(self.world().name()))
             print("\t", "backup: {}".format(date))
             print("\t", "path:   {}".format(path))
             
@@ -601,10 +601,10 @@ class UiBackupManager(BackupManager):
 
         # Break if no backup is available.
         if not backups:
-            print("{} - restore-menu:".format(self.world().name()))
+            print("{}:".format(self.world().name()))
             print("\t", "FAILURE: no backup available.")
         else:
-            print("{} - restore-menu:".format(self.world().name()))
+            print("{}:".format(self.world().name()))
 
             # Print the backup list.
             for i, backup in enumerate(backups):
