@@ -78,6 +78,8 @@ Arguments
 .. option:: --stop
    
     Stops all worlds, where the *enable_initd* configuration value is true.
+    Note, that this will always **force** the stop of the world, since the
+    process is killed anyway during system shutdown.
 """
 
 
@@ -188,6 +190,7 @@ class InitD(BasePlugin):
     def _initd_worlds(self):
         """
         Returns all worlds where *enable_initd* is true.
+        The worlds are sorted by their names.
 
         See also:
             * WorldWrapper.conf()
@@ -195,6 +198,7 @@ class InitD(BasePlugin):
         worlds = self.app().worlds().get_by_pred(
             lambda w: w.conf().getboolean("enable_initd", False)
             )
+        worlds.sort(key = lambda w: w.name())
         return worlds
     
     def _start(self):
@@ -203,15 +207,15 @@ class InitD(BasePlugin):
         """
         log.info("initd start ...")
         
-        print("initd - start:")
         for world in self._initd_worlds():
+            print("[", "...    ", "]", world.name(), end="\r")
             try:
                 world.start()
             except emsm.worlds.WorldStartFailed as err:
-                print("\t", TerminalColor.to_red("FAIL"), world.name())
+                print("[", TerminalColor.to_red("FAIL   "), "]", world.name())
                 self.app().set_exit_code(2)
             else:
-                print("\t", TerminalColor.to_green("OK  "), world.name())
+                print("[", TerminalColor.to_green("STARTED"), "]", world.name())
 
         log.info("initd start done.")
         return None
@@ -222,16 +226,16 @@ class InitD(BasePlugin):
         """
         log.info("initd stop ...")
         
-        print("initd - stop:")
         for world in self._initd_worlds():
+            print("[", "...    ", "]", world.name(), end="\r")
             try:
                 # Because the process is killed anyway, we force it here.
                 world.stop(force_stop=True)
             except emsm.worlds.WorldStopFailed as err:
-                print("\t", TerminalColor.to_red("FAIL"), world.name())
+                print("[", TerminalColor.to_red("FAIL   "), "]", world.name())
                 self.app().set_exit_code(2)
             else:
-                print("\t", TerminalColor.to_green("OK  "), world.name())
+                print("[", TerminalColor.to_green("STOPPED"), "]", world.name())
 
         log.info("initd stop done.")
         return None
@@ -240,12 +244,11 @@ class InitD(BasePlugin):
         """
         Prints the status of all worlds where *enable_initd* is true.
         """
-        print("initd - status:")
         for world in self._initd_worlds():
             if world.is_online():
-                print("\t", TerminalColor.to_green("ONLINE "), world.name())
+                print("[", TerminalColor.to_green("ONLINE "), "]", world.name())
             else:
-                print("\t", TerminalColor.to_red("OFFLINE"), world.name())
+                print("[", TerminalColor.to_red("OFFLINE"), "]", world.name())
         return None
     
     def run(self, args):
