@@ -605,7 +605,7 @@ class WorldWrapper(object):
         return None
 
     
-    def start(self):
+    def start(self, wait_check_time=1):
         """
         Starts the world if the world is offline. If the world is already
         online, nothing happens.
@@ -615,6 +615,9 @@ class WorldWrapper(object):
             * :attr:`world_about_to_start`
             * :attr:`world_started`
             * :attr:`world_start_failed`
+
+        :param float wait_check_time:
+            Time waited, before checking if the server actually started.
             
         :raises WorldStartFailed:
             if the world could not be started.
@@ -648,6 +651,7 @@ class WorldWrapper(object):
                 pass
 
         # Check if the world is really online.
+        time.sleep(wait_check_time)
         if not self.is_online():
             WorldWrapper.world_start_failed.send(self)
             raise WorldStartFailed(self)
