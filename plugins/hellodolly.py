@@ -96,6 +96,9 @@ module.
 import os
 import random
 
+# third party
+import termcolor
+
 # local
 import emsm
 from emsm.base_plugin import BasePlugin
@@ -256,11 +259,11 @@ class HelloDolly(BasePlugin):
         if rows < 0:
             rows = 0
 
-        # Get *rows* lyrics.
-        lyrics = self.get_lyrics(rows)
-
-        # Sent the poet to every selected world.
-        self.be_poetic(lyrics)
+        # Run hellodolly for each world, which has been selected with
+        # *-w* or *-W* per command line.
+        worlds = self.app().worlds().get_selected()
+        for world in worlds:
+            self.be_poetic(world, rows)
         return None
 
     def get_lyrics(self, num_rows):
@@ -284,22 +287,21 @@ class HelloDolly(BasePlugin):
             lyrics = lyrics[a:a+num_rows]
         return lyrics
 
-    def be_poetic(self, lyrics):
+    def be_poetic(self, world, num_rows):
         """
         Writes the *lyrics* to the chat of all running, selected worlds.
         """
-        # Get all worlds that have been selected with *-w* or *-W*.
-        worlds = self.app().worlds().get_selected()
+        lyrics = self.get_lyrics(num_rows)
 
-        for world in worlds:
-            if world.is_offline():
-                print("{}:".format(world.name()))
-                print("\t", "FAILURE:", "world is offline")
-            else:
-                for row in lyrics:
-                    world.send_command("say {}".format(row))
-                print("{}:".format(world.name()))
-                print("\t", "world has been visited")
+        # We follow the inofficial EMSM style guide and print the
+        # world name in cyan.
+        print(termcolor.colored("{}:".format(world.name()), "cyan"))
+        if world.is_offline():
+            print("\t", termcolor.colored("error:", "red"), "world is offline")
+        else:
+            for row in lyrics:
+                world.send_command("say {}".format(row))
+            print("\t", "world has been visited")
         return None
 
     def finish(self):
