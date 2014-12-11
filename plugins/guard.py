@@ -50,10 +50,10 @@ main.conf
 
     Defines the reaction on a detected error.
 
-    * *none*     Do nothing
-    * *restart*  Try to restart the world
-    * *stop*     Try to stop the world.
-    * *stderr*   Print a message to stderr
+    * *none*     Do nothing.
+    * *restart*  Force the restart of the world.
+    * *stop*     Force the stop of the world.
+    * *stderr*   Print a message to stderr.
     
 **error_regex**
 
@@ -90,13 +90,17 @@ Changelog
 
     * Removed configuration options that were dedicated to enable the guard
       for selected worlds.
-    * The new **guard** simply monitors all worlds selected with the **-W**
-      or *-w* argument.
+    * The *new* guard simply monitors all worlds selected with the **-W**
+      or **-w** argument.
 
 Todo
 ----
 
 * Add *email* as error action option.
+* Report a warning only once in a specified intervall.
+* Add the port check.
+* Remove the error action *none*.
+* Let the user overwrite the configuration by command line arguments.
 """
 
 
@@ -262,7 +266,7 @@ class Guard(BasePlugin):
 
         # Stderr
         elif self._error_action == "stderr":
-            print("guard - {}:".format(world.name()), file=sys.stderr)
+            print("{}:".format(world.name()), file=sys.stderr)
             print("\t", "has issues", file=sys.stderr)
         return None
 
