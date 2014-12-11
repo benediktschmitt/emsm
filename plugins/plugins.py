@@ -411,11 +411,13 @@ class Plugins(BasePlugin):
         """
         Sets the argument parser up.
         """
-        parser = self.argparser()
-        
-        parser.description = "Install and remove EMSM plugins"        
+        parser = self.argparser()        
+        parser.description = "Install and remove EMSM plugins"
 
-        parser.add_argument(
+        # We want to allow only one action per run.
+        me_group = parser.add_mutually_exclusive_group()
+        
+        me_group.add_argument(
             "--install",
             action = "store",
             dest = "install",
@@ -428,7 +430,7 @@ class Plugins(BasePlugin):
         plugin_names = [name \
                         for name in self.app().plugins().get_plugin_names()
                         if name != self.name()]
-        parser.add_argument(
+        me_group.add_argument(
             "--uninstall",
             action = "store",
             dest = "uninstall",
@@ -437,7 +439,7 @@ class Plugins(BasePlugin):
             help = "Uninstall the plugin."
             )
 
-        parser.add_argument(
+        me_group.add_argument(
             "--list",
             action = "count",
             dest = "list",
@@ -452,11 +454,11 @@ class Plugins(BasePlugin):
             installer = PluginInstaller(self.app(), args.install)
             installer.install()
 
-        if args.uninstall:
+        elif args.uninstall:
             plugin = self.app().plugins().get_plugin(args.uninstall)
             plugin.uninstall()
-
-        if args.list:
+            
+        elif args.list:
             self._list_plugins()
         return None
 
@@ -468,12 +470,10 @@ class Plugins(BasePlugin):
         plugins.sort()
         
         if not plugins:
-            print("plugins - list:")
-            print("\t", "- no plugins loaded -")
+            print("- no plugins loaded -")
         else:
-            print("plugins - list:")
             for name in plugins:
-                print("\t", "* {}".format(name))
+                print("* {}".format(name))
         return None
 
     
