@@ -291,14 +291,15 @@ class HelloDolly(BasePlugin):
         # Get all worlds that have been selected with *-w* or *-W*.
         worlds = self.app().worlds().get_selected()
 
-        print("hellodolly:")
         for world in worlds:
             if world.is_offline():
-                print("\t", world.name(), "OFFLINE")
+                print("{}:".format(world.name()))
+                print("\t", "FAILURE:", "world is offline")
             else:
                 for row in lyrics:
                     world.send_command("say {}".format(row))
-                print("\t", world.name(), "VISITED")
+                print("{}:".format(world.name()))
+                print("\t", "world has been visited")
         return None
 
     def finish(self):
