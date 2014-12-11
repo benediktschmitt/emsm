@@ -80,6 +80,18 @@ Arguments
     Stops all worlds, where the *enable_initd* configuration value is true.
     Note, that this will always **force** the stop of the world, since the
     process is killed anyway during system shutdown.
+
+.. option:: --restart
+
+    Forces the restart of all worlds which has *enable_initd* enabled.
+
+Exit code
+---------
+
+The exit code is set to:
+
+* 0 if no error occured.
+* 2 if an error occured.
 """
 
 
@@ -137,6 +149,9 @@ class InitD(BasePlugin):
 
     # Emitted when initd is called with the *--stop* argument.
     on_initd_stop = blinker.signal("initd_stop")
+
+    # Emitted when initd is called with the *--restart* argument.
+    on_initd_restart = blinker.signal("initd_restart")
     
     def __init__(self, app, name):
         """
@@ -167,6 +182,12 @@ class InitD(BasePlugin):
             action = "count",
             dest = "initd_stop",
             help = "Stop all worlds for which initd support is enabled."
+            )
+        me_group.add_argument(
+            "--restart",
+            action = "count",
+            dest = "initd_restart",
+            help = "Restart all worlds for which initd support is enabled."
             )
         me_group.add_argument(
             "--status",
@@ -212,10 +233,10 @@ class InitD(BasePlugin):
             try:
                 world.start()
             except emsm.worlds.WorldStartFailed as err:
-                print("[", TerminalColor.to_red("FAIL   "), "]", world.name())
+                print("[", TerminalColor.to_red("fail   "), "]", world.name())
                 self.app().set_exit_code(2)
             else:
-                print("[", TerminalColor.to_green("STARTED"), "]", world.name())
+                print("[", TerminalColor.to_green("started"), "]", world.name())
 
         log.info("initd start done.")
         return None
@@ -232,12 +253,35 @@ class InitD(BasePlugin):
                 # Because the process is killed anyway, we force it here.
                 world.stop(force_stop=True)
             except emsm.worlds.WorldStopFailed as err:
-                print("[", TerminalColor.to_red("FAIL   "), "]", world.name())
+                print("[", TerminalColor.to_red("fail   "), "]", world.name())
                 self.app().set_exit_code(2)
             else:
-                print("[", TerminalColor.to_green("STOPPED"), "]", world.name())
+                print("[", TerminalColor.to_green("stopped"), "]", world.name())
 
         log.info("initd stop done.")
+        return None
+
+    def _restart(self):
+        """
+        Forces the restart of all worlds which has *enable_initd* enabled.
+        """
+        log.info("initd restart ...")
+        
+        for world in self._initd_worlds():
+            print("[", "...      ", "]", world.name(), end="\r")
+            try:
+                # Because the process is killed anyway, we force it here.
+                world.restart(force_restart=True)
+            except emsm.worlds.WorldStopFailed as err:
+                print("[", TerminalColor.to_red("fail     "), "]", world.name())
+                self.app().set_exit_code(2)
+            except emsm.worlds.WorldStartFailed as err:
+                print("[", TerminalColor.to_red("fail     "), "]", world.name())
+                self.app().set_exit_code(2)
+            else:
+                print("[", TerminalColor.to_green("restarted"), "]", world.name())
+
+        log.info("initd restart done.")
         return None
 
     def _status(self):
@@ -246,9 +290,9 @@ class InitD(BasePlugin):
         """
         for world in self._initd_worlds():
             if world.is_online():
-                print("[", TerminalColor.to_green("ONLINE "), "]", world.name())
+                print("[", TerminalColor.to_green("online "), "]", world.name())
             else:
-                print("[", TerminalColor.to_red("OFFLINE"), "]", world.name())
+                print("[", TerminalColor.to_red("offline"), "]", world.name())
         return None
     
     def run(self, args):
@@ -260,6 +304,9 @@ class InitD(BasePlugin):
         elif args.initd_stop:
             self._stop()
             InitD.on_initd_stop.send()
+        elif args.initd_restart:
+            self._restart()
+            InitD.on_initd_restart.send()
         elif args.initd_status:
             self._status()
         return None
