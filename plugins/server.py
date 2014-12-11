@@ -169,26 +169,29 @@ class Server(BasePlugin):
         """
         Prints all worlds that are powered by the server *server*.
         """
-        # Get all worlds powered by this server.
+        # Get all worlds powered by this server and sort them.
         worlds = self.app().worlds().get_by_pred(
             lambda w: w.server() is server
             )
         online_worlds = list(filter(lambda w: w.is_online(), worlds))
+        online_worlds.sort(key = lambda w: w.name())
+        
         offline_worlds = list(filter(lambda w: w.is_offline(), worlds))
+        offline_worlds.sort(key = lambda w: w.name())
         
         # Print the worlds grouped by their current status (offline/online).
-        print("server - {} - usage:".format(server.name()))
-        print("\t", "number of worlds:", len(worlds))
+        print("{}:".format(server.name()))
+        print("\t", "* number of worlds:", len(worlds))
 
+        print("\t", "* online worlds:", len(online_worlds))
         if online_worlds:
-            print("\t", "online:")
             for world in online_worlds:
-                print("\t\t", world.name())
+                print("\t\t", "* {}".format(world.name()))
 
+        print("\t", "* offline worlds:", len(offline_worlds))
         if offline_worlds:
-            print("\t", "offline:")
             for world in offline_worlds:
-                print("\t\t", world.name())
+                print("\t\t", "* {}".format(world.name()))
         return None
 
     def _print_list(self):
@@ -198,9 +201,8 @@ class Server(BasePlugin):
         names = self.app().server().get_names()
         names.sort()
 
-        print("server - list:")
         for name in names:
-            print("\t", name)
+            print("* {}".format(name))
         return None
 
     def _update_server(self, server):
@@ -210,12 +212,13 @@ class Server(BasePlugin):
         All worlds which are currently online and powered by the *server* will
         be stopped and restarted after the update.
         """
-        print("server - {} - update: ...".format(server.name()))
+        print("{}: ".format(server.name()))
         
         # Get all worlds, that are currently running the server.
         worlds = self.app().worlds().get_by_pred(
             lambda w: w.server() is server and w.is_online()
             )
+        worlds.sort(key = lambda w: w.name())
 
         # Stop those worlds.
         try:
