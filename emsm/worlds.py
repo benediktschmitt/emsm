@@ -605,7 +605,7 @@ class WorldWrapper(object):
         return None
 
     
-    def start(self, wait_check_time=1):
+    def start(self, wait_check_time=0.1):
         """
         Starts the world if the world is offline. If the world is already
         online, nothing happens.
