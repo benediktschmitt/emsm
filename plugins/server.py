@@ -189,17 +189,17 @@ class Server(BasePlugin):
         
         # Print the worlds grouped by their current status (offline/online).
         print(termcolor.colored("{}:".format(server.name()), "cyan"))
-        print("\t", "* number of worlds:", len(worlds))
+        print("\t", "* {} worlds".format(len(worlds)))
 
-        print("\t", "* online worlds:", len(online_worlds))
+        print("\t", "* {} online worlds".format(len(online_worlds)))
         if online_worlds:
             for world in online_worlds:
-                print("\t\t", "* {}".format(world.name()))
+                print("\t\t", "- {}".format(world.name()))
 
-        print("\t", "* offline worlds:", len(offline_worlds))
+        print("\t", "* {} offline worlds".format(len(offline_worlds)))
         if offline_worlds:
             for world in offline_worlds:
-                print("\t\t", "* {}".format(world.name()))
+                print("\t\t", "- {}".format(world.name()))
         return None
 
     def _print_list(self):
