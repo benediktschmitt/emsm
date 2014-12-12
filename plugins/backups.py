@@ -731,32 +731,32 @@ class Backups(BasePlugin):
         me_group.add_argument(
             "--list",
             action = "count",
-            dest = "list",
+            dest = "backups_list",
             help = "Lists all available backups."
             )
         me_group.add_argument(
             "--create",
             action = "count",
-            dest = "create",
+            dest = "backups_create",
             help = "Creates a new backup."
             )
         me_group.add_argument(
             "--restore",
             action = "store",
-            dest = "restore",
+            dest = "backups_restore",
             metavar = "PATH",
             help = "Restores the backup at the given path."
             )
         me_group.add_argument(
             "--restore-latest",
             action = "count",
-            dest = "restore_latest",
+            dest = "backups_restore_latest",
             help = "Restores the latest backup."
             )
         me_group.add_argument(
             "--restore-menu",
             action = "count",
-            dest = "restore_menu",
+            dest = "backups_restore_menu",
             help = "Opens a dialog allowing the user to select the backup "\
                    "that should be restored."
             )
@@ -778,16 +778,16 @@ class Backups(BasePlugin):
                 backup_dir = os.path.join(self.data_dir(), world.name())
                 )
 
-            if args.list:
+            if args.backups_list:
                 bm.list()
-            elif args.create:
+            elif args.backups_create:
                 bm.create(self._archive_format)
-            elif args.restore:
-                bm.restore(args.restore, self._restore_message,
+            elif args.backups_restore:
+                bm.restore(args.backups_restore, self._restore_message,
                            self._restore_delay
                            )
-            elif args.restore_latest:
+            elif args.backups_restore_latest:
                 bm.restore_latest(self._restore_message, self._restore_delay)
-            elif args.restore_menu:
+            elif args.backups_restore_menu:
                 bm.restore_menu(self._restore_message, self._restore_delay)
         return None
