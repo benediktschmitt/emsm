@@ -103,6 +103,7 @@ import logging
 
 # third party
 import blinker
+import termcolor
 
 # local
 import emsm
@@ -119,24 +120,6 @@ log = logging.getLogger(__file__)
    
 # Classes
 # ------------------------------------------------
-
-class TerminalColor(object):
-    """
-    A small collection of methods to colorize terminal output.
-    """
-
-    RESET = "\x1b[39;49m"
-    RED = "\x1b[31m"
-    GREEN = "\x1b[32m"
-
-    @classmethod
-    def to_red(cls, txt):
-        return cls.RED + txt + cls.RESET
-
-    @classmethod
-    def to_green(cls, txt):
-        return cls.GREEN + txt + cls.RESET
-
 
 class InitD(BasePlugin):
 
@@ -229,8 +212,8 @@ class InitD(BasePlugin):
         # We create the unformatted messages here to increase readability.
         raw_msg = "[ {status} ] starting the minecraft world '{{world_name}}'"
         pre_msg = raw_msg.format(status="... ")
-        fail_msg = raw_msg.format(status=TerminalColor.to_red("fail"))
-        ok_msg = raw_msg.format(status=TerminalColor.to_green("ok  "))
+        fail_msg = raw_msg.format(status=termcolor.colored("fail", "red"))
+        ok_msg = raw_msg.format(status=termcolor.colored("ok  ", "green"))
 
         # Start the worlds.
         log.info("initd start ...")
@@ -255,8 +238,8 @@ class InitD(BasePlugin):
         # We create the unformatted messages here to increase readability.
         raw_msg = "[ {status} ] stopping the minecraft world '{{world_name}}'"
         pre_msg = raw_msg.format(status="... ")
-        fail_msg = raw_msg.format(status=TerminalColor.to_red("fail"))
-        ok_msg = raw_msg.format(status=TerminalColor.to_green("ok  "))
+        fail_msg = raw_msg.format(status=termcolor.colored("fail", "red"))
+        ok_msg = raw_msg.format(status=termcolor.colored("ok  ", "green"))
         
         # Stop the worlds.
         log.info("initd stop ...")
@@ -282,8 +265,8 @@ class InitD(BasePlugin):
         # We create the unformatted messages here to increase readability.
         raw_msg = "[ {status} ] restarting the minecraft world '{{world_name}}'"
         pre_msg = raw_msg.format(status="... ")
-        fail_msg = raw_msg.format(status=TerminalColor.to_red("fail"))
-        ok_msg = raw_msg.format(status=TerminalColor.to_green("ok  "))
+        fail_msg = raw_msg.format(status=termcolor.colored("fail", "red"))
+        ok_msg = raw_msg.format(status=termcolor.colored("ok  ", "green"))
 
         # Restart the worlds.
         log.info("initd restart ...")
@@ -311,9 +294,9 @@ class InitD(BasePlugin):
         """
         # We create the unformatted messages here to increase readability.
         fail_msg = "[ {status} ] the minecraft world '{{world_name}}' is offline."\
-                   .format(status=TerminalColor.to_red("fail"))
+                   .format(status=termcolor.colored("fail", "red"))
         ok_msg = "[ {status} ] the minecraft world '{{world_name}}' is online."\
-                 .format(status=TerminalColor.to_green("ok  "))
+                 .format(status=termcolor.colored("ok  ", "green"))
         
         # Print the status the worlds.
         for world in self._initd_worlds():
