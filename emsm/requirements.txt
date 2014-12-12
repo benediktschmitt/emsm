@@ -1,2 +1,4 @@
 blinker
 filelock
+colorama
+termcolor
