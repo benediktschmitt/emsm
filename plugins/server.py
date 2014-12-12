@@ -138,19 +138,19 @@ class Server(BasePlugin):
         me_group.add_argument(
             "--usage",
             action = "count",
-            dest = "usage",
+            dest = "server_usage",
             help = "Prints all worlds powered by a server."
             )
         me_group.add_argument(
             "--list",
             action = "count",
-            dest = "list",
+            dest = "server_list",
             help = "Prints the names of all server supported by the EMSM."
             )
         me_group.add_argument(
             "--update",
             action = "count",
-            dest = "update",
+            dest = "server_update",
             help = "Updates the server software."
             )
         return None
@@ -158,7 +158,7 @@ class Server(BasePlugin):
     def run(self, args):
         """
         """
-        if args.list:
+        if args.server_list:
             self._print_list()
             
         else:            
@@ -167,9 +167,9 @@ class Server(BasePlugin):
             sel_server.sort(key = lambda s: s.name())
             
             for server in sel_server:
-                if args.usage:
+                if args.server_usage:
                     self._print_usage(server)
-                elif args.update:
+                elif args.server_update:
                     self._update_server(server)                
         return None
 
