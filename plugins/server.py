@@ -161,11 +161,16 @@ class Server(BasePlugin):
         if args.list:
             self._print_list()
             
-        for server in self.app().server().get_selected():
-            if args.usage:
-                self._print_usage(server)
-            elif args.update:
-                self._update_server(server)                
+        else:            
+            # Sort the server by their names, before running.
+            sel_server = self.app().server().get_selected()
+            sel_server.sort(key = lambda s: s.name())
+            
+            for server in sel_server:
+                if args.usage:
+                    self._print_usage(server)
+                elif args.update:
+                    self._update_server(server)                
         return None
 
     def _print_usage(self, server):
