@@ -220,10 +220,13 @@ class HelloDolly(BasePlugin):
             "wordpress plugin \"Hello, Dolly\"."
             )        
         parser.epilog = "https://github.com/benediktschmitt/emsm"
+
+        # Note, that we prefix the *dest* value, since all arguments share
+        # the same namespace.
         parser.add_argument(
             "--rows", "-r",
             action = "store",
-            dest = "rows",
+            dest = "hellodolly_rows",
             type = int,
             default = 1,
             metavar = "ROWS",
@@ -253,7 +256,7 @@ class HelloDolly(BasePlugin):
         """
         # Get the number of lines we want to print and make sure, that
         # the number is not greater then the max_rows configuration value.
-        rows = args.rows
+        rows = args.hellodolly_rows
         if rows > self._max_rows:
             rows = self._max_rows
         if rows < 0:
@@ -261,7 +264,11 @@ class HelloDolly(BasePlugin):
 
         # Run hellodolly for each world, which has been selected with
         # *-w* or *-W* per command line.
+        # We sort the worlds by their names, to process them in alphabetical
+        # order.
         worlds = self.app().worlds().get_selected()
+        worlds.sort(key = lambda w: w.name())
+        
         for world in worlds:
             self.be_poetic(world, rows)
         return None
