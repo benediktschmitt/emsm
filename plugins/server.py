@@ -78,6 +78,9 @@ import os
 import sys
 import logging
 
+# third party
+import termcolor
+
 # local
 import emsm
 from emsm.base_plugin import BasePlugin
@@ -180,7 +183,7 @@ class Server(BasePlugin):
         offline_worlds.sort(key = lambda w: w.name())
         
         # Print the worlds grouped by their current status (offline/online).
-        print("{}:".format(server.name()))
+        print(termcolor.colored("{}:".format(server.name()), "cyan"))
         print("\t", "* number of worlds:", len(worlds))
 
         print("\t", "* online worlds:", len(online_worlds))
@@ -212,7 +215,7 @@ class Server(BasePlugin):
         All worlds which are currently online and powered by the *server* will
         be stopped and restarted after the update.
         """
-        print("{}: ".format(server.name()))
+        print(termcolor.colored("{}:".format(server.name()), "cyan"))
         
         # Get all worlds, that are currently running the server.
         worlds = self.app().worlds().get_by_pred(
@@ -228,8 +231,9 @@ class Server(BasePlugin):
                 
         # Do not continue if a world could not be stopped.
         except emsm.worlds.WorldStopFailed as err:
-            print("\t", "failure: the world '{}' could not be stopped."\
-                  .format(err.world.name()))
+            print("\t", termcolor.colored("error:", "red"),
+                  "the world '{}' could not be stopped.".format(err.world.name())
+                  )
             log.exception(err)
             
         # Continue with the server update if all worlds are offline.
@@ -241,7 +245,7 @@ class Server(BasePlugin):
             try:
                 server.reinstall()
             except emsm.server.ServerInstallationFailure as err:
-                print("\t", "failure: {}".format(err))
+                print("\t", termcolor.colored("error:", "red"), err)
                 log.exception(err)
                 
         # Restart the worlds.
@@ -252,7 +256,9 @@ class Server(BasePlugin):
                 try:
                     world.start()
                 except emsm.worlds.WorldStartFailed as err:
-                    print("\t", "failure: the world '{} could not be "\
-                          "restarted.".format(world.name()))
+                    print("\t", termcolor.colored("error:", "red"),
+                          "the world '{}' could not be restarted."\
+                          .format(err.world.name())
+                          )
                     log.exception(err)
         return None
