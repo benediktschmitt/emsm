@@ -703,7 +703,10 @@ class Worlds(BasePlugin):
     def run(self, args):
         """
         """
+        # We process the worlds in alphabetical order, so we need to sort them.
         worlds = self.app().worlds().get_selected()
+        worlds.sort(key = lambda w: w.name())
+        
         for world in worlds:
             world = MyWorld(self.app, world)
 
