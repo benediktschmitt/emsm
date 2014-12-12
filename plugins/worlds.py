@@ -170,9 +170,9 @@ Examples
    
     # Print the log of the world *foo*:
     $ minecraft -w foo worlds --log
-    $ minecraft -w foo worlds --log-start '"-20"'
-    $ minecraft -w foo worlds --log-limit '"5"'
-    $ minecraft -w foo worlds --log-start '"-50'" --log-limit 10
+    $ minecraft -w foo worlds --log-start '-20'
+    $ minecraft -w foo worlds --log-limit 5
+    $ minecraft -w foo worlds --log-start '-50' --log-limit 10
    
     # Open the console of a running world
     $ minecraft -w bar worlds --console
@@ -188,6 +188,9 @@ Examples
 import os
 import sys
 import time
+
+# third party
+import termcolor
 
 # emsm
 import emsm
@@ -228,8 +231,8 @@ class MyWorld(object):
             * WorldWrapper.conf()
         """
         conf = self._world.conf().items()
-        
-        print("{} - configuration:".format(self._world.name()))
+
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         for key, value in sorted(conf):
             # Make sure, the indent of multiline values is correct.
             value = value.replace("\n", "\n\t\t")
@@ -243,8 +246,8 @@ class MyWorld(object):
 
         See also:
             * WorldWrapper.directory()
-        """        
-        print("{} - directory:".format(self._world.name()))
+        """
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         print("\t", self._world.directory())
         return None
 
@@ -272,7 +275,7 @@ class MyWorld(object):
         """
         log = self._world.latest_log()
         log = log.split("\n")
-        
+            
         # Make sure that the limits are valid.
         # 0 <= start <= size
         # limit <= size - start
@@ -291,10 +294,18 @@ class MyWorld(object):
             end_line = num_lines
 
         # Print the log section.
-        print("{} - latest-log - line {}-{}/{}:"\
-              .format(self._world.name(), start_line, end_line, num_lines))
+        tmp = termcolor.colored(self._world.name(), "cyan") + " - " +\
+              termcolor.colored("lines {}-{}/{}".format(start_line + 1, end_line, num_lines), "green") +\
+              ":"
+        print(tmp)
+              
         for line in range(start_line, end_line):
-            print("\t", log[line])
+            tmp = "#{line_no:>8} | {line}"
+            tmp = tmp.format(
+                line_no = termcolor.colored(str(start_line + line + 1)),
+                line = log[line]
+                )
+            print("\t", tmp)
         return None
 
     def print_pids(self):
@@ -306,10 +317,13 @@ class MyWorld(object):
             * WorldWrapper.pids()
         """
         pids = self._world.pids()
-        
-        print("{} - pids:".format(self._world.name()))
-        for pid in pids:
-            print("\t", pid)
+
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
+        if not pids:
+            print("\t", "- offline -")
+        else:
+            for pid in pids:
+                print("\t", pid)
         return None
 
     def print_status(self, status=None):
@@ -319,11 +333,11 @@ class MyWorld(object):
         See also:
             * WorldWrapper.is_online()
         """
-        print("{} - status:".format(self._world.name()))
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         if self._world.is_online():
-            print("\t", "online")
+            print("\t", termcolor.colored("online", "green"))
         else:
-            print("\t", "offline")
+            print("\t", termcolor.colored("offline", "red"))
         return None
 
     def send_command(self, cmd):
@@ -337,14 +351,13 @@ class MyWorld(object):
         See also:
             * WorldWrapper.send_command()
         """
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         try:
             self._world.send_command(cmd)
         except emsm.worlds.WorldIsOfflineError:
-            print("{} - send-command:".format(self._world.name()))
-            print("\t", "FAILURE: The world is offline.")
+            print("\t", termcolor.colored("error:", "red"), "the world is offline")
         else:
-            print("{} - send-command:".format(self._world.name()))
-            print("\t", "The command '{}' has been sent to the server.".format(cmd))
+            print("\t", "done.".format(cmd))
         return None
     
     def verbose_send_command(self, cmd, timeout):
@@ -360,18 +373,16 @@ class MyWorld(object):
         See also:
             * WorldWrapper.send_command_get_output()
         """
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         try:
             output = self._world.send_command_get_output(
                 server_cmd=cmd, timeout=timeout
                 )
         except emsm.worlds.WorldIsOfflineError:
-            print("{} - send-command:".format(self._world.name()))
-            print("\t", "FAILURE: The world is offline.")
+            print("\t", termcolor.colored("error:", "red"), "the world is offline")
         except emsm.worlds.WorldCommandTimeout:
-            print("{} - send-command:".format(self._world.name()))
-            print("\t", "FAILURE: The world did not react.")
+            print("\t", termcolor.colored("error:", "red"), "the world did not react")
         else:
-            print("{} - send-command:".format(self._world.name()))
             for line in output.split("\n"):
                 print("\t", line)
         return None
@@ -388,19 +399,22 @@ class MyWorld(object):
         See also:
             * WorldWrapper.open_console()
         """
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         if self._world.is_online():
-            print("{} - console:".format(self._world.name()))
-            print("\t", "NOTE: Press [ctrl + a + d] to detach from the console.")
-            print("\t", "WARNING: When you stop the server in the session, "\
-                        "EMSM may behave not as expected.")
+            print("\t", termcolor.colored("note:   ", "yellow"),
+                  "Press [ctrl + a + d] (in this order) to detach from the console."
+                  )
+            print("\t", termcolor.colored("warning:", "red"),
+                  "When you stop the server in the session, EMSM may behave"\
+                  "unexpected."
+                  )
             time.sleep(delay)
 
             # No need to catch the WorldIsOfflineError, since we check the
             # status.
             self._world.open_console()
         else:
-            print("{} - console:".format(self._world.name()))
-            print("\t", "FAILURE: The world is offline.")
+            print("\t", termcolor.colored("error:", "red"), "the world is offline.")
         return None
     
     def start(self):
@@ -410,14 +424,13 @@ class MyWorld(object):
         See also:
             * WorldWrapper.start()
         """
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         try:
             self._world.start()
         except emsm.worlds.WorldStartFailed:
-            print("{} - start:".format(self._world.name()))
-            print("\t", "FAILURE: The world could not be started.")
+            print("\t", termcolor.colored("error:", "red"), "the world could not be started.")
         else:
-            print("{} - start:".format(self._world.name()))
-            print("\t", "The world is now online.")
+            print("\t", "the world is now", termcolor.colored("online", "green"))
         return None
 
     def kill_processes(self):
@@ -427,15 +440,14 @@ class MyWorld(object):
         See also:
             * WorldWrapper.kill_processes()
         """
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         try:
             self._world.kill_processes()
         except emsm.worlds.WorldStopFailed:
-            print("{} - kill-processes:".format(self._world.name()))
-            print("\t", "FAILURE: The world could not be stopped.")
+            print("\t", termcolor.colored("error:", "red"), "the world could not be stopped.")
         else:
-            print("{} - kill-processes:".format(self._world.name()))
-            print("\t", "The world is now offline.")
-        return None        
+            print("\t", "the world is now", termcolor.colored("offline", "red"))
+        return None
 
     def stop(self, force_stop=False):
         """
@@ -449,17 +461,17 @@ class MyWorld(object):
         See also:
             * WorldWrapper.stop()
         """
-        print("{} - stop:".format(self._world.name()))
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         try:
             self._world.stop(force_stop=force_stop)
         except emsm.worlds.WorldStopFailed:
             if force_stop:
-                print("\t", "FAILURE: The world could not be stopped.")
+                print("\t", termcolor.colored("error:", "red"), "the world could not be stopped.")
             else:
-                print("\t", "FAILURE: The world could not be stopped.")
-                print("\t", "         Try: *--force-stop*")
+                print("\t", termcolor.colored("error:", "red"), "the world could not be stopped.")
+                print("\t", "       try: *--force-stop*")
         else:
-            print("\t", "The world is now offline.")
+            print("\t", "the world is now", termcolor.colored("offline", "red"))
         return None    
 
     def restart(self, force_restart=False):
@@ -474,20 +486,19 @@ class MyWorld(object):
         See also:
             * WorldWrapper.restart()
         """
-        print("{} - restart:".format(self._world.name()))
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         try:
             self._world.restart(force_restart=force_restart)
         except emsm.worlds.WorldStopFailed:
             if force_restart:
-                print("\t", "FAILURE: The world could not be stopped.")
+                print("\t", termcolor.colored("error:", "red"), "the world could not be stopped.")
             else:
-                print("\t", "FAILURE: The world could not be stopped.")
-                print("\t", "         Try: *--force-restart*")
+                print("\t", termcolor.colored("error:", "red"), "the world could not be stopped.")
+                print("\t", "       try: *--force-restart*")
         except emsm.worlds.WorldStartFailed:
-            print("{} - start:".format(self._world.name()))
-            print("\t", "FAILURE: The world could not be started.")
+            print("\t", termcolor.colored("error:", "red"), "the world could not be restarted.")
         else:
-            print("\t", "The world has been restarted and is now online.")
+            print("\t", "the world has been", termcolor.colored("restarted.", "yellow"))
         return None
 
     def uninstall(self):
@@ -497,7 +508,7 @@ class MyWorld(object):
         See also:
             * WorldWrapper.uninstall()
         """
-        print("{} - uninstall:".format(self._world.name()))
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         
         # Make sure, that the user wants to remove the world.
         prompt = "\t Are you sure, that you want to remove the world?"
@@ -506,7 +517,7 @@ class MyWorld(object):
             self._world.uninstall()
             print("\t", "The world has been removed.")
         else:
-            print("\t", "FAILURE: Aborted by user.")
+            print("\t", "- aborted -")
         return None
 
     
@@ -554,9 +565,13 @@ class Worlds(BasePlugin):
         """
         Adds the accepted arguments to the argpaser of this plugin.
         """
-        parser = self.argparser()
-        
+        parser = self.argparser()        
         parser.description = "Manage and interact with a world."
+
+        # Todo: We support only one action per run. So we should put all
+        #       arguments in a mutually exclusive group. The only problem
+        #       with python 3.4 was, the *log* group. The log command can
+        #       be combined with the log-start and log-limit command.
 
         # Information about the world.
         parser.add_argument(
@@ -571,14 +586,16 @@ class Worlds(BasePlugin):
             dest = "directory",
             help = "Prints the path to the world's directory."
             )
-        
-        parser.add_argument(
+
+        # Log group
+        log_group = parser.add_argument_group(title="log")
+        log_group.add_argument(
             "--log",
             action = "count",
             dest = "log",
             help = "Prints the log."
             )
-        parser.add_argument(
+        log_group.add_argument(
             "--log-start",
             action = "store",
             dest = "log_start",
@@ -586,45 +603,32 @@ class Worlds(BasePlugin):
             help = "First printed line of the log. "\
             "('\"-2\"' starts with the 2nd last line)"
             )
-        parser.add_argument(
+        log_group.add_argument(
             "--log-limit",
             action = "store",
             dest = "log_limit",
             type = int,
             help = "The number of lines that will be printed."
             )
-
-        parser.add_argument(
-            "--pid",
-            action = "count",
-            dest = "pid",
-            help = "Prints the pid of the server that runs the world."
-            )
-        parser.add_argument(
-            "--status",
-            action = "count",
-            dest = "status",
-            help = "Prints the status of the world."
-            )
         
-        # XXX: I need a name for those group
+        # XXX: I need a name for that group
         # of arguments.
-        con_iface_group = parser.add_mutually_exclusive_group()
-        con_iface_group.add_argument(
+        console_group = parser.add_argument_group(title="console")
+        console_group.add_argument(
             "--send",
             action = "store",
             dest = "send",
             metavar = "COMMAND",
             help = "Sends the command to the world. E.g.: '\"say Hello\"'"
             )
-        con_iface_group.add_argument(
+        console_group.add_argument(
             "--verbose-send",
             action = "store",
             dest = "verbose_send",
             metavar = "COMMAND",
             help = "Sends the command to the world prints the log echo."
             )
-        con_iface_group.add_argument(
+        console_group.add_argument(
             "--console",
             action = "count",
             dest = "console",
@@ -632,27 +636,39 @@ class Worlds(BasePlugin):
             )
         
         # Status changes
-        group_status_change = parser.add_mutually_exclusive_group()
-        group_status_change.add_argument(
+        status_group = parser.add_argument_group(title="status")
+        status_group.add_argument(
+            "--pid",
+            action = "count",
+            dest = "pid",
+            help = "Prints the pid of the server that runs the world."
+            )
+        status_group.add_argument(
+            "--status",
+            action = "count",
+            dest = "status",
+            help = "Prints the status of the world."
+            )        
+        status_group.add_argument(
             "--start",
             action = "count",
             dest = "start",
             help = "Starts the world."
             )
-        group_status_change.add_argument(
+        status_group.add_argument(
             "--stop",
             action = "count",
             dest = "stop",
             help = "Stops the world."
             )
-        group_status_change.add_argument(
+        status_group.add_argument(
             "--force-stop",
             action = "count",
             dest = "force_stop",
             help = "Like --stop, but kills the processes "\
             "if the smooth stop fails."
             )
-        group_status_change.add_argument(
+        status_group.add_argument(
             "--kill",
             action = "count",
             dest = "kill",
@@ -660,14 +676,14 @@ class Worlds(BasePlugin):
             "the force-stop method if you can. force-stop saves the world, "\
             "before it kills the process."
             )
-        group_status_change.add_argument(
+        status_group.add_argument(
             "--restart",
             action = "count",
             dest = "restart",
             help = "Restarts the world. If the world is offline, "\
             "the world will be started."
             )
-        group_status_change.add_argument(
+        status_group.add_argument(
             "--force-restart",
             action = "count",
             dest = "force_restart",
@@ -695,11 +711,11 @@ class Worlds(BasePlugin):
             if args.configuration:
                 world.print_conf()
 
-            if args.directory:
+            elif args.directory:
                 world.print_directory()
 
             # log
-            if args.log is not None\
+            elif args.log is not None\
                or args.log_start is not None \
                or args.log_limit is not None:
 
@@ -707,17 +723,17 @@ class Worlds(BasePlugin):
                     args.log_start = self._default_log_start
                 if args.log_limit is None:
                     args.log_limit = self._default_log_limit                    
-                world.print_latest_log(args.log_start, args.log_limit)
+                world.print_latest_log(args.log_start - 1, args.log_limit)
 
             # pid / status / ...
-            if args.pid:
+            elif args.pid:
                 world.print_pids()
                 
-            if args.status:
+            elif args.status:
                 world.print_status()
 
             # send / screen / ...
-            if args.send:
+            elif args.send:
                 world.send_command(args.send)
             elif args.verbose_send:
                 world.verbose_send_command(
@@ -727,7 +743,7 @@ class Worlds(BasePlugin):
                 world.open_console(self._default_open_console_delay)
 
             # start / stop / ...
-            if args.start:
+            elif args.start:
                 world.start()
             elif args.stop:
                 world.stop()
@@ -740,6 +756,6 @@ class Worlds(BasePlugin):
             elif args.force_restart:
                 world.restart(force_restart=True)
             # Setup
-            if args.uninstall:
+            elif args.uninstall:
                 world.uninstall()
         return None
