@@ -36,6 +36,8 @@ import atexit
 
 # third party
 import filelock
+import colorama
+import termcolor
 
 # local
 from . import argparse_
@@ -248,11 +250,12 @@ class Application(object):
 
         # Handle the exception by creating a log entry and printing
         # a short error message.
-        msg = "EMSM: Critical:\n"\
+        msg = "EMSM: Uncaught exception:\n"\
               " > Exception: {0}\n"\
               " > Message:   {1}\n"\
               " > A full traceback can be found in the log file."\
               .format(exc_info[0].__name__, exc_info[1])
+        msg = termcolor.colored(msg, "red")
         print(msg, file=sys.stderr)
 
         log.exception("uncaught exception:")
@@ -267,6 +270,9 @@ class Application(object):
         """
         log.info("----------")
         log.info("setting the EMSM {} up ...".format(version.VERSION))
+
+        # Initialise colorama.
+        colorama.init()
         
         # Read the configuration, so that we get to know some startup
         # parameters like the file lock *timeout* or the EMSM user.
@@ -324,7 +330,7 @@ class Application(object):
         # Dispatch the plugins.
         self._plugins.run()
         self._plugins.finish()
-
+        
         # Save changes to the configuration that have been made during
         # execution.
         self._conf.write()
@@ -347,6 +353,9 @@ class Application(object):
             * :meth:`run`
             * :meth:`exit_code`
         """
+        # Disable colorama.
+        colorama.deinit()
+        
         log.info("EMSM finished.")
         self._lock.release()
         return self._exit_code
