@@ -1,19 +1,19 @@
 #!/usr/bin/python3
 
 # The MIT License (MIT)
-# 
+#
 # Copyright (c) 2014 Benedikt Schmitt <benedikt@benediktschmitt.de>
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -33,6 +33,7 @@ import grp
 import sys
 import logging
 import atexit
+import traceback
 
 # third party
 import filelock
@@ -71,7 +72,7 @@ class ApplicationException(Exception):
     """
     Base class for all exceptions in this module.
     """
-    
+
 
 class WrongUserError(ApplicationException):
     """
@@ -86,8 +87,8 @@ class WrongUserError(ApplicationException):
         temp = "This script requires a user named '{}'."\
                .format(self.required_user)
         return temp
-    
-    
+
+
 # Classes
 # ------------------------------------------------
 
@@ -120,7 +121,7 @@ class Application(object):
         self._lock = filelock.FileLock(
             os.path.join(self._paths.root_dir(), "app.lock")
             )
-        self._logger = logging_.Logger(self)        
+        self._logger = logging_.Logger(self)
 
         self._conf = conf.Configuration(self)
         self._argparser = argparse_.ArgumentParser(self)
@@ -164,7 +165,7 @@ class Application(object):
         Returns the used :class:`~emsm.server.ServerManager` instance.
         """
         return self._server
-    
+
     def plugins(self):
         """
         Returns the used :class:`~emsm.plugins.PluginManager` instance.
@@ -185,7 +186,7 @@ class Application(object):
         the Python :func:`exit` function.
 
         :raises TypeError:
-            if *code* is not an int.            
+            if *code* is not an int.
         :raises ValueError:
             if *code* < 0.
 
@@ -198,7 +199,7 @@ class Application(object):
 
         self._exit_code = code
         return None
-    
+
     def _switch_user(self):
         """
         Switches the *uid* and *gui* of the current EMSM process to
@@ -236,7 +237,7 @@ class Application(object):
             log.critical(err, exc_info=True)
             raise WrongUserError(username)
         return None
-     
+
     def handle_exception(self):
         """
         Checks :func:`sys.exc_info` if there is currently an uncaught exception
@@ -251,16 +252,20 @@ class Application(object):
         # Handle the exception by creating a log entry and printing
         # a short error message.
         msg = "EMSM: Uncaught exception:\n"\
-              " > Exception: {0}\n"\
-              " > Message:   {1}\n"\
+              " > Exception: {exc_type}\n"\
+              " > Module     {exc_mod}\n"\
+              " > Message:   {exc_msg}\n"\
               " > A full traceback can be found in the log file."\
-              .format(exc_info[0].__name__, exc_info[1])
+              .format(exc_type = exc_info[0].__name__,
+                      exc_mod = traceback.extract_tb(exc_info[2])[-1][0],
+                      exc_msg = exc_info[1]
+                      )
         msg = termcolor.colored(msg, "red")
         print(msg, file=sys.stderr)
 
         log.exception("uncaught exception:")
         return None
-        
+
     def setup(self):
         """
         Initialises all components of the EMSM.
@@ -273,7 +278,7 @@ class Application(object):
 
         # Initialise colorama.
         colorama.init()
-        
+
         # Read the configuration, so that we get to know some startup
         # parameters like the file lock *timeout* or the EMSM user.
         # Note, that we don't need anything to **read** the configuration,
@@ -295,7 +300,7 @@ class Application(object):
         # Wait for the file lock to avoid running multiple EMSM applications
         # at the same time.
         log.info("waiting for the file lock ...")
-        
+
         lock_timeout = self._conf.main()["emsm"].getint("timeout", 0)
         lock_timeout = lock_timeout if lock_timeout > 0 else None
         self._lock.acquire(lock_timeout, 0.05)
@@ -306,12 +311,12 @@ class Application(object):
         # Reload the configuration again, since it may have changed while
         # waiting for the file lock.
         self._conf.read()
-        
+
         self._plugins.setup()
         self._plugins.init_plugins()
-        
+
         self._worlds.load_worlds()
-        
+
         self._argparser.setup()
         return None
 
@@ -320,7 +325,7 @@ class Application(object):
         Runs the plugins.
 
         .. seealso::
-        
+
             * :meth:`emsm.plugins.PluginManager.run()`
             * :meth:`emsm.plugins.PluginManager.finish()`
         """
@@ -330,7 +335,7 @@ class Application(object):
         # Dispatch the plugins.
         self._plugins.run()
         self._plugins.finish()
-        
+
         # Save changes to the configuration that have been made during
         # execution.
         self._conf.write()
@@ -341,8 +346,8 @@ class Application(object):
         Performs some clean up and background stuff.
 
         :returns: :meth:`exit_code`
-        
-        .. note:: 
+
+        .. note::
 
             Do not mix this method up with the
             :meth:`emsm.plugins.PluginManager.finish` method. These are not
@@ -355,7 +360,7 @@ class Application(object):
         """
         # Disable colorama.
         colorama.deinit()
-        
+
         log.info("EMSM finished.")
         self._lock.release()
         return self._exit_code
