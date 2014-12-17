@@ -39,6 +39,7 @@ import glob
 
 # third party
 import blinker
+import yaml
 
 
 # Backward compatibility
@@ -367,7 +368,33 @@ class BaseServerWrapper(object):
         after a server restart.
         """
         raise NotImplementedError()
-    
+
+    def log_error_re(self):
+        """
+        **ABSTRACT**
+
+        Returns a regex, that matches every line with a *severe* (critical)
+        error.
+        A severe error means, that the server does not run correct and needs
+        to be restarted.
+        """
+        raise NotImplementedError()
+
+    def world_address(self, world):
+        """
+        **ABSTRACT**
+
+        Returns the address (ip, port) which is binded by the world.
+        (None, None) should be returned, if the binding can not be retrieved.
+
+        If the server is binded to all ip addresses, return the emtpy string
+        ``""`` for the ip address.
+
+        The port should be returned as integer. If it can not be retrieved,
+        return None.
+        """
+        raise NotImplementedError()
+
 
 # Vanilla
 # '''''''
@@ -398,6 +425,31 @@ class VanillaBase(BaseServerWrapper):
         else:
             shutil.move(tmp_path, self.server())
         return None
+
+    def world_address(self, world):
+        """
+        """
+        # Read the server.properties file in the world's directory.
+        conf_path = os.path.join(world.directory(), "server.properties")
+        try:
+            with open(conf_path, "r") as file:
+                conf = file.read()
+        except (OSError, IOError) as err:
+            port = None
+            ip = None
+        else:
+            # Retrieve the values for *server-port* and *server-ip*.
+            # Note, that we use the '^' and '$' chars, so that we only match
+            # valid lines. If there is a syntax error in the configuration,
+            # we will ignore the value and return None instead.
+            port_re = "^server-port\s*=\s*([\d]{1,5})\s*$"
+            port = re.findall(port_re, conf, re.MULTILINE)
+            port = int(port[0]) if port else None
+
+            ip_re = "^server-ip\s*=\s*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*$"
+            ip = re.findall(ip_re, conf, re.MULTILINE)
+            ip = ip[0] if ip else str()
+        return (ip, port)
     
     
 class Vanilla_1_2(VanillaBase):
@@ -415,6 +467,9 @@ class Vanilla_1_2(VanillaBase):
     def log_start_re(self):
         return re.compile("^.*Starting minecraft server version 1\.2.*")
 
+    def log_error_re(self):
+        return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
+
 
 class Vanilla_1_3(VanillaBase):
 
@@ -431,6 +486,9 @@ class Vanilla_1_3(VanillaBase):
     def log_start_re(self):
         return re.compile("^.*Starting minecraft server version 1\.3.*")
 
+    def log_error_re(self):
+        return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
+    
 
 class Vanilla_1_4(VanillaBase):
 
@@ -447,7 +505,10 @@ class Vanilla_1_4(VanillaBase):
     def log_start_re(self):
         return re.compile("^.*Starting minecraft server version 1\.4.*")
 
+    def log_error_re(self):
+        return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
 
+    
 class Vanilla_1_5(VanillaBase):
     
     @classmethod
@@ -463,6 +524,9 @@ class Vanilla_1_5(VanillaBase):
     def log_start_re(self):
         return re.compile("^.*Starting minecraft server version 1\.5.*")
 
+    def log_error_re(self):
+        return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
+    
 
 class Vanilla_1_6(VanillaBase):
     
@@ -479,7 +543,10 @@ class Vanilla_1_6(VanillaBase):
     def log_start_re(self):
         return re.compile("^.*Starting minecraft server version 1\.6.*")
 
+    def log_error_re(self):
+        return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
 
+    
 class Vanilla_1_7(VanillaBase):
     
     @classmethod
@@ -495,6 +562,9 @@ class Vanilla_1_7(VanillaBase):
     def log_start_re(self):
         return re.compile("^.*Starting minecraft server version 1\.7.*")
 
+    def log_error_re(self):
+        return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
+    
 
 class Vanilla_1_8(VanillaBase):
     
@@ -511,7 +581,9 @@ class Vanilla_1_8(VanillaBase):
     def log_start_re(self):
         return re.compile("^.*Starting minecraft server version 1\.8.*")
 
-
+    def log_error_re(self):
+        return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
+    
 # MinecraftForger
 # '''''''''''''''
 
@@ -519,6 +591,9 @@ class Vanilla_1_8(VanillaBase):
 class MinecraftForgeBase(BaseServerWrapper):
     """
     Base class for the minecraft forge server.
+
+    Todo:
+        * check if :meth:`log_error_re` is correct implemented.
     """
 
     def translate_command(self, cmd):
@@ -627,7 +702,7 @@ class BungeeCordServerWrapper(BaseServerWrapper):
     Wraps only the **latest** BungeeCord version.
 
     Unfortunetly, the BungeeCord server uses the git commit hash value
-    as its version number. So it would be too many work to keep track of the
+    as its version number. So it would be too much work to keep track of the
     versions.
     """
 
@@ -670,6 +745,38 @@ class BungeeCordServerWrapper(BaseServerWrapper):
 
     def log_start_re(self):
         return re.compile("^.*Enabled BungeeCord version git:.*")
+    
+    def log_error_re(self):
+        return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
+
+    def world_address(self, world):
+        """
+        """        
+        # Try to read and parse the configuration.
+        # Note that it may not exist, not readable or parseable.
+        conf_path = os.path.join(world.directory(), "config.yml")
+        try:
+            with open(conf_path) as file:
+                conf = yaml.load(file)          
+        except (OSError, IOError) as err:
+            ip, port = (None, None)
+        else:
+            # Try to extract the ip and port.
+            try:
+                adr = conf["listeners"][0]["host"]
+                ip, port = adr.split(":")
+            except:
+                ip, port = (None, None)
+            else:
+                # Check if the ip address is valid.
+                ip = ip.strip()
+                if not re.match("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", ip):
+                    ip = None
+
+                # Check if the port is valid and convert it to an int.
+                port = port.strip()
+                port = int(port) if re.match("^\d{1,5}$", port) else None
+        return (ip, port)
 
 
 # Spigot (1.8+)
@@ -762,9 +869,40 @@ class Spigot(BaseServerWrapper):
 
     def log_start_re(self):
         return re.compile("^.*Starting minecraft server version .*")
+    
+    def log_error_re(self):
+        """
+        Todo: Check if this regex is correct and matches an error line.
+        """
+        return re.compile(".*/SEVERE\].*", re.MULTILINE)
 
     def translate_command(self, cmd):
         return cmd
+
+    def world_address(self, world):
+        """
+        """
+        # Read the server.properties file in the world's directory.
+        conf_path = os.path.join(world.directory(), "server.properties")
+        try:
+            with open(conf_path, "r") as file:
+                conf = file.read()
+        except (OSError, IOError) as err:
+            port = None
+            ip = None
+        else:
+            # Retrieve the values for *server-port* and *server-ip*.
+            # Note, that we use the '^' and '$' chars, so that we only match
+            # valid lines. If there is a syntax error in the configuration,
+            # we will ignore the value and return None instead.
+            port_re = "^server-port\s*=\s*([\d]{1,5})\s*$"
+            port = re.findall(port_re, conf, re.MULTILINE)
+            port = int(port[0]) if port else None
+
+            ip_re = "^server-ip\s*=\s*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*$"
+            ip = re.findall(ip_re, conf, re.MULTILINE)
+            ip = ip[0] if ip else str()
+        return (ip, port)
 
 
 # MC-Server

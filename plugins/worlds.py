@@ -68,6 +68,10 @@ Configuration
 Arguments
 ---------
 
+.. option:: --address
+
+    Prints the binding (ip, port) of the world.
+
 .. option:: --configuration
    
     Prints the section of the world in the :file:`worlds.conf`.
@@ -222,6 +226,27 @@ class MyWorld(object):
         Returns the wrapped WorldWrapper object.
         """
         return self._world
+
+    def print_address(self):
+        """
+        Prints the remote address (ip, port) the server is binded to.
+
+        See also:
+            * WorldWrapper.address()
+        """
+        ip, port = self._world.address()
+        
+        print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
+        if ip and port:
+            print("\t", "{}:{}".format(ip, port))
+        elif (not ip) and port:
+            print("\t", "*:{}".format(port))
+        elif ip and (not port):
+            print("\t", "{}:{}".format(ip, termcolor.colored("?????", "red")))
+        else:
+            print("\t", termcolor.colored("error:", "red"),
+                  "unable to retrieve binding.")
+        return None
 
     def print_conf(self):
         """
@@ -575,6 +600,12 @@ class Worlds(BasePlugin):
 
         # Information about the world.
         parser.add_argument(
+            "--address",
+            action = "count",
+            dest = "worlds_address",
+            help = "Prints the binding (ip, port) of the world."
+            )
+        parser.add_argument(
             "--configuration",
             action = "count",
             dest = "configuration",
@@ -711,7 +742,9 @@ class Worlds(BasePlugin):
             world = MyWorld(self.app, world)
 
             # configuration
-            if args.configuration:
+            if args.worlds_address:
+                world.print_address()
+            elif args.configuration:
                 world.print_conf()
 
             elif args.directory:

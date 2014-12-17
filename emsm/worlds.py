@@ -372,6 +372,13 @@ class WorldWrapper(object):
         """
         return self._directory
 
+    def address(self):
+        """
+        Returns the binding (ip, port) of the world. If those values can not
+        be retrieved, ``(None, None)`` is returned.
+        """
+        return self._server.world_address(self)
+
     def latest_log(self):
         """
         Returns the log of the world since the last start. If the

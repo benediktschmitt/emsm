@@ -28,7 +28,7 @@ Manual installation
     
    .. code-block:: bash
    
-      $ pip-3.2 install blinker filelock
+      $ pip-3.2 install blinker filelock colorama termcolor pyyaml 
 
 #. Create the user that should run the EMSM:
 
