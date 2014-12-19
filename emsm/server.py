@@ -448,7 +448,7 @@ class VanillaBase(BaseServerWrapper):
 
             ip_re = "^server-ip\s*=\s*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*$"
             ip = re.findall(ip_re, conf, re.MULTILINE)
-            ip = ip[0] if ip else str()
+            ip = ip[0] if ip else "localhost"
         return (ip, port)
     
     
@@ -773,6 +773,10 @@ class BungeeCordServerWrapper(BaseServerWrapper):
                 if not re.match("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", ip):
                     ip = None
 
+                # Check if the server is bounded to all available ip addresses.
+                if ip == "0.0.0.0":
+                    ip = "localhost"
+
                 # Check if the port is valid and convert it to an int.
                 port = port.strip()
                 port = int(port) if re.match("^\d{1,5}$", port) else None
@@ -901,7 +905,7 @@ class Spigot(BaseServerWrapper):
 
             ip_re = "^server-ip\s*=\s*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*$"
             ip = re.findall(ip_re, conf, re.MULTILINE)
-            ip = ip[0] if ip else str()
+            ip = ip[0] if ip else "localhost"
         return (ip, port)
 
 
