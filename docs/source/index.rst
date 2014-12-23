@@ -38,7 +38,7 @@ Why should you use the **EMSM**?
          
 *  **Open Source**
 
-   Licensed under the MIT License.
+   Licensed under the :ref:`MIT License <license>`.
                   
 *  **Portable**
          
@@ -51,7 +51,7 @@ Why should you use the **EMSM**?
 
 *  **InitD**
 
-   Use the :mod:`initd` plugin to benefit from the *init.d* service.
+   Use the :mod:`plugins.initd` plugin to benefit from the *init.d* service.
                
 *  **Simple Configuration**
 
@@ -60,16 +60,21 @@ Why should you use the **EMSM**?
 *  **Backup ready**
 
    Create and manage multiple versions of your worlds with the
-   :mod:`backup manager <backups>`.
+   :mod:`backup manager <plugins.backups>`.
 
 *  **Multiple worlds and server**
 
    This application has been written to administrate and run multiple
    worlds and server versions to the same time.
+   
+*  **Beautiful output**
+
+   The EMSM output is colored, so that you only need one view to get the
+   most important information.
 
 *  **Guarded worlds**
 
-   The :mod:`guard` helps you to monitor the worlds and to react
+   The :mod:`plugins.guard` helps you to monitor the worlds and to react
    on server issues automatically.
 
 *  **Fast learning curve**
