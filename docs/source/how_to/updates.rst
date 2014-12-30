@@ -26,9 +26,9 @@ you want to update the server:
 
    .. code-block:: bash
 
-      $ minecraft -s "vanilla 1.8" server --reinstall
+      $ minecraft -s "vanilla 1.8" server --update
 
-If the reinstallation fails, the old server software will be restored and
+If the update fails, the old server software will be restored and
 nothing has changed.
 
 Please take a look at the :ref:`server configuration <configuration>` and the
