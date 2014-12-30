@@ -37,6 +37,12 @@ Please take a look at the :ref:`server configuration <configuration>` and the
 
 EMSM updates
 ------------
+   
+.. warning::
+
+   The described ways for updating the EMSM are currently not reliable, since
+   we don't have much experience so far. If anything fails or you have a 
+   question about the progress, don't hesitate to open a new issue on GitHub.
 
 .. hint::
 
