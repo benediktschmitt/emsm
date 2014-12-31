@@ -133,9 +133,11 @@ EMSM v3
 # ------------------------------------------------
 
 # std
+import hashlib
 import os
 import time
 import shutil
+from shutil import ignore_patterns
 import datetime
 import tempfile
 import logging
@@ -189,13 +191,14 @@ class BackupManager(object):
     Manages the backups of one world.
     """
 
-    def __init__(self, app, world, max_storage_size, backup_dir):
+    def __init__(self, app, world, max_storage_size, backup_dir, backup_logs):
         """
         """
         self._app = app
         self._world = world
         self._backup_dir = backup_dir
         self._max_storage_size = max_storage_size
+        self._backup_logs = backup_logs
 
         os.makedirs(self._backup_dir, exist_ok=True)
         return None
@@ -224,6 +227,12 @@ class BackupManager(object):
         time. If this value is *0*, then there is no limit.
         """
         return self._max_storage_size
+
+    def backup_logs(self):
+        """
+        Returns the option to include the logs in the backup.
+        """
+        return self._backup_logs
 
     # We use the *filenames* to store the *timestamp* of a backup.
 
@@ -353,9 +362,16 @@ class BackupManager(object):
                     pass
 
             # Copy the world data to *backup_dir*.
-            shutil.copytree(
-                self._world.directory(),
-                os.path.join(backup_dir, "world")
+            if self._backup_logs == "yes":
+                shutil.copytree(
+                    self._world.directory(),
+                    os.path.join(backup_dir, "world")
+                )
+            else:
+                shutil.copytree(
+                    self._world.directory(),
+                    os.path.join(backup_dir, "world"),
+                    ignore=ignore_patterns('logs')
                 )
         finally:
             if self._world.is_online():
@@ -707,6 +723,10 @@ class Backups(BasePlugin):
         if self._max_storage_size < 0:
             self._max_storage_size = 0
 
+        # backup_logs
+        self._backup_logs = conf.get("backup_logs", "yes")
+        log.info("Backup logs: %s", self._backup_logs)
+
         # Write
         # ^^^^^
 
@@ -715,6 +735,7 @@ class Backups(BasePlugin):
         conf["restore_message"] = str(self._restore_message)
         conf["restore_delay"] = str(self._restore_delay)
         conf["max_storage_size"] = str(self._max_storage_size)
+        conf["backup_logs"] = str(self._backup_logs)
         return None
 
     def _setup_argparser(self):
@@ -775,8 +796,8 @@ class Backups(BasePlugin):
                 app = self.app(),
                 world = world,
                 max_storage_size = self._max_storage_size,
-                backup_dir = os.path.join(self.data_dir(), world.name())
-                )
+                backup_dir = os.path.join(self.data_dir(), world.name()),
+                backup_logs=self._backup_logs)
 
             if args.backups_list:
                 bm.list()
