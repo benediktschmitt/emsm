@@ -44,6 +44,7 @@ Configuration
     restore_message = This world is about to be ressetted to an earlier state.
     restore_delay = 5
     max_storage_size = 30
+    backup_logs = yes
 
 **archive_format**
 
@@ -64,6 +65,10 @@ Configuration
 
     Maximum number of backups in the storage folder, before older backups
     will be removed.
+
+**backup_logs**
+
+    If ``yes``, the log files are included into the backup, otherwise not.
 
 Arguments
 ---------
