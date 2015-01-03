@@ -137,7 +137,6 @@ import hashlib
 import os
 import time
 import shutil
-from shutil import ignore_patterns
 import datetime
 import tempfile
 import logging
@@ -362,7 +361,7 @@ class BackupManager(object):
                     pass
 
             # Copy the world data to *backup_dir*.
-            if self._backup_logs == "yes":
+            if self._backup_logs:
                 shutil.copytree(
                     self._world.directory(),
                     os.path.join(backup_dir, "world")
@@ -371,7 +370,7 @@ class BackupManager(object):
                 shutil.copytree(
                     self._world.directory(),
                     os.path.join(backup_dir, "world"),
-                    ignore=ignore_patterns('logs')
+                    ignore=shutil.ignore_patterns("logs")
                 )
         finally:
             if self._world.is_online():
@@ -724,8 +723,7 @@ class Backups(BasePlugin):
             self._max_storage_size = 0
 
         # backup_logs
-        self._backup_logs = conf.get("backup_logs", "yes")
-        log.info("Backup logs: %s", self._backup_logs)
+        self._backup_logs = conf.getboolean("backup_logs", True)
 
         # Write
         # ^^^^^
@@ -735,7 +733,7 @@ class Backups(BasePlugin):
         conf["restore_message"] = str(self._restore_message)
         conf["restore_delay"] = str(self._restore_delay)
         conf["max_storage_size"] = str(self._max_storage_size)
-        conf["backup_logs"] = str(self._backup_logs)
+        conf["backup_logs"] = "yes" if self._backup_logs else "no"
         return None
 
     def _setup_argparser(self):
@@ -797,7 +795,8 @@ class Backups(BasePlugin):
                 world = world,
                 max_storage_size = self._max_storage_size,
                 backup_dir = os.path.join(self.data_dir(), world.name()),
-                backup_logs=self._backup_logs)
+                backup_logs = self._backup_logs
+                )
 
             if args.backups_list:
                 bm.list()
