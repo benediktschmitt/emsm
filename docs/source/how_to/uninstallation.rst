@@ -39,4 +39,4 @@ Uninstallation
       $ update-rc.d -f minecraft remove
       $ rm /etc/init.d/minecraft
       
-#. You may have created some cron tabs, don't forget them.
+#. You may have created some cron tabs, don't forget to delete them.

@@ -48,6 +48,10 @@ EMSM updates
 
    Before you update the EMSM, please create a temporary copy of the whole
    EMSM folder. Something can go always wrong.
+   
+   .. code-block:: bash
+   
+      $ cp -r /opt/minecraft /tmp/minecraft
 
 You can update the EMSM either *manually* or using *git*.
 

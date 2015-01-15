@@ -45,19 +45,11 @@ but some times you have to.
 Examples
 ''''''''
 
-*  These are the default EMSM settings for the mojang minecraft server 1.8:
-
-   .. code-block:: ini
-
-      [minecraft]
-      url = https://.....
-      start_command = java -jar {server_path} nogui.
-	  
 *  You want to adjust the java heap size:
 
    .. code-block:: ini
 
-      [minecraft 1.8]
+      [vanilla 1.8]
       start_command = java -Xmx3G -jar {server_path} 
       
 *  The EMSM database url is outdated, since the server received a patch. So you
@@ -65,12 +57,14 @@ Examples
   
    .. code-block:: ini
    
-      [minecraft 1.8]
+      [vanilla 1.8]
       url = https://...
-      
-   Then stop all affected worlds and remove the *server* in
-   :file:`EMSM_ROOT/server/`. When you restart the worlds, the EMSM will 
-   automatically download the server again, this time from the new url.
+   
+   Issue the update command:
+   
+   .. code-block:: bash
+   
+      $ minecraft -s "vanilla 1.8" server --update
 
 worlds.conf
 -----------
@@ -128,7 +122,8 @@ configuration file. Each section represents another world.
    
    .. hint:: 
    
-      You can list all available server versions by ``minecraft server --list``.
+      You can list all available server versions with
+      ``minecraft server --list``.
    
 Example
 '''''''
@@ -156,7 +151,7 @@ Example
    [lobby]
    server = bungeecord
    
-Some plugins like :mod:`initd` provide extra configuration options:
+Some plugins like :mod:`~plugins.initd` provide additional configuration options:
 
 .. code-block:: ini
 
