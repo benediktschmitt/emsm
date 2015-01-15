@@ -21,8 +21,7 @@ case "$1" in
       $EMSM $PLUGIN --stop
       ;;
    restart)
-      $0 stop
-      $0 start
+      $EMSM $PLUGIN --restart
       ;;
    status)
       $EMSM $PLUGIN --status

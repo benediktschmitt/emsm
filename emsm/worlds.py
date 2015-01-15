@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # The MIT License (MIT)
 # 
@@ -372,6 +372,13 @@ class WorldWrapper(object):
         """
         return self._directory
 
+    def address(self):
+        """
+        Returns the binding (ip, port) of the world. If those values can not
+        be retrieved, ``(None, None)`` is returned.
+        """
+        return self._server.world_address(self)
+
     def latest_log(self):
         """
         Returns the log of the world since the last start. If the
@@ -605,7 +612,7 @@ class WorldWrapper(object):
         return None
 
     
-    def start(self):
+    def start(self, wait_check_time=0.1):
         """
         Starts the world if the world is offline. If the world is already
         online, nothing happens.
@@ -615,6 +622,9 @@ class WorldWrapper(object):
             * :attr:`world_about_to_start`
             * :attr:`world_started`
             * :attr:`world_start_failed`
+
+        :param float wait_check_time:
+            Time waited, before checking if the server actually started.
             
         :raises WorldStartFailed:
             if the world could not be started.
@@ -648,6 +658,7 @@ class WorldWrapper(object):
                 pass
 
         # Check if the world is really online.
+        time.sleep(wait_check_time)
         if not self.is_online():
             WorldWrapper.world_start_failed.send(self)
             raise WorldStartFailed(self)

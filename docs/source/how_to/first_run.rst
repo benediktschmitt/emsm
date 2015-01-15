@@ -3,12 +3,6 @@ First run
 
 There are some common arguments and run types you should know:
 
-*  The **dry-run**. Only the service routines will be called:
-
-   .. code-block:: bash
-      
-      $ minecraft
-
 *  The **help** argument:
 
    .. code-block:: bash
@@ -89,5 +83,5 @@ Common taks
    .. code-block:: bash
       
       $ minecraft -S server --update
-      $ minecraft -s bukkit_latest server --update
-      $ minecraft --server bukkit_latest server --update
+      $ minecraft -s "vanilla 1.8" server --update
+      $ minecraft --server "vanilla 1.8" server --update

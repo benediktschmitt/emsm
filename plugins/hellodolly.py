@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # The MIT License (MIT)
 # 
@@ -95,6 +95,9 @@ module.
 # std
 import os
 import random
+
+# third party
+import termcolor
 
 # local
 import emsm
@@ -217,10 +220,13 @@ class HelloDolly(BasePlugin):
             "wordpress plugin \"Hello, Dolly\"."
             )        
         parser.epilog = "https://github.com/benediktschmitt/emsm"
+
+        # Note, that we prefix the *dest* value, since all arguments share
+        # the same namespace.
         parser.add_argument(
             "--rows", "-r",
             action = "store",
-            dest = "rows",
+            dest = "hellodolly_rows",
             type = int,
             default = 1,
             metavar = "ROWS",
@@ -250,17 +256,21 @@ class HelloDolly(BasePlugin):
         """
         # Get the number of lines we want to print and make sure, that
         # the number is not greater then the max_rows configuration value.
-        rows = args.rows
+        rows = args.hellodolly_rows
         if rows > self._max_rows:
             rows = self._max_rows
         if rows < 0:
             rows = 0
 
-        # Get *rows* lyrics.
-        lyrics = self.get_lyrics(rows)
-
-        # Sent the poet to every selected world.
-        self.be_poetic(lyrics)
+        # Run hellodolly for each world, which has been selected with
+        # *-w* or *-W* per command line.
+        # We sort the worlds by their names, to process them in alphabetical
+        # order.
+        worlds = self.app().worlds().get_selected()
+        worlds.sort(key = lambda w: w.name())
+        
+        for world in worlds:
+            self.be_poetic(world, rows)
         return None
 
     def get_lyrics(self, num_rows):
@@ -284,21 +294,21 @@ class HelloDolly(BasePlugin):
             lyrics = lyrics[a:a+num_rows]
         return lyrics
 
-    def be_poetic(self, lyrics):
+    def be_poetic(self, world, num_rows):
         """
         Writes the *lyrics* to the chat of all running, selected worlds.
         """
-        # Get all worlds that have been selected with *-w* or *-W*.
-        worlds = self.app().worlds().get_selected()
+        lyrics = self.get_lyrics(num_rows)
 
-        print("hellodolly:")
-        for world in worlds:
-            if world.is_offline():
-                print("\t", world.name(), "OFFLINE")
-            else:
-                for row in lyrics:
-                    world.send_command("say {}".format(row))
-                print("\t", world.name(), "VISITED")
+        # We follow the inofficial EMSM style guide and print the
+        # world name in cyan.
+        print(termcolor.colored("{}:".format(world.name()), "cyan"))
+        if world.is_offline():
+            print("\t", termcolor.colored("error:", "red"), "world is offline")
+        else:
+            for row in lyrics:
+                world.send_command("say {}".format(row))
+            print("\t", "world has been visited")
         return None
 
     def finish(self):

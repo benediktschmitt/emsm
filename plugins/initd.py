@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # The MIT License (MIT)
 # 
@@ -78,6 +78,20 @@ Arguments
 .. option:: --stop
    
     Stops all worlds, where the *enable_initd* configuration value is true.
+    Note, that this will always **force** the stop of the world, since the
+    process is killed anyway during system shutdown.
+
+.. option:: --restart
+
+    Forces the restart of all worlds which has *enable_initd* enabled.
+
+Exit code
+---------
+
+The exit code is set to:
+
+* 0 if no error occured.
+* 2 if an error occured.
 """
 
 
@@ -89,6 +103,7 @@ import logging
 
 # third party
 import blinker
+import termcolor
 
 # local
 import emsm
@@ -106,24 +121,6 @@ log = logging.getLogger(__file__)
 # Classes
 # ------------------------------------------------
 
-class TerminalColor(object):
-    """
-    A small collection of methods to colorize terminal output.
-    """
-
-    RESET = "\x1b[39;49m"
-    RED = "\x1b[31m"
-    GREEN = "\x1b[32m"
-
-    @classmethod
-    def to_red(cls, txt):
-        return cls.RED + txt + cls.RESET
-
-    @classmethod
-    def to_green(cls, txt):
-        return cls.GREEN + txt + cls.RESET
-
-
 class InitD(BasePlugin):
 
     VERSION = "3.0.0-beta"
@@ -135,6 +132,9 @@ class InitD(BasePlugin):
 
     # Emitted when initd is called with the *--stop* argument.
     on_initd_stop = blinker.signal("initd_stop")
+
+    # Emitted when initd is called with the *--restart* argument.
+    on_initd_restart = blinker.signal("initd_restart")
     
     def __init__(self, app, name):
         """
@@ -167,6 +167,12 @@ class InitD(BasePlugin):
             help = "Stop all worlds for which initd support is enabled."
             )
         me_group.add_argument(
+            "--restart",
+            action = "count",
+            dest = "initd_restart",
+            help = "Restart all worlds for which initd support is enabled."
+            )
+        me_group.add_argument(
             "--status",
             action = "count",
             dest = "initd_status",
@@ -188,6 +194,7 @@ class InitD(BasePlugin):
     def _initd_worlds(self):
         """
         Returns all worlds where *enable_initd* is true.
+        The worlds are sorted by their names.
 
         See also:
             * WorldWrapper.conf()
@@ -195,23 +202,31 @@ class InitD(BasePlugin):
         worlds = self.app().worlds().get_by_pred(
             lambda w: w.conf().getboolean("enable_initd", False)
             )
+        worlds.sort(key = lambda w: w.name())
         return worlds
     
     def _start(self):
         """
         Starts all worlds if *enable_initd* is true.
         """
+        # We create the unformatted messages here to increase readability.
+        raw_msg = "[ {status} ] starting the minecraft world '{{world_name}}'"
+        pre_msg = raw_msg.format(status="... ")
+        fail_msg = raw_msg.format(status=termcolor.colored("fail", "red"))
+        ok_msg = raw_msg.format(status=termcolor.colored("ok  ", "green"))
+
+        # Start the worlds.
         log.info("initd start ...")
         
-        print("initd - start:")
         for world in self._initd_worlds():
+            print(pre_msg.format(world_name=world.name()), end="\r")
             try:
                 world.start()
             except emsm.worlds.WorldStartFailed as err:
-                print("\t", TerminalColor.to_red("FAIL"), world.name())
+                print(fail_msg.format(world_name=world.name()))
                 self.app().set_exit_code(2)
             else:
-                print("\t", TerminalColor.to_green("OK  "), world.name())
+                print(ok_msg.format(world_name=world.name()))
 
         log.info("initd start done.")
         return None
@@ -220,32 +235,75 @@ class InitD(BasePlugin):
         """
         Stops all worlds if *enable_initd* is true.
         """
+        # We create the unformatted messages here to increase readability.
+        raw_msg = "[ {status} ] stopping the minecraft world '{{world_name}}'"
+        pre_msg = raw_msg.format(status="... ")
+        fail_msg = raw_msg.format(status=termcolor.colored("fail", "red"))
+        ok_msg = raw_msg.format(status=termcolor.colored("ok  ", "green"))
+        
+        # Stop the worlds.
         log.info("initd stop ...")
         
-        print("initd - stop:")
-        for world in self._initd_worlds():
+        for world in self._initd_worlds():            
+            print(pre_msg.format(world_name=world.name()), end="\r")
             try:
                 # Because the process is killed anyway, we force it here.
                 world.stop(force_stop=True)
             except emsm.worlds.WorldStopFailed as err:
-                print("\t", TerminalColor.to_red("FAIL"), world.name())
+                print(fail_msg.format(world_name=world.name()))
                 self.app().set_exit_code(2)
             else:
-                print("\t", TerminalColor.to_green("OK  "), world.name())
+                print(ok_msg.format(world_name=world.name()))
 
         log.info("initd stop done.")
+        return None
+
+    def _restart(self):
+        """
+        Forces the restart of all worlds which has *enable_initd* enabled.
+        """
+        # We create the unformatted messages here to increase readability.
+        raw_msg = "[ {status} ] restarting the minecraft world '{{world_name}}'"
+        pre_msg = raw_msg.format(status="... ")
+        fail_msg = raw_msg.format(status=termcolor.colored("fail", "red"))
+        ok_msg = raw_msg.format(status=termcolor.colored("ok  ", "green"))
+
+        # Restart the worlds.
+        log.info("initd restart ...")
+        
+        for world in self._initd_worlds():
+            print(pre_msg.format(world_name=world.name()), end="\r")
+            try:
+                # Because the process is killed anyway, we force it here.
+                world.restart(force_restart=True)
+            except emsm.worlds.WorldStopFailed as err:
+                print(fail_msg.format(world_name=world.name()))
+                self.app().set_exit_code(2)
+            except emsm.worlds.WorldStartFailed as err:
+                print(fail_msg.format(world_name=world.name()))
+                self.app().set_exit_code(2)
+            else:
+                print(ok_msg.format(world_name=world.name()))
+
+        log.info("initd restart done.")
         return None
 
     def _status(self):
         """
         Prints the status of all worlds where *enable_initd* is true.
         """
-        print("initd - status:")
+        # We create the unformatted messages here to increase readability.
+        fail_msg = "[ {status} ] the minecraft world '{{world_name}}' is offline."\
+                   .format(status=termcolor.colored("fail", "red"))
+        ok_msg = "[ {status} ] the minecraft world '{{world_name}}' is online."\
+                 .format(status=termcolor.colored("ok  ", "green"))
+        
+        # Print the status the worlds.
         for world in self._initd_worlds():
             if world.is_online():
-                print("\t", TerminalColor.to_green("ONLINE "), world.name())
+                print(ok_msg.format(world_name=world.name()))
             else:
-                print("\t", TerminalColor.to_red("OFFLINE"), world.name())
+                print(fail_msg.format(world_name=world.name()))
         return None
     
     def run(self, args):
@@ -257,6 +315,9 @@ class InitD(BasePlugin):
         elif args.initd_stop:
             self._stop()
             InitD.on_initd_stop.send()
+        elif args.initd_restart:
+            self._restart()
+            InitD.on_initd_restart.send()
         elif args.initd_status:
             self._status()
         return None

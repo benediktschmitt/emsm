@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # The MIT License (MIT)
 #
@@ -204,19 +204,19 @@ class EMSM(BasePlugin):
         me_group.add_argument(
             "--version",
             action = "count",
-            dest = "version",
+            dest = "emsm_version",
             help = "Shows the current EMSM version number."
             )
         me_group.add_argument(
             "--license",
             action = "count",
-            dest = "license",
+            dest = "emsm_license",
             help = "Shows the EMSM license.",
             )
         me_group.add_argument(
             "--check-update",
             action = "count",
-            dest = "check_update",
+            dest = "emsm_check_update",
             help = "Simulates an EMSM update."
             )
         return None
@@ -254,10 +254,10 @@ class EMSM(BasePlugin):
     def run(self, args):
         """
         """
-        if args.version:
+        if args.emsm_version:
             self._action_version()
-        elif args.license:
+        elif args.emsm_license:
             self._action_license()
-        elif args.check_update:
+        elif args.emsm_check_update:
             self._action_check_update()
         return None

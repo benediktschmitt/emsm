@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # The MIT License (MIT)
 # 
@@ -37,4 +37,4 @@ __all__ = [
 #: The version of the EMSM.
 #:
 #: Take a look at http://semver.org for more information.
-VERSION = "3.1.4-beta"
+VERSION = "3.2.3-beta"

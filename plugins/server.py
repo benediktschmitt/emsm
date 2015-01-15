@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # The MIT License (MIT)
 # 
@@ -78,6 +78,9 @@ import os
 import sys
 import logging
 
+# third party
+import termcolor
+
 # local
 import emsm
 from emsm.base_plugin import BasePlugin
@@ -135,19 +138,19 @@ class Server(BasePlugin):
         me_group.add_argument(
             "--usage",
             action = "count",
-            dest = "usage",
+            dest = "server_usage",
             help = "Prints all worlds powered by a server."
             )
         me_group.add_argument(
             "--list",
             action = "count",
-            dest = "list",
+            dest = "server_list",
             help = "Prints the names of all server supported by the EMSM."
             )
         me_group.add_argument(
             "--update",
             action = "count",
-            dest = "update",
+            dest = "server_update",
             help = "Updates the server software."
             )
         return None
@@ -155,40 +158,48 @@ class Server(BasePlugin):
     def run(self, args):
         """
         """
-        if args.list:
+        if args.server_list:
             self._print_list()
             
-        for server in self.app().server().get_selected():
-            if args.usage:
-                self._print_usage(server)
-            elif args.update:
-                self._update_server(server)                
+        else:            
+            # Sort the server by their names, before running.
+            sel_server = self.app().server().get_selected()
+            sel_server.sort(key = lambda s: s.name())
+            
+            for server in sel_server:
+                if args.server_usage:
+                    self._print_usage(server)
+                elif args.server_update:
+                    self._update_server(server)                
         return None
 
     def _print_usage(self, server):
         """
         Prints all worlds that are powered by the server *server*.
         """
-        # Get all worlds powered by this server.
+        # Get all worlds powered by this server and sort them.
         worlds = self.app().worlds().get_by_pred(
             lambda w: w.server() is server
             )
         online_worlds = list(filter(lambda w: w.is_online(), worlds))
+        online_worlds.sort(key = lambda w: w.name())
+        
         offline_worlds = list(filter(lambda w: w.is_offline(), worlds))
+        offline_worlds.sort(key = lambda w: w.name())
         
         # Print the worlds grouped by their current status (offline/online).
-        print("server - {} - usage:".format(server.name()))
-        print("\t", "number of worlds:", len(worlds))
+        print(termcolor.colored("{}:".format(server.name()), "cyan"))
+        print("\t", "* {} worlds".format(len(worlds)))
 
+        print("\t", "* {} online worlds".format(len(online_worlds)))
         if online_worlds:
-            print("\t", "online:")
             for world in online_worlds:
-                print("\t\t", world.name())
+                print("\t\t", "- {}".format(world.name()))
 
+        print("\t", "* {} offline worlds".format(len(offline_worlds)))
         if offline_worlds:
-            print("\t", "offline:")
             for world in offline_worlds:
-                print("\t\t", world.name())
+                print("\t\t", "- {}".format(world.name()))
         return None
 
     def _print_list(self):
@@ -198,9 +209,8 @@ class Server(BasePlugin):
         names = self.app().server().get_names()
         names.sort()
 
-        print("server - list:")
         for name in names:
-            print("\t", name)
+            print("* {}".format(name))
         return None
 
     def _update_server(self, server):
@@ -210,12 +220,13 @@ class Server(BasePlugin):
         All worlds which are currently online and powered by the *server* will
         be stopped and restarted after the update.
         """
-        print("server - {} - update: ...".format(server.name()))
+        print(termcolor.colored("{}:".format(server.name()), "cyan"))
         
         # Get all worlds, that are currently running the server.
         worlds = self.app().worlds().get_by_pred(
             lambda w: w.server() is server and w.is_online()
             )
+        worlds.sort(key = lambda w: w.name())
 
         # Stop those worlds.
         try:
@@ -225,8 +236,9 @@ class Server(BasePlugin):
                 
         # Do not continue if a world could not be stopped.
         except emsm.worlds.WorldStopFailed as err:
-            print("\t", "failure: the world '{}' could not be stopped."\
-                  .format(err.world.name()))
+            print("\t", termcolor.colored("error:", "red"),
+                  "the world '{}' could not be stopped.".format(err.world.name())
+                  )
             log.exception(err)
             
         # Continue with the server update if all worlds are offline.
@@ -238,7 +250,7 @@ class Server(BasePlugin):
             try:
                 server.reinstall()
             except emsm.server.ServerInstallationFailure as err:
-                print("\t", "failure: {}".format(err))
+                print("\t", termcolor.colored("error:", "red"), err)
                 log.exception(err)
                 
         # Restart the worlds.
@@ -249,7 +261,9 @@ class Server(BasePlugin):
                 try:
                     world.start()
                 except emsm.worlds.WorldStartFailed as err:
-                    print("\t", "failure: the world '{} could not be "\
-                          "restarted.".format(world.name()))
+                    print("\t", termcolor.colored("error:", "red"),
+                          "the world '{}' could not be restarted."\
+                          .format(err.world.name())
+                          )
                     log.exception(err)
         return None

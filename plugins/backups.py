@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # The MIT License (MIT)
 #
@@ -44,6 +44,7 @@ Configuration
     restore_message = This world is about to be ressetted to an earlier state.
     restore_delay = 5
     max_storage_size = 30
+    backup_logs = yes
 
 **archive_format**
 
@@ -64,6 +65,10 @@ Configuration
 
     Maximum number of backups in the storage folder, before older backups
     will be removed.
+
+**backup_logs**
+
+    If ``yes``, the log files are included into the backup, otherwise not.
 
 Arguments
 ---------
@@ -133,6 +138,7 @@ EMSM v3
 # ------------------------------------------------
 
 # std
+import hashlib
 import os
 import time
 import shutil
@@ -140,6 +146,9 @@ import datetime
 import tempfile
 import logging
 import json
+
+# third party
+import termcolor
 
 # local
 import emsm
@@ -186,13 +195,14 @@ class BackupManager(object):
     Manages the backups of one world.
     """
 
-    def __init__(self, app, world, max_storage_size, backup_dir):
+    def __init__(self, app, world, max_storage_size, backup_dir, backup_logs):
         """
         """
         self._app = app
         self._world = world
         self._backup_dir = backup_dir
         self._max_storage_size = max_storage_size
+        self._backup_logs = backup_logs
 
         os.makedirs(self._backup_dir, exist_ok=True)
         return None
@@ -221,6 +231,12 @@ class BackupManager(object):
         time. If this value is *0*, then there is no limit.
         """
         return self._max_storage_size
+
+    def backup_logs(self):
+        """
+        Returns the option to include the logs in the backup.
+        """
+        return self._backup_logs
 
     # We use the *filenames* to store the *timestamp* of a backup.
 
@@ -350,9 +366,16 @@ class BackupManager(object):
                     pass
 
             # Copy the world data to *backup_dir*.
-            shutil.copytree(
-                self._world.directory(),
-                os.path.join(backup_dir, "world")
+            if self._backup_logs:
+                shutil.copytree(
+                    self._world.directory(),
+                    os.path.join(backup_dir, "world")
+                )
+            else:
+                shutil.copytree(
+                    self._world.directory(),
+                    os.path.join(backup_dir, "world"),
+                    ignore=shutil.ignore_patterns("logs")
                 )
         finally:
             if self._world.is_online():
@@ -516,100 +539,132 @@ class UiBackupManager(BackupManager):
         """
         backups = list(self.backup_list().items())
         backups.sort(reverse=True)
-        
+
+        print(termcolor.colored("{}:".format(self.world().name()), "cyan"))
         if not backups:
-            print("{} - list:".format(self.world().name()))
             print("\t", "- no backups found -")
         else:
-            print("{} - list:".format(self.world().name()))
             for date, path in backups:
-                size = os.path.getsize(path)
-                print("\t", date.ctime())
+                print("\t", "*", date.ctime())
         return None
 
     def create(self, archive_format):
         """
         Creates a new backup.
         """
-        print("{} - create:".format(self.world().name()))
+        print(termcolor.colored("{}:".format(self.world().name()), "cyan"))
 
         try:
             super().create(archive_format)
         except Exception as err:
-            print("\t", "FAILURE: an unexpected error occured:")
-            print("\t", "         {}".format(err))
-
-            # Reraise the exception, so that EMSM logs it.
+            # The EMSM will print the exception, so we do nothing here.
+            # We only catch Exception to show, that a lot of things
+            # can go wrong when creating a backup.
             raise
         else:
             print("\t", "done.")
         return None
 
-    def restore(self, backup_path, message, delay):
+    def _restore(self, *, backup_path, message, delay, verify_restore=True):
         """
-        """
-        print("{} - restore:".format(self.world().name()))
-        print("\t", "backup: {}".format(backup_path))
+        The main purpose of this method is simply to wrap the restore
+        progress and print it in a user friendly way to the console.
         
-        # Verify, that the user really wants to restore the world.
-        prompt = "\t Do you really want to restore and OVERWRITE the "\
-                 "world '{}'?".format(self.world().name())
-        if not emsm.lib.userinput.ask(prompt):
-            return None
+        The *message* and *delay* parameter are passed to the super class
+        *restore()* method.
+
+        If *verify_restore* is True, the user is asked if he really wants to
+        restore (and so overwrite) the world.
+        """
+        if verify_restore:
+            prompt = "\t Do you really want to restore and " +\
+                     termcolor.colored("overwrite", "red") +\
+                     " the world '{}'?"
+            prompt = prompt.format(self.world().name())
+            if not emsm.lib.userinput.ask(prompt):
+                return None
             
         # Restore the world.
         try:
             super().restore(backup_path, message, delay)
         except emsm.worlds.WorldStopFailed:
-            print("\t", "FAILURE: the world could not be stopped.")            
+            print("\t", termcolor.colored("error:", "red"),
+                  "the world could not be stopped.")
         except emsm.worlds.WorldStartFailed:
-            print("\t", "FAILURE: the world could not be restarted.")
+            print("\t", termcolor.colored("error:", "red"),
+                  "the world could not be restarted.")
         except Exception as err:
-            print("\t", "FAILURE: an unexpected error occured.")
-            print("\t", "         {}".format(err))
-
-            # Reraise the exception, so that the EMSM logs it.
+            # This is an unexpected exception that may be an IOError or
+            # OSError. Let the EMSM log it and print a warning.
+            # We can't handle them properly, since we can not react on
+            # them.
             raise
         else:
             print("\t", "done.")
         return None
 
+    def restore(self, backup_path, message, delay, backup_date=None):
+        """
+        This method corresponds to the command line argument:
+
+            --restore PATH
+        """
+        print(termcolor.colored("{}:".format(self.world().name()), "cyan"))
+
+        # Print some information about the backup archive.
+        print("\t", "backup path: {}".format(backup_path))
+
+        # Restore the backup.
+        self._restore(
+            backup_path=backup_path, message=message, delay=delay,
+            verify_restore=True
+            )
+        return None
+
     def restore_latest(self, message, delay):
         """
-        """
-        latest_backup = self.latest_backup()
+        This method corresponds to the command line argument:
 
+            --restore-latest
+        """
+        print(termcolor.colored("{}:".format(self.world().name()), "cyan"))
+        
         # Break if no backup is available.
+        latest_backup = self.latest_backup()
         if latest_backup == (None, None):
-            print("{} - restore-latest:".format(self.world().name()))
-            print("\t", "FAILURE: no backup available.")
+            print("\t", termcolor.colored("error:", "red"), "no backup available.")
         else:
-            date, path = latest_backup
+            date, path = latest_backup            
+            print("\t", "backup date:", date.ctime())
             
-            print("{} - restore-latest:".format(self.world().name()))
-            print("\t", "backup: {}".format(date))
-            print("\t", "path:   {}".format(path))
-            
-            self.restore(path, message, delay)
+            # Restore the backup.
+            self._restore(
+                backup_path=path, message=message, delay=delay,
+                verify_restore=True
+                )
         return None
 
     def restore_menu(self, message, delay):
         """
+        This method corresponds to the command line argument:
+
+            --restore-menu
         """
+        print(termcolor.colored("{}:".format(self.world().name()), "cyan"))
+
+        # Get all existing backups.
         backups = list(self.backup_list().items())
         backups.sort(reverse=True)
 
         # Break if no backup is available.
         if not backups:
-            print("{} - restore-menu:".format(self.world().name()))
-            print("\t", "FAILURE: no backup available.")
+            print("\t", termcolor.colored("error:", "red"),
+                  "no backup available.")
         else:
-            print("{} - restore-menu:".format(self.world().name()))
-
             # Print the backup list.
             for i, backup in enumerate(backups):
                 date, path = backup
-                print("\t", "{}.".format(i), date.ctime())
+                print("\t", "{})".format(i), date.ctime())
 
             # Let the user select a backup.
             i = emsm.lib.userinput.get_value(
@@ -618,9 +673,12 @@ class UiBackupManager(BackupManager):
                 check_func = lambda s: 0 <= s < len(backups)
                 )
             backup = backups[i]
-
+            
             # Restore the backup.
-            self.restore(backup[1], message, delay)    
+            self._restore(
+                backup_path=backup[1], message=message, delay=delay,
+                verify_restore=True
+                )
         return None
 
 
@@ -669,6 +727,9 @@ class Backups(BasePlugin):
         if self._max_storage_size < 0:
             self._max_storage_size = 0
 
+        # backup_logs
+        self._backup_logs = conf.getboolean("backup_logs", True)
+
         # Write
         # ^^^^^
 
@@ -677,6 +738,7 @@ class Backups(BasePlugin):
         conf["restore_message"] = str(self._restore_message)
         conf["restore_delay"] = str(self._restore_delay)
         conf["max_storage_size"] = str(self._max_storage_size)
+        conf["backup_logs"] = "yes" if self._backup_logs else "no"
         return None
 
     def _setup_argparser(self):
@@ -693,32 +755,32 @@ class Backups(BasePlugin):
         me_group.add_argument(
             "--list",
             action = "count",
-            dest = "list",
+            dest = "backups_list",
             help = "Lists all available backups."
             )
         me_group.add_argument(
             "--create",
             action = "count",
-            dest = "create",
+            dest = "backups_create",
             help = "Creates a new backup."
             )
         me_group.add_argument(
             "--restore",
             action = "store",
-            dest = "restore",
+            dest = "backups_restore",
             metavar = "PATH",
             help = "Restores the backup at the given path."
             )
         me_group.add_argument(
             "--restore-latest",
             action = "count",
-            dest = "restore_latest",
+            dest = "backups_restore_latest",
             help = "Restores the latest backup."
             )
         me_group.add_argument(
             "--restore-menu",
             action = "count",
-            dest = "restore_menu",
+            dest = "backups_restore_menu",
             help = "Opens a dialog allowing the user to select the backup "\
                    "that should be restored."
             )
@@ -727,25 +789,30 @@ class Backups(BasePlugin):
     def run(self, args):
         """
         """
+        # We process the worlds in alphabetical order, so we need to sort
+        # them first.
         worlds = self.app().worlds().get_selected()
+        worlds.sort(key = lambda w: w.name())
+        
         for world in worlds:
             bm = UiBackupManager(
                 app = self.app(),
                 world = world,
                 max_storage_size = self._max_storage_size,
-                backup_dir = os.path.join(self.data_dir(), world.name())
+                backup_dir = os.path.join(self.data_dir(), world.name()),
+                backup_logs = self._backup_logs
                 )
 
-            if args.list:
+            if args.backups_list:
                 bm.list()
-            elif args.create:
+            elif args.backups_create:
                 bm.create(self._archive_format)
-            elif args.restore:
-                bm.restore(args.restore, self._restore_message,
+            elif args.backups_restore:
+                bm.restore(args.backups_restore, self._restore_message,
                            self._restore_delay
                            )
-            elif args.restore_latest:
+            elif args.backups_restore_latest:
                 bm.restore_latest(self._restore_message, self._restore_delay)
-            elif args.restore_menu:
+            elif args.backups_restore_menu:
                 bm.restore_menu(self._restore_message, self._restore_delay)
         return None

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # The MIT License (MIT)
 # 
@@ -119,6 +119,9 @@ import shutil
 import tempfile
 import logging
 import argparse
+
+# third party
+import termcolor
 
 # local
 try:
@@ -362,33 +365,32 @@ class PluginInstaller(object):
         Like *_install()*, but catches the exceptions, prints the progress and
         creates more log entries.
         """
-        print("plugins - install:")
-        print("\t", "package_path: {}".format(self._archive_path))
-        print("\t", "package_name: {}".format(self._name))
-        print("\t", "installing package ...")
+        print("package_path: {}".format(self._archive_path))
+        print("package_name: {}".format(self._name))
+        print("installing package ...")
 
         log.info("installing '{}' from '{}' ..."\
                  .format(self._name, self._archive_path)
                  )
         
         try:
-            self._install()
+            self._install()            
         except PluginAlreadyInstalledError as err:
-            print("\t", "FAILURE: a plugin with the name '{}' "\
-                        "is already installed.".format(self._name))
-            print("\t", "         try to --uninstall the other plugin first.")
-            
+            print(termcolor.colored("error:", "red"),
+                  "a plugin with the name '{}' is already installed."\
+                  .format(self._name)
+                  )
             log.error(err)
         except PluginPackageCorruptedError as err:
-            print("\t", "FAILURE: the package is not a valid plugin package.")
-
+            print(termcolor.colored("error:", "red"),
+                  "the package is not a valid plugin package."
+                  )
             log.error(err)
         except PluginInstallError as err:
-            print("\t", "FAILURE: {}".format(err))
-            
+            print(termcolor.colored("error:", "red"), err)
             log.error(err)
         else:
-            print("\t", "installation complete.")
+            print("installation complete.")
             log.info("installation of '{}' complete.".format(self._name))
         return None
 
@@ -411,14 +413,16 @@ class Plugins(BasePlugin):
         """
         Sets the argument parser up.
         """
-        parser = self.argparser()
-        
-        parser.description = "Install and remove EMSM plugins"        
+        parser = self.argparser()        
+        parser.description = "Install and remove EMSM plugins"
 
-        parser.add_argument(
+        # We want to allow only one action per run.
+        me_group = parser.add_mutually_exclusive_group()
+        
+        me_group.add_argument(
             "--install",
             action = "store",
-            dest = "install",
+            dest = "plugins_install",
             metavar = "ARCHIVE",
             help = "Install a new plugin from the given archive."
             )
@@ -428,19 +432,19 @@ class Plugins(BasePlugin):
         plugin_names = [name \
                         for name in self.app().plugins().get_plugin_names()
                         if name != self.name()]
-        parser.add_argument(
+        me_group.add_argument(
             "--uninstall",
             action = "store",
-            dest = "uninstall",
+            dest = "plugins_uninstall",
             metavar = "PLUGIN",
             choices = plugin_names,
             help = "Uninstall the plugin."
             )
 
-        parser.add_argument(
+        me_group.add_argument(
             "--list",
             action = "count",
-            dest = "list",
+            dest = "plugins_list",
             help = "Lists all loaded plugins."
             )
         return None
@@ -448,15 +452,15 @@ class Plugins(BasePlugin):
     def run(self, args):
         """
         """
-        if args.install:
-            installer = PluginInstaller(self.app(), args.install)
+        if args.plugins_install:
+            installer = PluginInstaller(self.app(), args.plugins_install)
             installer.install()
 
-        if args.uninstall:
-            plugin = self.app().plugins().get_plugin(args.uninstall)
+        elif args.plugins_uninstall:
+            plugin = self.app().plugins().get_plugin(args.plugins_uninstall)
             plugin.uninstall()
-
-        if args.list:
+            
+        elif args.plugins_list:
             self._list_plugins()
         return None
 
@@ -464,16 +468,15 @@ class Plugins(BasePlugin):
         """
         Lists all loaded plugins.
         """
+        # We list the plugins in alphabetical order.
         plugins = self.app().plugins().get_plugin_names()
         plugins.sort()
         
         if not plugins:
-            print("plugins - list:")
-            print("\t", "- no plugins loaded -")
+            print("- no plugins loaded -")
         else:
-            print("plugins - list:")
             for name in plugins:
-                print("\t", "* {}".format(name))
+                print("* {}".format(name))
         return None
 
     
@@ -501,24 +504,22 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Create the archive
-    print("plugins - packer:")
     with tempfile.TemporaryDirectory() as temp_dir:
 
         # Copy the plugin module and the data directory to the temp_dir.
-        print("\t", "copying plugin module ...")
+        print("copying plugin module ...")
         shutil.copy(args.source, os.path.join(temp_dir, "plugin.py"))
         
         if args.data:
-            print("\t", "copying  plugin data dir ...")
+            print("copying plugin data dir ...")
             shutil.copytree(args.data, os.path.join(temp_dir, "data"))
 
         # Create the archive by zipping the temp_dir.
-        print(args.create)
+        print("compressing archive ...")
         archive = shutil.make_archive(
             base_name = args.create,
             format = "bztar",
             root_dir = temp_dir,
             base_dir = "./"
             )
-
-        print("\t", "package created.")
+        print("created '{}'.".format(archive))
