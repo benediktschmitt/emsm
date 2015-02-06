@@ -681,7 +681,7 @@ class MinecraftForge_1_7(MinecraftForgeBase, Vanilla_1_7):
         return "minecraft forge 1.7"
 
     def default_url(self):
-        return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.7.10-10.13.0.1180/forge-1.7.10-10.13.0.1180-installer.jar"
+        return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.7.10-10.13.2.1291/forge-1.7.10-10.13.2.1291-installer.jar"
 
     def default_start_cmd(self):
         filenames = [filename \
