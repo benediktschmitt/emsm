@@ -694,6 +694,26 @@ class MinecraftForge_1_7(MinecraftForgeBase, Vanilla_1_7):
         return start_cmd
     
 
+class MinecraftForge_1_8(MinecraftForgeBase, Vanilla_1_8):
+
+    @classmethod
+    def name(self):
+        return "minecraft forge 1.8"
+
+    def default_url(self):
+        return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.8-11.14.0.1299/forge-1.8-11.14.0.1299-installer.jar"
+
+    def default_start_cmd(self):
+        filenames = [filename \
+                     for filename in os.listdir(self.server()) \
+                     if re.match("^forge-1\.8.*.jar$", filename)]
+        filename = filenames[0]
+        
+        start_cmd =  "java -jar {} nogui."\
+                    .format(shlex.quote(os.path.join(self._server, filename)))
+        return start_cmd
+
+
 # Bungeecord
 # ''''''''''
 
@@ -954,6 +974,7 @@ class ServerManager(object):
             Vanilla_1_8,
             MinecraftForge_1_6,
             MinecraftForge_1_7,
+            MinecraftForge_1_8,
             BungeeCordServerWrapper,
             Spigot,
             ]
