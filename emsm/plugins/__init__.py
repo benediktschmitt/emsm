@@ -22,28 +22,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+"""
+This package contains the plugins, delivered with the EMSM.
 
-# Modules
-# ------------------------------------------------
-
-from . import core
-from . import plugins
-
-# ...
-# -----------------------------------------------
-
-def run(instance_dir):
-    """
-    Sets an EMSM application up and dispatchs it.
-    """
-    app = core.application.Application(instance_dir)
-    try:
-        app.setup()
-        app.run()
-    except:
-        app.handle_exception()
-        raise
-    finally:
-        app.finish()
-        exit(app.exit_code())
-    return None
+The instance folder contains also a ``plugins`` directory, where the user
+can place plugins he'd like to run.
+"""

@@ -38,31 +38,6 @@ nosetests.xml
 # EMSM
 # ====
 
-# EMSM instance folders and files
-# -------------------------------
-conf/
-logs/
-plugins_data/
-worlds/
-server/
-app.lock
-
-# EMSM Plugins
-# ------------
-#
-# The plugin folder is an instance folder. But it contains also core plugins,
-# so we ignore the whole folder and create exceptions for the core plugins.
-plugins/
-!plugins/__init__.py
-!plugins/backups.py
-!plugins/emsm.py
-!plugins/guard.py
-!plugins/hellodolly.py
-!plugins/initd.py
-!plugins/plugins.py
-!plugins/server.py
-!plugins/worlds.py
-
 # EMSM docs
 # ---------
 docs/build
