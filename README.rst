@@ -1,4 +1,4 @@
-.. image:: https://raw.githubusercontent.com/benediktschmitt/emsm/master/docs/source/_static/logo/emsm.png
+.. image:: https://raw.githubusercontent.com/benediktschmitt/emsm/master/docs/source/_static/logo/emsm_48x48.png
     :width: 16px
     :height: 16px
     :align: left
