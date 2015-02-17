@@ -52,7 +52,7 @@ setup(
     long_description = long_description,
     packages = ["emsm", "emsm.core", "emsm.core.lib", "emsm.plugins"],
     include_package_data = True,
-    platforms = "linux",
+    platforms = "LINUX",
     classifiers = [
         "Development Status :: 4 - Beta",
         "Environment :: Console",
