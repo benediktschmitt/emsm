@@ -30,22 +30,28 @@
 from setuptools import setup
 
 # local
-import emsm
+try:
+    import emsm
+except ImportError:
+    emsm = None
 
 
 # Setup
 # -----------------------------------------------
 
 long_description = open("README.rst").read()
+
 requirements = [
     line.strip()
     for line in open("emsm/requirements.txt")
     if line.strip()
     ]
 
+version = emsm.core.VERSION if emsm else "- n/a -"
+
 setup(
     name = "emsm",
-    version = emsm.core.VERSION,
+    version = version,
     url = "https://github.com/benediktschmitt/emsm",
     license = "MIT License",
     author = "Benedikt Schmitt",
