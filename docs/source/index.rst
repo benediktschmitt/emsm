@@ -51,7 +51,8 @@ Why should you use the **EMSM**?
 
 *   **InitD**
 
-    Use the :mod:`emsm.plugins.initd` plugin to benefit from the *init.d* service.
+    Use the :mod:`~emsm.plugins.initd` plugin to benefit from the *init.d*
+    service.
 
 *   **Simple Configuration**
 
@@ -74,7 +75,7 @@ Why should you use the **EMSM**?
 
 *   **Guarded worlds**
 
-    The :mod:`emsm.plugins.guard` helps you to monitor the worlds and to react
+    The :mod:`~emsm.plugins.guard` helps you to monitor the worlds and to react
     on server issues automatically.
 
 *   **Fast learning curve**
