@@ -49,4 +49,4 @@ License
 -------
 
 * 0.0.0-beta - 2.0.0-beta: `GNU GPL v3 <https://www.gnu.org/copyleft/gpl.html>`_
-* 2.0.1-beta - current release: `MIT License <LICENSE>`_.
+* 2.0.1-beta - current release: `MIT License <LICENSE.rst>`_.
