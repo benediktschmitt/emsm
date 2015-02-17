@@ -27,7 +27,7 @@
 # -----------------------------------------------
 
 # std
-from distutils.core import setup
+from setuptools import setup
 
 # local
 import emsm
@@ -36,10 +36,12 @@ import emsm
 # Setup
 # -----------------------------------------------
 
-try:
-    long_description = open("README.rst").read()
-except OSError:
-    long_description = "not available"
+long_description = open("README.rst").read()
+requirements = [
+    line.strip()
+    for line in open("emsm/requirements.txt")
+    if line.strip()
+    ]
 
 setup(
     name = "emsm",
@@ -53,6 +55,7 @@ setup(
     packages = ["emsm", "emsm.core", "emsm.core.lib", "emsm.plugins"],
     include_package_data = True,
     platforms = "LINUX",
+    install_requires = requirements,
     classifiers = [
         "Development Status :: 4 - Beta",
         "Environment :: Console",
