@@ -99,7 +99,7 @@ log = logging.getLogger(__file__)
 
 class Server(BasePlugin):
 
-    VERSION = "3.0.0-beta"
+    VERSION = "4.0.0-beta"
 
     DESCRIPTION = __doc__
 

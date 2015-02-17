@@ -163,7 +163,7 @@ class HelloDolly(BasePlugin):
     DOWNLOAD_URL = None
 
     # The last compatible version of the EMSM.
-    VERSION = "3.0.0-beta"
+    VERSION = "4.0.0-beta"
 
     # The EMSM automatically uses the DESCRIPTION variable to set up the
     # *--long-help* argument parser argument.

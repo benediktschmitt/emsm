@@ -684,7 +684,7 @@ class UiBackupManager(BackupManager):
 
 class Backups(BasePlugin):
 
-    VERSION = "3.0.0-beta"
+    VERSION = "4.0.0-beta"
 
     DESCRIPTION = __doc__
 

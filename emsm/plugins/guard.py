@@ -208,7 +208,7 @@ def port_is_open(adr, timeout=1, attempts=1):
 
 class Guard(BasePlugin):
 
-    VERSION = "3.0.0-beta"
+    VERSION = "4.0.0-beta"
 
     DESCRIPTION = __doc__
 
