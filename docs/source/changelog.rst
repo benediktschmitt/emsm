@@ -15,7 +15,6 @@ This log contains only the changes beginning with version *3.1.1-beta*.
 
             .. code-block:: bash
 
-                # I encourage you to use virtualenv!
                 $ sudo pip3 install emsm
 
         #.  Remove obsolete folders and files:
@@ -41,10 +40,10 @@ This log contains only the changes beginning with version *3.1.1-beta*.
 
                 #!/usr/bin/env python3
 
-                import os
                 import emsm
 
-                emsm.run(os.path.dirname(os.path.abspath(__file__)))
+                # Make sure, the instance folder is correct.
+                emsm.run(instance_dir = "/opt/minecraft")
 
 *   3.1.1-beta
 
