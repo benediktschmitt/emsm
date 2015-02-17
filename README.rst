@@ -11,7 +11,7 @@ The *Extendable Minecraft Server Manager* (EMSM) handles
 in Python and can be easily modified by the user.
 
 The *EMSM* provides a simple, but powerful and extensive command line interface,
-which allows to manage your minecraft server and automize tasks.
+which allows to manage your minecraft server easily and automize tasks.
 
 The separation of minecraft worlds and server executables allows to manage
 several different versions of server (e.g. Vanilla and Bukkit in

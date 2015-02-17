@@ -18,6 +18,7 @@ develop-eggs
 lib
 lib64
 __pycache__
+MANIFEST
 
 # Installer logs
 pip-log.txt
@@ -42,7 +43,7 @@ nosetests.xml
 # ---------
 docs/build
 
-# The *.rst files for the api are created automatically by autodoc. So we 
+# The *.rst files for the api are created automatically by autodoc. So we
 # ignore them.
 docs/source/api/*.rst
 !docs/source/api/index.rst

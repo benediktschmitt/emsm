@@ -23,18 +23,44 @@
 # THE SOFTWARE.
 
 
-# ...
-# ------------------------------------------------
+# Modules
+# -----------------------------------------------
 
-__all__ = [
-    "VERSION"
+# std
+from distutils.core import setup
+
+# local
+import emsm
+
+
+# Setup
+# -----------------------------------------------
+
+try:
+    long_description = open("README.rst").read()
+except OSError:
+    long_description = "not available"
+
+setup(
+    name = "emsm",
+    version = emsm.core.VERSION,
+    url = "https://github.com/benediktschmitt/emsm",
+    license = "MIT License",
+    author = "Benedikt Schmitt",
+    author_email = "benedikt@benediktschmitt.de",
+    description = "A lightweight, easy to extend mineraft server manager",
+    long_description = long_description,
+    packages = ["emsm", "emsm.core", "emsm.core.lib", "emsm.plugins"],
+    include_package_data = True,
+    platforms = "linux",
+    classifiers = [
+        "Development Status :: 4 - Beta",
+        "Environment :: Console",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3.2",
+        "Topic :: Games/Entertainment",
+        "Topic :: System :: Systems Administration",
+        "Topic :: Utilities"
     ]
-
-
-# Data
-# ------------------------------------------------
-
-#: The version of the EMSM.
-#:
-#: Take a look at http://semver.org for more information.
-VERSION = "4.0.0-beta"
+)

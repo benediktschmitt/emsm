@@ -1,0 +1,5 @@
+include README.rst
+include LICENSE.rst
+
+recursive-include emsm *.txt
+recursive-include emsm *.sh
