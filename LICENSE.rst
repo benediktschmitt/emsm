@@ -1,3 +1,6 @@
+License
+=======
+
 The MIT License (MIT)
 
 Copyright (c) 2014-2015 Benedikt Schmitt <benedikt@benediktschmitt.de>
