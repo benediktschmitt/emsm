@@ -45,6 +45,11 @@ This log contains only the changes beginning with version *3.1.1-beta*.
                 # Make sure, the instance folder is correct.
                 emsm.run(instance_dir = "/opt/minecraft")
 
+            .. code-block:: bash
+
+                $ chmod +x /opt/minecraft/minecraft.py
+                $ chown minecraft:minecraft /opt/minecraft/minecraft.py
+
 *   3.1.1-beta
 
     *   **added**   :meth:`emsm.core.server.BaseServerWrapper.world_address` method
