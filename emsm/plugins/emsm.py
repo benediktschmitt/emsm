@@ -128,16 +128,14 @@ class Updater(object):
         if not self._latest_version is None:
             return self._latest_version
 
-        latest_version_py_url = "https://raw.githubusercontent.com/benediktschmitt/emsm/master/emsm/version.py"
+        latest_version_py_url = "https://pypi.python.org/pypi?:action=doap&name=emsm"
         with urllib.request.urlopen(latest_version_py_url) as file:
             data = file.read()
-            data = data.decode()
 
-        # Isolte the value of the *VERSION* variable.
-        latest_version = re.findall(
-            "^VERSION\s*=\s*\\\"(.*?)\\\"\s*", data, re.MULTILINE
-            )
+        # Isolate the version node and get its value.
+        latest_version = re.findall(b"<revision>(.*?)</revision>", data)
         latest_version = latest_version[0]
+        latest_version = latest_version.decode()
         latest_version = self._split_version(latest_version)
 
         # Save the value to avoid multiple http requests. I assume, that the
