@@ -20,7 +20,7 @@ Installation
 
     .. code-block:: bash
 
-        $ sudo pip3 install emsm
+        $ sudo pip3 install --pre emsm
 
     This will also install all EMSM Python depencies.
 
