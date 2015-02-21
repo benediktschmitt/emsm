@@ -37,16 +37,16 @@ You can find the latest version of this plugin in the EMSM
 Installation
 ------------
 
-The EMSM comes with an ``init.d`` script. You need to copy it
-to the ``/etc/init.d`` directory so that EMSM works with the
-*init.d* service.
+You only have to create the ``init.d`` script :file:`/etc/init.d/minecraft`:
+
+..  literalinclude:: ../../../emsm/core/initd_script.sh
+    :language: bash
+    :linenos:
 
 .. code-block:: bash
 
-    $ foo@bar: cp emsm/initd_script /etc/init.d/minecraft
-    $ foo@bar: chmod +x /etc/init.d/minecraft
-    $ foo@bar: update-rc.d minecraft
-
+    $ sudo chmod +x /etc/init.d/minecraft
+    $ sudo update-rc.d minecraft
 
 Configuration
 -------------
@@ -64,7 +64,7 @@ worlds.conf
 
 **enable_initd**
 
-    If ``True``, the autostart/-stop is enabled.
+    If ``yes``, the autostart/-stop is enabled.
 
 If you want to enable *init.d* for all worlds, use the *DEFAULT* section.
 
