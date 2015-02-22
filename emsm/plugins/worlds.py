@@ -759,7 +759,7 @@ class Worlds(BasePlugin):
                     args.log_start = self._default_log_start
                 if args.log_limit is None:
                     args.log_limit = self._default_log_limit
-                world.print_latest_log(args.log_start - 1, args.log_limit)
+                world.print_latest_log(args.log_start, args.log_limit)
 
             # pid / status / ...
             elif args.pid:

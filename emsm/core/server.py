@@ -180,44 +180,46 @@ class BaseServerWrapper(object):
     def __init__(self, app):
         """
         """
-        # This class is abstract and can not be initialised.
-        if type(self) is BaseServerWrapper:
-            raise RuntimeError("BaseServerWrapper is an abstract class")
-
         log.info("initialising server '{}' ...".format(self.name()))
 
-        self._app = app
+        self.__app = app
 
-        # The absolute path to the server executable that is
-        # wrapped by this object.
-        # The filename is simply *name*.
-        self._server = os.path.join(app.paths().server(), self.name())
+        # Absolute path to the directory which should contain all server
+        # software.
+        # For the vanilla server, this is only a single file
+        # *minecraft_server.jar*. The forge server comes with some
+        # subdirectories and libraries.
+        self.__directory = app.paths().server_(self.name())
 
         # The configuration section in the *server.conf* configuration file.
-        # Note, that only a server wrapper which has a name, is listed in
-        # the configuration.
-        try:
-            self.name()
-        except NotImplementedError:
-            self._conf = None
-        else:
-            if not app.conf().server().has_section(self.name()):
-                app.conf().server().add_section(self.name())
-            self._conf = app.conf().server()[self.name()]
+        if not app.conf().server().has_section(self.name()):
+            app.conf().server().add_section(self.name())
+        self.__conf = app.conf().server()[self.name()]
         return None
 
-    def server(self):
+    def directory(self):
         """
-        Absolute path of the server executable.
+        Absolute path to the directory which contains all server software.
         """
-        return self._server
+        if not os.path.exists(self.__directory):
+            os.makedirs(self.__directory)
+        return self.__directory
+
+    def exe_path(self):
+        """
+        **ABSTRACT**
+
+        Absolute path to the server executable. This file is usually located
+        in :meth:`directory`.
+        """
+        raise NotImplementedError()
 
     def conf(self):
         """
         Returns the configuration section in the *server.conf* configuration
         file.
         """
-        return self._conf
+        return self.__conf
 
     def default_url(self):
         """
@@ -232,23 +234,26 @@ class BaseServerWrapper(object):
         Returns the url in :meth:`conf`, if available. Otherwise the value
         of :meth:`default_url`.
         """
-        if "url" in self._conf:
-            return self._conf.get("url")
+        if "url" in self.conf():
+            return self.conf().get("url")
         return self.default_url()
 
     def is_installed(self):
         """
         ``True`` if the executable has been downloaded and exists, otherwise
         ``False``.
+
+        Per default, this method only checks if the :meth:`directory` is empty
+        or not. It can be *overridden* for a more detailed check.
         """
-        return os.path.exists(self._server)
+        return bool(os.listdir(self.directory()))
 
     def is_online(self):
         """
         Returns ``True`` if at least one world is currently running with
         this server.
         """
-        worlds = self._app.worlds().get_by_pred(
+        worlds = self.__app.worlds().get_by_pred(
             lambda w: w.server() is self and w.is_online()
             )
         return bool(worlds)
@@ -281,11 +286,10 @@ class BaseServerWrapper(object):
         if self.is_online():
             raise ServerIsOnlineError(self)
 
-        # Save the old self.server() path (we don't know if it is a directory
-        # or a file) in a temporary folder, so that we can move it back, if
-        # something fails.
+        # Save the old directory in a temporary folder, so that we can restore
+        # it if something fails.
         with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_server_path = shutil.move(self._server, tmp_dir)
+            tmp_server_path = shutil.move(self.directory(), tmp_dir)
 
             # is_installed() returns now False.
             assert not self.is_installed()
@@ -294,14 +298,16 @@ class BaseServerWrapper(object):
             try:
                 self.install()
             except:
-                # Clean up the installation target directory self.server()
+                # Clean up the installation target directory self.directory()
                 # and move the old server path back.
-                if os.path.exists():
-                    if os.path.isdir():
-                        shutil.rmtree(self._server)
+                if os.path.exists(self.directory()):
+                    if os.path.isdir(self.directory()):
+                        shutil.rmtree(self.directory())
                     else:
-                        os.remove(self._server)
-                shutil.move(tmp_server_path, self._server)
+                        # This is a relict of version 3, when not all server
+                        # created a directory in ``server/``.
+                        os.remove(self.directory())
+                shutil.move(tmp_server_path, self.directory())
 
                 # Reraise the original exception.
                 raise
@@ -323,9 +329,12 @@ class BaseServerWrapper(object):
         Returns the value for *start_command* in :meth:`conf` if available
         and the :meth:`default_start_cmd` otherwise.
         """
-        if "start_command" in self._conf:
-            cmd = self._conf.get("start_command")\
-                  .format(server_path=shlex.quote(self._server))
+        if "start_command" in self.conf():
+            cmd = self.conf().get("start_command")
+            cmd = cmd.format(
+                server_exe = self.exe_path(),
+                server_dir = self.directory()
+            )
             return cmd
         else:
             return self.default_start_cmd()
@@ -404,8 +413,11 @@ class VanillaBase(BaseServerWrapper):
     Base class for all vanilla server versions.
     """
 
+    def exe_path(self):
+        return os.path.join(self.directory(), self.name())
+
     def default_start_cmd(self):
-        return "java -jar {} nogui.".format(shlex.quote(self._server))
+        return "java -jar {} nogui.".format(shlex.quote(self.exe_path()))
 
     def translate_command(self, cmd):
         return cmd
@@ -423,7 +435,7 @@ class VanillaBase(BaseServerWrapper):
         except Exception as err:
             raise ServerInstallationFailure(self, err)
         else:
-            shutil.move(tmp_path, self.server())
+            shutil.move(tmp_path, self.exe_path())
         return None
 
     def world_address(self, world):
@@ -612,15 +624,16 @@ class MinecraftForgeBase(BaseServerWrapper):
             except Exception as err:
                 raise ServerInstallationFailure(err)
             else:
-
                 # Now, we have to run the installer.
-                if os.path.exists(self.server()):
-                    shutil.rmtree(self.server())
-                os.makedirs(self.server())
 
-                os.chdir(self.server())
-                if not os.path.samefile(self.server(), os.curdir):
-                    msg = "Could not chdir to {}".format(self.server())
+                # Clear the server directory.
+                shutil.rmtree(self.directory())
+                if not os.path.exists(self.directory()):
+                    os.makedirs(self.directory())
+
+                os.chdir(self.directory())
+                if not os.path.samefile(self.directory(), os.curdir):
+                    msg = "Could not chdir to {}".format(self.directory())
                     raise ServerInstallationFailure(self, msg)
 
                 sys_install_cmd = "java -jar {} --installServer"\
@@ -649,9 +662,15 @@ class MinecraftForgeBase(BaseServerWrapper):
                     raise ServerInstallationFailure(self, err)
         except:
             # Try to undo the installation.
-            if os.path.exists(self.server()):
-                shutil.rmtree(self.server())
+            if os.path.exists(self.directory()):
+                shutil.rmtree(self.directory())
+
+            raise
         return None
+
+    def default_start_cmd(self):
+        start_cmd = "java -jar {} nogui.".format(self.exe_path())
+        return start_cmd
 
 
 class MinecraftForge_1_6(MinecraftForgeBase, Vanilla_1_6):
@@ -663,15 +682,12 @@ class MinecraftForge_1_6(MinecraftForgeBase, Vanilla_1_6):
     def default_url(self):
         return "http://files.minecraftforge.net/minecraftforge/minecraftforge-installer-1.6.4-9.11.1.916.jar"
 
-    def default_start_cmd(self):
+    def exe_path(self):
         filenames = [filename \
-                     for filename in os.listdir(self.server()) \
+                     for filename in os.listdir(self.directory()) \
                      if re.match("^minecraftforge-universal-1\.6.*.jar$", filename)]
         filename = filenames[0]
-
-        start_cmd =  "java -jar {} nogui."\
-                    .format(shlex.quote(os.path.join(self._server, filename)))
-        return start_cmd
+        return os.path.join(self.directory(), filename)
 
 
 class MinecraftForge_1_7(MinecraftForgeBase, Vanilla_1_7):
@@ -683,15 +699,12 @@ class MinecraftForge_1_7(MinecraftForgeBase, Vanilla_1_7):
     def default_url(self):
         return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.7.10-10.13.2.1291/forge-1.7.10-10.13.2.1291-installer.jar"
 
-    def default_start_cmd(self):
+    def exe_path(self):
         filenames = [filename \
-                     for filename in os.listdir(self.server()) \
+                     for filename in os.listdir(self.directory()) \
                      if re.match("^forge-1\.7.*.jar$", filename)]
         filename = filenames[0]
-
-        start_cmd =  "java -jar {} nogui."\
-                    .format(shlex.quote(os.path.join(self._server, filename)))
-        return start_cmd
+        return os.path.join(self.directory(), filename)
 
 
 # Bungeecord
@@ -713,6 +726,9 @@ class BungeeCordServerWrapper(BaseServerWrapper):
     def default_url(self):
         return "http://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar"
 
+    def exe_path(self):
+        return os.path.join(self.directory(), self.name())
+
     def install(self):
         """
         """
@@ -726,11 +742,11 @@ class BungeeCordServerWrapper(BaseServerWrapper):
         except Exception as err:
             raise ServerInstallationFailure(err)
         else:
-            shutil.move(tmp_path, self.server())
+            shutil.move(tmp_path, self.exe_path())
         return None
 
     def default_start_cmd(self):
-        return "java -jar {}".format(shlex.quote(self._server))
+        return "java -jar {}".format(shlex.quote(self.exe_path()))
 
     def translate_command(self, cmd):
         cmd = cmd.strip()
@@ -847,13 +863,13 @@ class Spigot(BaseServerWrapper):
                           .format(proc.returncode)
                     raise ServerInstallationFailure(self, msg)
 
-            # Move the built files to the *server()* folder.
+            # Move the built files to *exe_path()*.
             jarfiles = glob.glob(
                 os.path.join(build_dir, "Spigot/Spigot-Server/target/spigot-*.jar")
                 )
             if len(jarfiles) > 0:
                 jarfile = jarfiles[0]
-                shutil.move(jarfile, self.server())
+                shutil.move(jarfile, self.exe_path())
             else:
                 msg = "Could not find built spigot-*.jar file."
                 raise ServerInstallationFailure(self, msg)
@@ -865,8 +881,11 @@ class Spigot(BaseServerWrapper):
                 shutil.rmtree(build_dir)
         return None
 
+    def exe_path(self):
+        return os.path.join(self.directory(), self.name())
+
     def default_start_cmd(self):
-        return "java -jar {}".format(shlex.quote(self._server))
+        return "java -jar {}".format(shlex.quote(self.exe_path()))
 
     def log_path(self):
         return "./logs/latest.log"

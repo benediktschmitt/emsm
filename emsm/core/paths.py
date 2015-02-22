@@ -237,8 +237,24 @@ class Pathsystem(object):
         the ``server.conf`` configuration file.
 
         The directory is located in the *instance* folder.
+
+        .. seealso:: :meth:`server_`
         """
         return os.path.join(self._instance_dir, "server")
+
+    def server_(self, server_name):
+        """
+        This directory contains the server software for the server with the
+        name *server_name*.
+
+        The directory is located in the :meth:`server` folder.
+
+        .. todo::
+
+            * Try to find better names for *server* and *server_*. They are hard
+              to distinguish.
+        """
+        return os.path.join(self.server(), server_name)
 
     def worlds(self):
         """

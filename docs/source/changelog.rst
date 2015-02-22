@@ -5,6 +5,21 @@ Changelog
 
 This log contains only the changes beginning with version *3.1.1-beta*.
 
+*   4.0.5-beta
+
+    *   The server executables are now always placed in a subdirectory of
+        ``INSTANCE_ROOT/server/``.
+    *   **removed** :meth:`emsm.core.server.BaseServerWrapper.server`
+    *   **added**   :meth:`emsm.core.server.BaseServerWrapper.directory`
+    *   **added**   :meth:`emsm.core.server.BaseServerWrapper.exe_path`
+    *   The *start_command* in the :file:`server.conf` accepts due to the
+        changes above now these placeholders:
+
+        *   ``{server_exe}``    Points to the server executable
+        *   ``{server_dir}``    Points to the directory which contains all
+            server software.
+    *   *added**    :meth:`emsm.core.paths.Pathsystem.server_`
+
 *   4.0.0-beta
 
     *   **changed** The EMSM is now a valid Python package available via PyPi.
