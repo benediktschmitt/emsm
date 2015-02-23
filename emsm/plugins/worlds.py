@@ -452,7 +452,7 @@ class MyWorld(object):
         print(termcolor.colored("{}:".format(self._world.name()), "cyan"))
         try:
             self._world.start()
-        except emsm.worlds.WorldStartFailed:
+        except emsm.core.worlds.WorldStartFailed:
             print("\t", termcolor.colored("error:", "red"), "the world could not be started.")
         else:
             print("\t", "the world is now", termcolor.colored("online", "green"))
