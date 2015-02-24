@@ -669,7 +669,7 @@ class MinecraftForgeBase(BaseServerWrapper):
         return None
 
     def default_start_cmd(self):
-        start_cmd = "java -jar {} nogui.".format(self.exe_path())
+        start_cmd = "java -jar {} nogui.".format(shlex.quote(self.exe_path()))
         return start_cmd
 
 

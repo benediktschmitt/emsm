@@ -470,7 +470,7 @@ class WorldWrapper(object):
         # Send the command to the server.
         for pid in pids:
             sys_cmd = "screen -S {0}.{1} -p 0 -X stuff {2}"\
-                      .format(pid, self.screen_name(), server_cmd)
+                      .format(pid, shlex.quote(self.screen_name()), server_cmd)
             sys_cmd = shlex.split(sys_cmd)
             subprocess.call(sys_cmd)
         return None
