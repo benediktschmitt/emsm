@@ -645,7 +645,7 @@ class WorldWrapper(object):
             if os.path.samefile(os.getcwd(), self.directory()):
                 sys_cmd = "{screen} -dmS {screen_name} {start_cmd}".format(
                     screen = _SCREEN,
-                    screen_name = self.screen_name(),
+                    screen_name = shlex.quote(self.screen_name()),
                     start_cmd = self._server.start_cmd()
                     )
                 sys_cmd = shlex.split(sys_cmd)
