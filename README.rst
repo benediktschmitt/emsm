@@ -3,8 +3,6 @@
     :height: 16px
     :align: left
 
-**!!! THIS IS THE DEVELOPMENT VERSION !!!**
-
 EMSM
 ====
 
