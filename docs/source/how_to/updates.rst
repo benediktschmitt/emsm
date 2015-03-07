@@ -48,3 +48,10 @@ a backup before an update anymore.
 If the EMSM does not work as expected after the update, take a look at the
 :ref:`changelog` or create an
 `issue <https://github.com/benediktschmitt/emsm/issues>`_.
+
+Upgrade
+-------
+
+If the major version number changes, you should take a look at the
+:ref:`changelog` first. There will be an upgrade guide and additional
+information.
