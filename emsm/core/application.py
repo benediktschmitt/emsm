@@ -32,7 +32,6 @@ import pwd
 import grp
 import sys
 import logging
-import atexit
 import traceback
 
 # third party
