@@ -37,4 +37,4 @@ __all__ = [
 #: The version of the EMSM.
 #:
 #: Take a look at http://semver.org for more information.
-VERSION = "4.0.8-beta"
+VERSION = "4.0.9-beta"
