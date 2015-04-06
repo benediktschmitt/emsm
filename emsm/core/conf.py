@@ -135,6 +135,7 @@ class MainConfiguration(ConfigParser):
         [emsm]
         user = minecraft
         timeout = 0
+        screenrc =
 
         [backups]
         include_server = ...
@@ -150,6 +151,7 @@ class MainConfiguration(ConfigParser):
         "[emsm]\n"
         "user = minecraft\n"
         "timeout = -1\n"
+        "screenrc = \n"
         "\n"
         "The configuration section of each plugin is titled with the plugins\n"
         "name."
@@ -164,6 +166,7 @@ class MainConfiguration(ConfigParser):
         self.add_section("emsm")
         self["emsm"]["user"] = "minecraft"
         self["emsm"]["timeout"] = "0"
+        self["emsm"]["screenrc"] = ""
         return None
 
 

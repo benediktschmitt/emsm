@@ -648,6 +648,15 @@ class WorldWrapper(object):
                     screen_name = shlex.quote(self.screen_name()),
                     start_cmd = self._server.start_cmd()
                     )
+
+                # Check if a screenrc file should be used.
+                #
+                # Note: Put the screenrc path into another configuration file?
+                screenrc_path = self._app.conf().main()["emsm"]["screenrc"]
+                if screenrc_path:
+                    sys_cmd += " -c {}".format(shlex.quote(screenrc_path))
+
+                # Fire off the start command.
                 sys_cmd = shlex.split(sys_cmd)
                 subprocess.call(sys_cmd)
         finally:

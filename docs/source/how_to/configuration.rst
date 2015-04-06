@@ -23,6 +23,13 @@ plugins.
     # A negative values means no timeout and wait endless if necessairy.
     timeout = -1
 
+    # You can provide a *screenrc* file. Please note, that it must be an
+    # **absolute** path.
+    # This option is optional.
+    #
+    #screenrc = /opt/minecraft/conf/screenrc
+    screenrc =
+
 Each plugin has its own section. E.g.:
 
 .. code-block:: ini
