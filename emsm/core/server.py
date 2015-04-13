@@ -332,8 +332,8 @@ class BaseServerWrapper(object):
         if "start_command" in self.conf():
             cmd = self.conf().get("start_command")
             cmd = cmd.format(
-                server_exe = self.exe_path(),
-                server_dir = self.directory()
+                server_exe = shlex.quote(self.exe_path()),
+                server_dir = shlex.quote(self.directory())
             )
             return cmd
         else:
