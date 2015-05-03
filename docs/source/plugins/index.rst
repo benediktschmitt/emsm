@@ -13,7 +13,7 @@ Plugins
 What are EMSM plugins?
 ----------------------
 
-The EMSM plugins work as *frontend* for the EMSM and automize minecraft server
+The EMSM plugins work as *frontend* for the EMSM and automate minecraft server
 tasks.
 
 How to write a plugin
