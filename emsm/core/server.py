@@ -585,7 +585,7 @@ class Vanilla_1_8(VanillaBase):
         return "vanilla 1.8"
 
     def default_url(self):
-        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.8.1/minecraft_server.1.8.1.jar"
+        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.8.8/minecraft_server.1.8.8.jar"
 
     def log_path(self):
         return "./logs/latest.log"
@@ -714,7 +714,7 @@ class MinecraftForge_1_8(MinecraftForgeBase, Vanilla_1_8):
         return "minecraft forge 1.8"
 
     def default_url(self):
-        return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.8-11.14.0.1299/forge-1.8-11.14.0.1299-installer.jar"
+        return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.8-11.14.3.1450/forge-1.8-11.14.3.1450-installer.jar"
 
     def exe_path(self):
         filenames = [filename \
