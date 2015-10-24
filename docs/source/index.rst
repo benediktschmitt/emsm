@@ -29,6 +29,13 @@ The **EMSM** itself provides only a simple but sufficient **API** to manage the
 worlds. The rest of the work is done by the plugins. This makes the application
 easy to extend and maintain.
 
+And the best thing: We support **many server**:
+
+    * **vanilla** (mojang server) beginning with version 1.2
+    * **bungeecord**
+    * **minecraft forge**
+    * **spigot**
+
 Why should you use the **EMSM**?
 --------------------------------
 
