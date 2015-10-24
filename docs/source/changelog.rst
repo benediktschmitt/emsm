@@ -5,6 +5,11 @@ Changelog
 
 This log contains only the changes beginning with version *3.1.1-beta*.
 
+*   4.0.12-beta
+
+    *   **fixed** `issue #35 <https://github.com/benediktschmitt/emsm/issues/35>`_
+    *   **fixed** The start command option ``nogui`` of the vanilla server
+
 *   4.0.5-beta
 
     *   The server executables are now always placed in a subdirectory of

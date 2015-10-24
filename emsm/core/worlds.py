@@ -333,7 +333,7 @@ class WorldWrapper(object):
         if self.is_online():
             raise WorldIsOnlineError(self)
 
-        # Break, if we have nothin to do.
+        # Break, if we have nothing to do.
         if server is self._server:
             return None
 
@@ -536,10 +536,9 @@ class WorldWrapper(object):
         # Open all world screen sessions (one for each found pid).
         for pid in pids:
             sys_cmd = "screen -x {pid}".format(pid=pid)
-            sys_cmd = shlex.split(sys_cmd)
 
             try:
-                subprocess.check_call(sys_cmd)
+                subprocess.check_call(shlex.split(sys_cmd))
             except subprocess.CalledProcessError as error:
                 # It's probably not the terminal of the user,
                 # so try this one.

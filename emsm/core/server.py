@@ -417,7 +417,7 @@ class VanillaBase(BaseServerWrapper):
         return os.path.join(self.directory(), self.name())
 
     def default_start_cmd(self):
-        return "java -jar {} nogui.".format(shlex.quote(self.exe_path()))
+        return "java -jar {} nogui".format(shlex.quote(self.exe_path()))
 
     def translate_command(self, cmd):
         return cmd
