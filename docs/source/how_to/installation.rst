@@ -68,7 +68,7 @@ Installation
 
     .. code-block:: bash
 
-        $ minecraft emsm --version
+        $ sudo minecraft emsm --version
 
 #.  That's it. Your instance directory should now look like this:
 
