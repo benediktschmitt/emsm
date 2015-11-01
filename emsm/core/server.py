@@ -596,8 +596,8 @@ class Vanilla_1_8(VanillaBase):
     def log_error_re(self):
         return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
 
-# MinecraftForger
-# '''''''''''''''
+# MinecraftForge
+# ''''''''''''''
 
 
 class MinecraftForgeBase(BaseServerWrapper):
