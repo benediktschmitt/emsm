@@ -5,6 +5,10 @@ Changelog
 
 This log contains only the changes beginning with version *3.1.1-beta*.
 
+*   4.0.13-beta
+
+    *   **fixed** The start command option ``nogui`` of the forge server
+
 *   4.0.12-beta
 
     *   **fixed** `issue #35 <https://github.com/benediktschmitt/emsm/issues/35>`_
