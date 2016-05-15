@@ -585,7 +585,7 @@ class Vanilla_1_8(VanillaBase):
         return "vanilla 1.8"
 
     def default_url(self):
-        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.8.8/minecraft_server.1.8.8.jar"
+        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.8.9/minecraft_server.1.8.9.jar"
 
     def log_path(self):
         return "./logs/latest.log"
@@ -595,6 +595,26 @@ class Vanilla_1_8(VanillaBase):
 
     def log_error_re(self):
         return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
+
+
+class Vanilla_1_9(VanillaBase):
+
+    @classmethod
+    def name(self):
+        return "vanilla 1.9"
+
+    def default_url(self):
+        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.9/minecraft_server.1.9.jar"
+
+    def log_path(self):
+        return "./logs/latest.log"
+
+    def log_start_re(self):
+        return re.compile("^.*Starting minecraft server version 1\.9.*")
+
+    def log_error_re(self):
+        return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
+
 
 # MinecraftForge
 # ''''''''''''''
@@ -988,6 +1008,7 @@ class ServerManager(object):
             Vanilla_1_6,
             Vanilla_1_7,
             Vanilla_1_8,
+            Vanilla_1_9,
             MinecraftForge_1_6,
             MinecraftForge_1_7,
             MinecraftForge_1_8,
