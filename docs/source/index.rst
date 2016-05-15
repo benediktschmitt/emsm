@@ -31,7 +31,7 @@ easy to extend and maintain.
 
 And the best thing: We support **many server**:
 
-    * **vanilla** (mojang server) beginning with version 1.2
+    * **vanilla** (mojang server) starting with version 1.2
     * **bungeecord**
     * **minecraft forge**
     * **spigot**
