@@ -46,7 +46,8 @@ You only have to create the ``init.d`` script :file:`/etc/init.d/minecraft`:
 .. code-block:: bash
 
     $ sudo chmod +x /etc/init.d/minecraft
-    $ sudo update-rc.d minecraft
+    $ sudo update-rc.d minecraft defaults
+    $ sudo update-rc.d minecraft enable
 
 Configuration
 -------------
