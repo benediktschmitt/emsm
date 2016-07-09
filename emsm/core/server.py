@@ -615,6 +615,24 @@ class Vanilla_1_9(VanillaBase):
     def log_error_re(self):
         return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
 
+class Vanilla_1_10(VanillaBase):
+
+    @classmethod
+    def name(self):
+        return "vanilla 1.10"
+
+    def default_url(self):
+        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.10.2/minecraft_server.1.10.2.jar"
+
+    def log_path(self):
+        return "./logs/latest.log"
+
+    def log_start_re(self):
+        return re.compile("^.*Starting minecraft server version 1\.10.*")
+
+    def log_error_re(self):
+        return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
+
 
 # MinecraftForge
 # ''''''''''''''
@@ -740,6 +758,22 @@ class MinecraftForge_1_8(MinecraftForgeBase, Vanilla_1_8):
         filenames = [filename \
                      for filename in os.listdir(self.directory()) \
                      if re.match("^forge-1\.8.*.jar$", filename)]
+        filename = filenames[0]
+        return os.path.join(self.directory(), filename)
+
+class MinecraftForge_1_10(MinecraftForgeBase, Vanilla_1_10):
+
+    @classmethod
+    def name(self):
+        return "minecraft forge 1.10"
+
+    def default_url(self):
+        return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.10.2-12.18.0.2008/forge-1.10.2-12.18.0.2008-installer.jar"
+
+    def exe_path(self):
+        filenames = [filename \
+                     for filename in os.listdir(self.directory()) \
+                     if re.match("^forge-1\.10.*.jar$", filename)]
         filename = filenames[0]
         return os.path.join(self.directory(), filename)
 
@@ -1009,9 +1043,11 @@ class ServerManager(object):
             Vanilla_1_7,
             Vanilla_1_8,
             Vanilla_1_9,
+            Vanilla_1_10,
             MinecraftForge_1_6,
             MinecraftForge_1_7,
             MinecraftForge_1_8,
+            MinecraftForge_1_10,
             BungeeCordServerWrapper,
             Spigot,
             ]
