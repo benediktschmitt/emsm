@@ -761,6 +761,7 @@ class MinecraftForge_1_8(MinecraftForgeBase, Vanilla_1_8):
         filename = filenames[0]
         return os.path.join(self.directory(), filename)
 
+
 class MinecraftForge_1_10(MinecraftForgeBase, Vanilla_1_10):
 
     @classmethod
