@@ -2,7 +2,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) 2014-2015 Benedikt Schmitt <benedikt@benediktschmitt.de>
+# Copyright (c) 2014-2016 Benedikt Schmitt <benedikt@benediktschmitt.de>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -430,7 +430,7 @@ class MyWorld(object):
                   "Press [ctrl + a + d] (in this order) to detach from the console."
                   )
             print("\t", termcolor.colored("warning:", "red"),
-                  "When you stop the server in the session, EMSM may behave"\
+                  "When you stop the server in the session, EMSM may behave "\
                   "unexpected."
                   )
             time.sleep(delay)

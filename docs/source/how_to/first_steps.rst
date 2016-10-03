@@ -53,7 +53,7 @@ Each plugin provides its own arguments, similar to *git*. There are only a few
         $ minecraft --server vanilla --server bukkit [plugin ...]
 
 Common tasks
------------
+------------
 
 *   Start all worlds:
 

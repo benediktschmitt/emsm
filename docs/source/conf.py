@@ -63,7 +63,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Extendable Minecraft Server Manager'
-copyright = '2013-2014, Benedikt Schmitt'
+copyright = '2013-2016, Benedikt Schmitt'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -285,7 +285,7 @@ texinfo_documents = [
 epub_title = 'Extendable Minecraft Server Manager'
 epub_author = 'Benedikt Schmitt'
 epub_publisher = 'Benedikt Schmitt'
-epub_copyright = '2013, Benedikt Schmitt'
+epub_copyright = '2014-2016, Benedikt Schmitt'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.

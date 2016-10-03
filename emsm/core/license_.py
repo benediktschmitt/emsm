@@ -2,7 +2,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) 2014-2015 Benedikt Schmitt <benedikt@benediktschmitt.de>
+# Copyright (c) 2014-2016 Benedikt Schmitt <benedikt@benediktschmitt.de>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ __all__ = [
 #: The EMSM license
 LICENSE = """The MIT License (MIT)
 
-Copyright (c) 2014 Benedikt Schmitt <benedikt@benediktschmitt.de>
+Copyright (c) 2014-2016 Benedikt Schmitt <benedikt@benediktschmitt.de>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
