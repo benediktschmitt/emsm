@@ -30,6 +30,7 @@
 import os
 import logging
 import shutil
+import warnings
 
 # third party
 import blinker
@@ -37,6 +38,7 @@ import blinker
 # emsm
 from . import argparse_
 from .lib import userinput
+from .worlds import WorldWrapper
 
 
 # Data
@@ -132,19 +134,69 @@ class BasePlugin(object):
         """
         Returns a dictionary like object that contains the configuration
         of the plugin.
+
+        .. deprecated:: 4.0.16-beta
+
+            This method has been replaced by :meth:`global_conf` to clarify
+            the difference to :meth:`world_conf`.
+        """
+        msg = "The BasePlugin.conf() method has been marked as deprecated. "\
+            "Please use BasePlugin.global_conf() instead."
+        warnings.warn(msg, DeprecationWarning)
+        return self.global_conf()
+
+    def global_conf(self):
+        """
+        Returns a dictionary like object, that contains the *global*
+        configuration of the plugin (:file:`plugins.conf`).
+
+        :seealso: :meth:`world_conf`
         """
         # Make sure the configuration section exists.
         main_conf = self.__app.conf().main()
         if not self.__name in main_conf:
-            log.info("creating configuration section for '{}'"\
-                     .format(self.__name))
+            log.info(
+                "creating configuration section for '%s' in '%s'.",
+                self.__name, main_conf.path()
+            )
 
             main_conf.add_section(self.__name)
 
-            log.info("created configuration section for '{}'."\
-                     .format(self.__name))
-
+            log.info(
+                "created configuration section for '%s' in '%s'.",
+                self.__name, main_conf.path()
+            )
         return main_conf[self.__name]
+
+    def world_conf(self, world):
+        """
+        Returns a dictionary like object, that contains the *world* specific
+        configuration of the plugin (:file:`foo.world.conf`).
+
+        :seealso: :meth:`global_conf`
+
+        :arg world:
+            The :class:`WorldWrapper` of the world or the world's name (str).
+        """
+        # Get the world's name.
+        world_name = world.name() if isinstance(world, WorldWrapper) else world
+
+        # Make sure, the configuration section exists.
+        conf = self.__app.conf().world(world_name)
+        section_name = "plugin:{}".format(self.__name)
+        if not section_name in conf:
+            log.info(
+                "creating configuration section for '%s' in '%s'.",
+                self.__name, conf.path()
+            )
+
+            conf.add_section(self.__name)
+
+            log.info(
+                "created configuration section for '%s' in '%s'.",
+                self.__name, conf.path()
+            )
+        return conf[section_name]
 
     def data_dir(self, create=True):
         """
@@ -253,9 +305,13 @@ class BasePlugin(object):
         if userinput.ask("Do you want to remove the configuration?"):
             self.__app.conf().main().remove_section(self.__name)
 
-            log.info("removed '{}' configuration section."\
-                     .format(self.__name)
+            log.info("removed '{}' configuration section in '{}'."\
+                     .format(self.__name, self.__app.conf().main().path())
                      )
+
+            # Remove the configuration section in every  *.world.conf file.
+            for world_conf in self.__app.conf().worlds():
+                world_conf.remove_section("plugin:" + self.name())
 
         # Remove the subclass stuff.
         self._uninstall()

@@ -289,9 +289,9 @@ class Application(object):
 
         # Read the configuration, so that we get to know some startup
         # parameters like the file lock *timeout* or the EMSM user.
-        # Note, that the configuration wrappers define default values for
+        # Note, that the configuration wrappers defines default values for
         # the EMSM. So the configuration files may not exist at this point and
-        # we can call ``self._paths.create()`` later..
+        # we can call ``self._paths.create()`` later.
         self._conf.read()
 
         # Downgrade the privileges before doing anything else.

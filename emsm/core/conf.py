@@ -31,6 +31,9 @@ import os
 import logging
 import configparser
 
+# local
+from .worlds import WorldWrapper
+
 
 # Backward compatibility
 # ------------------------------------------------
@@ -68,9 +71,6 @@ class ConfigParser(configparser.ConfigParser):
         :meth:`read` or :meth:`write`.
     """
 
-    #: Written at the begin of the configuration file.
-    _EPILOG = str()
-
     def __init__(self, path):
         """
         """
@@ -82,6 +82,13 @@ class ConfigParser(configparser.ConfigParser):
             )
         self._path = path
         return None
+
+    def epilog(self):
+        """
+        Returns a comment, which is written at the begin of a configuration
+        file.
+        """
+        return ""
 
     def path(self):
         """
@@ -106,17 +113,28 @@ class ConfigParser(configparser.ConfigParser):
         """
         # Get the comment prefix.
         comment_prefix = self._comment_prefixes[0]
-        comment_format = "{} {{}}".format(comment_prefix)
 
         # Convert the EPILOG to comment lines.
-        epilog = map(lambda s: comment_format.format(s),
-                     type(self)._EPILOG.split("\n"))
+        epilog = self.epilog().split("\n")
+        epilog = [comment_prefix + " " + line for line in epilog]
         epilog = "\n".join(epilog) + "\n\n"
 
         # Write the configuration into the file.
         with open(self._path, "w") as file:
             file.write(epilog)
             super().write(file)
+        return None
+
+    def remove(self):
+        """
+        Removes the configuration file from the file system.
+        """
+        try:
+            os.remove(self.path())
+        except FileNotFoundError:
+            log.error(
+                "could not remove the '%s' configuration file.", self.path()
+            )
         return None
 
 
@@ -142,21 +160,6 @@ class MainConfiguration(ConfigParser):
         # ...
     """
 
-    _EPILOG = (
-        "This file contains the settings for the EMSM core application and\n"
-        "the plugins.\n"
-        "\n"
-        "The section of the EMSM looks like this per default:\n"
-        "\n"
-        "[emsm]\n"
-        "user = minecraft\n"
-        "timeout = -1\n"
-        "screenrc = \n"
-        "\n"
-        "The configuration section of each plugin is titled with the plugins\n"
-        "name."
-        )
-
     def __init__(self, path):
         """
         """
@@ -169,6 +172,23 @@ class MainConfiguration(ConfigParser):
         self["emsm"]["screenrc"] = ""
         return None
 
+    def epilog(self):
+        epilog = "\n".join([
+            "This file contains the settings for the EMSM core application and",
+            "the plugins.",
+            "",
+            "The section of the EMSM looks like this per default:",
+            "",
+            "[emsm]",
+            "user = minecraft",
+            "timeout = -1",
+            "screenrc = ",
+            "",
+            "The configuration section of each plugin is titled with the plugins",
+            "name.",
+        ])
+        return epilog
+
 
 class ServerConfiguration(ConfigParser):
     """
@@ -176,56 +196,78 @@ class ServerConfiguration(ConfigParser):
     to overwrite the default EMSM settings for a server wrapper like
     the *url* or the *start command*.
 
-
     .. seealso::
 
         * :meth:`emsm.core.server.BaseServerWrapper.conf`
+        * :meth:`emsm.core.conf.WorldConfiguration`
     """
 
-    _EPILOG = (
-        "[server name]\n"
-        "url = string\n"
-        "start_command = string\n"
-        "\n"
-        "The EMSM comes with tested default settings for each server.\n"\
-        "so you should only overwrite these values, if you have to.\n"
-        )
+    def epilog(self):
+        epilog = "\n".join([
+            "[server name]",
+            "url = string",
+            "start_command = string",
+            "",
+            "The EMSM comes with tested default settings for each server.",
+            "so you should only overwrite these values, if you have to.",
+        ])
+        return epilog
 
 
-class WorldsConfiguration(ConfigParser):
+class WorldConfiguration(ConfigParser):
     """
-    Handles the *worlds.conf* configuration file, which defines the
-    names and settings of all worlds managed by the EMSM.
+    Handles a configuration file for *one* world and allows the user
+    to set custom configuration values for each plugin, server and
+    the EMSM.
 
-    .. seealso::
-
-        * :meth:`emsm.core.worlds.WorldWrapper.conf`
+    :arg str path:
     """
-
-    _EPILOG = (
-        "[the world's name]\n"
-        "stop_timeout = int\n"
-        "stop_message = string\n"
-        "stop_delay = int\n"
-        "server = a server in server.conf\n"
-        "\n"
-        "Note, that some plugins may offer you some more options for\n"
-        "a world, like *enable_initd*. Take a look at the plugins help page\n"
-        "or documentation for further information.\n"
-        )
 
     def __init__(self, path):
         """
         """
         super().__init__(path)
 
-        # Populate the defaults section.
-        defaults = self.defaults()
-        defaults["stop_timeout"] = "10"
-        defaults["stop_delay"] = "5"
-        defaults["stop_message"] = "The server is going down.\n"\
-                                   "Hope to see you soon."
+        # Add the default options for the world.
+        self.add_section("world")
+        self["world"]["stop_timeout"] = "10"
+        self["world"]["stop_delay"] = "5"
+        self["world"]["stop_message"] = "The server is going down.\n"\
+                                        "Hope to see you soon."
+        self["world"]["server"] = "vanilla 1.10"
         return None
+
+    def epilog(self):
+        filename = os.path.basename(self.path())
+        world_name = filename[:-len(".world.conf")]
+
+        epilog = "\n".join([
+            "This configuration file contains the configuration for the world",
+            "",
+            "    **{world_name}**",
+            "",
+            "This file can be used to override global configuration values in ",
+            "the *server.conf* and *emsm.conf* configuration files.",
+            "",
+            "[world]",
+            "stop_timeout = int",
+            "stop_message = string",
+            "stop_delay = int",
+            "server = a server in server.conf",
+            "",
+            "Custom options for the backups plugin:",
+            "",
+            "[plugin:backups]",
+            "archive_format = bztar",
+            "max_storage_size = 30",
+            "",
+            "Custom options for the vanilla 1.8 server:",
+            "",
+            "[server:vanilla 1.8]",
+            "start_command = java -Xms512m -Xmx1G -jar {{server_exe}} nogui",
+            ""
+        ]).format(world_name=world_name)
+        return epilog
 
 
 class Configuration(object):
@@ -247,7 +289,32 @@ class Configuration(object):
 
         self._main = MainConfiguration(os.path.join(self._dir, "main.conf"))
         self._server = ServerConfiguration(os.path.join(self._dir, "server.conf"))
-        self._worlds = WorldsConfiguration(os.path.join(self._dir, "worlds.conf"))
+
+        # Load all *.world.conf configuration files
+        # We ignore files, that start with an underscore.
+        self._worlds = dict()
+        for name in os.listdir(self._dir):
+            path = os.path.join(self._dir, name)
+            if not os.path.isfile(path):
+                continue
+            if not name.endswith(".world.conf"):
+                continue
+            if name.startswith("_"):
+                continue
+
+            world_name = name[:-len(".world.conf")]
+            self._worlds[world_name] = WorldConfiguration(path)
+
+        WorldWrapper.world_uninstalled.connect(self.__remove_world)
+        return None
+
+    def __remove_world(self, world):
+        """
+        Removes the :class:`WorldConfiguration` of *world* from the internal
+        map.
+        """
+        if world.name() in self._worlds:
+            del self._worlds[world.name()]
         return None
 
     def main(self):
@@ -264,9 +331,23 @@ class Configuration(object):
 
     def worlds(self):
         """
-        Returns the :class:`WorldsConfiguration`.
+        Returns a list with all :class:`WorldConfiguration` objects.
         """
-        return self._worlds
+        return list(self._worlds.values())
+
+    def world(self, name):
+        """
+        Returns the :class:`WorldConfiguration` for the world with the name
+        *name* and ``None``, if there is not such a world.
+        """
+        return self._worlds.get(name)
+
+    def list_worlds(self):
+        """
+        Returns a list with the names of all worlds, for which a configuration
+        file has been found.
+        """
+        return list(self._worlds.keys())
 
     def read(self):
         """
@@ -277,7 +358,8 @@ class Configuration(object):
         # Don't change the order!
         self._main.read()
         self._server.read()
-        self._worlds.read()
+        for conf in self._worlds.values():
+            conf.read()
         return None
 
     def write(self):
@@ -288,5 +370,6 @@ class Configuration(object):
 
         self._main.write()
         self._server.write()
-        self._worlds.write()
+        for conf in self._worlds.values():
+            conf.write()
         return None

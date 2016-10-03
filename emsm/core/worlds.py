@@ -243,8 +243,11 @@ class WorldWrapper(object):
         # The name of the world.
         self._name = name
 
-        # Get the configuration.
-        self._conf = app.conf().worlds()[name]
+        # The whole dedicated configuration file.
+        self._world_conf = app.conf().world(name)
+
+        # Get the configuration section.
+        self._conf = self._world_conf["world"]
         self._check_conf()
 
         # The ServerWrapper for the server that powers this world.
@@ -305,11 +308,18 @@ class WorldWrapper(object):
 
     def conf(self):
         """
-        The configuration section of this world.
+        The configuration section of this world in the :file:`name.world.conf`
+        configuration file::
+
+        .. code-block:: ini
+
+            # morpheus.world.conf
+            [world]
+            server = vanilla 1.8
 
         .. seealso::
 
-            * :class:`~emsm.core.conf.WorldsConfiguration`
+            * :class:`~emsm.core.conf.WorldConfiguration`
         """
         return self._conf
 
@@ -604,7 +614,7 @@ class WorldWrapper(object):
                 break
 
         # Remove the configuration.
-        self._app.conf().worlds().remove_section(self._name)
+        self._world_conf.remove()
 
         # Emit the corresponing signal to this event.
         WorldWrapper.world_uninstalled.send(self)
@@ -645,13 +655,22 @@ class WorldWrapper(object):
                 sys_cmd = "{screen} -dmS {screen_name} {start_cmd}".format(
                     screen = _SCREEN,
                     screen_name = shlex.quote(self.screen_name()),
-                    start_cmd = self._server.start_cmd()
+                    start_cmd = self._server.start_cmd(self.name())
                     )
 
                 # Check if a screenrc file should be used.
                 #
-                # Note: Put the screenrc path into another configuration file?
-                screenrc_path = self._app.conf().main()["emsm"]["screenrc"]
+                # 1.) Check if it has been defined in the world's configuration
+                #     file.
+                # 2.) Check if a screenrc path is given in the global
+                #     configuration.
+                screenrc_path = None
+                if self._world_conf.has_option("emsm", "screenrc"):
+                    screenrc_path = self._world_conf["emsm"]["screenrc"]
+                if (not screenrc_path) \
+                    and self._app.conf().main().has_option("emsm", "screenrc"):
+                    screenrc_path = self._app.conf().main()["emsm"]["screenrc"]
+
                 if screenrc_path:
                     sys_cmd += " -c {}".format(shlex.quote(screenrc_path))
 
@@ -660,6 +679,7 @@ class WorldWrapper(object):
                 subprocess.call(sys_cmd)
         finally:
             # We may have not the rights to change back.
+            # E.g.: The EMSM was invoked in /root, but we dropped privileges.
             try:
                 os.chdir(old_wd)
             except OSError:
@@ -845,9 +865,9 @@ class WorldManager(object):
 
             * :class:`~emsm.core.conf.WorldsConfiguration`
         """
-        conf = self._app.conf().worlds()
-        for section in conf.sections():
-            world = WorldWrapper(self._app, section)
+        world_names = self._app.conf().list_worlds()
+        for name in world_names:
+            world = WorldWrapper(self._app, name)
             self._worlds[world.name()] = world
 
             # Make sure the folder exists.

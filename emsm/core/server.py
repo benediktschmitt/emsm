@@ -324,20 +324,37 @@ class BaseServerWrapper(object):
         """
         raise NotImplementedError()
 
-    def start_cmd(self):
+    def start_cmd(self, world=None):
         """
         Returns the value for *start_command* in :meth:`conf` if available
         and the :meth:`default_start_cmd` otherwise.
+
+        :arg str world:
+            The name of an EMSM world. The start command can be overridden
+            for each world. We will look for a custom start command in the
+            worlds configuration file first.
         """
-        if "start_command" in self.conf():
+        cmd = ""
+
+        # 1.) morpheus.world.conf
+        if world:
+            world_conf = self.__app.conf().world(world)
+            if world_conf.has_option("server:" + self.name(), "start_command"):
+                cmd = world_conf["server:" + self.name()]["start_command"]
+
+        # 2.) server.conf
+        if not cmd:
             cmd = self.conf().get("start_command")
-            cmd = cmd.format(
-                server_exe = shlex.quote(self.exe_path()),
-                server_dir = shlex.quote(self.directory())
-            )
-            return cmd
-        else:
-            return self.default_start_cmd()
+
+        # 3.) fallback
+        if not cmd:
+            cmd = self.default_start_cmd()
+
+        cmd = cmd.format(
+            server_exe = shlex.quote(self.exe_path()),
+            server_dir = shlex.quote(self.directory())
+        )
+        return cmd
 
     def translate_command(self, cmd):
         """
@@ -887,6 +904,15 @@ class Spigot(BaseServerWrapper):
         return "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"
 
     def build_dir(self):
+        """
+        You can specify a build directory in the :file:`server.conf`. If not
+        specified, we will use a temporary directory:
+
+        .. code-block:: ini
+
+            [spigot latest]
+            build_dir = /path/to/my/build/dir
+        """
         if "build_dir" in self.conf():
             tmp = self.conf().get("build_dir")
             tmp = os.path.expanduser(tmp)
