@@ -52,39 +52,35 @@ You only have to create the ``init.d`` script :file:`/etc/init.d/minecraft`:
 Configuration
 -------------
 
-worlds.conf
-^^^^^^^^^^^
+\*.worlds.conf
+^^^^^^^^^^^^^^
 
 .. code-block:: ini
 
-    [DEFAULT]
-    enable_initd = yes
+    [plugin:initd]
+    enable = yes
 
-    [foo]
-    enable_initd = no
-
-**enable_initd**
+**enable**
 
     If ``yes``, the autostart/-stop is enabled.
-
-If you want to enable *init.d* for all worlds, use the *DEFAULT* section.
 
 Arguments
 ---------
 
 .. option:: --start
 
-    Starts all worlds, where the *enable_initd* configuration value is true.
+    Starts all worlds, where initd has been enabled in the
+    :file:`*.world.conf` configuration file.
 
 .. option:: --stop
 
-    Stops all worlds, where the *enable_initd* configuration value is true.
+    Stops all worlds, where initd is enabled.
     Note, that this will always **force** the stop of the world, since the
     process is killed anyway during system shutdown.
 
 .. option:: --restart
 
-    Forces the restart of all worlds which has *enable_initd* enabled.
+    Forces the restart of all worlds, for which initd has been enabled.
 
 Exit code
 ---------
@@ -93,6 +89,29 @@ The exit code is set to:
 
 * 0 if no error occured.
 * 2 if an error occured.
+
+Changelog
+---------
+
+EMSM v5
+^^^^^^^
+
+*   *initd* must now be enabled in the *plugin:initd* configuration
+    section of the :file:`*.world.conf` configuration file.
+
+    In v4 (:file:`worlds.conf`):
+
+    .. code-block:: ini
+
+        [morpheus]
+        enable_initd = yes
+
+    In v5 (:file:`morpheus.world.conf`):
+
+    .. code-block:: ini
+
+        [plugin:initd]
+        enable = yes
 """
 
 
@@ -124,7 +143,7 @@ log = logging.getLogger(__file__)
 
 class InitD(BasePlugin):
 
-    VERSION = "4.0.0-beta"
+    VERSION = "5.0.0-beta"
 
     DESCRIPTION = __doc__
 
@@ -181,34 +200,30 @@ class InitD(BasePlugin):
             )
         return None
 
-    def _uninstall(self):
-        """
-        Makes sure the configuration options added to the *world.conf* are
-        removed.
-        """
-        # Clean the worlds.conf up.
-        world_conf = self.app().conf().worlds()
-        for section in world_conf:
-            world_conf.remove_option(section, "enable_initd")
-        return None
-
     def _initd_worlds(self):
         """
-        Returns all worlds where *enable_initd* is true.
+        Returns all worlds where *conf[plugin:initd][enable]* is true.
         The worlds are sorted by their names.
 
         See also:
             * WorldWrapper.conf()
         """
-        worlds = self.app().worlds().get_by_pred(
-            lambda w: w.conf().getboolean("enable_initd", False)
-            )
+        worlds = list()
+        for world in self.app().worlds().get_all():
+            # Initialise the configuration on the fly.
+            world_conf = self.world_conf(world)
+            enable = world_conf.getboolean("enable", False)
+            world_conf["enable"] = "yes" if enable else "no"
+
+            if world_conf.getboolean("enable"):
+                worlds.append(world)
+
         worlds.sort(key = lambda w: w.name())
         return worlds
 
     def _start(self):
         """
-        Starts all worlds if *enable_initd* is true.
+        Starts all worlds if *initd* is enabled.
         """
         # We create the unformatted messages here to increase readability.
         raw_msg = "[ {status} ] starting the minecraft world '{{world_name}}'"
@@ -234,7 +249,7 @@ class InitD(BasePlugin):
 
     def _stop(self):
         """
-        Stops all worlds if *enable_initd* is true.
+        Stops all worlds if *initd* is enabled.
         """
         # We create the unformatted messages here to increase readability.
         raw_msg = "[ {status} ] stopping the minecraft world '{{world_name}}'"
@@ -261,7 +276,7 @@ class InitD(BasePlugin):
 
     def _restart(self):
         """
-        Forces the restart of all worlds which has *enable_initd* enabled.
+        Forces the restart of all worlds which have initd enabled.
         """
         # We create the unformatted messages here to increase readability.
         raw_msg = "[ {status} ] restarting the minecraft world '{{world_name}}'"
@@ -291,7 +306,7 @@ class InitD(BasePlugin):
 
     def _status(self):
         """
-        Prints the status of all worlds where *enable_initd* is true.
+        Prints the status of all worlds where initd has been enabled.
         """
         # We create the unformatted messages here to increase readability.
         fail_msg = "[ {status} ] the minecraft world '{{world_name}}' is offline."\
