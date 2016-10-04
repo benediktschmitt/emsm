@@ -397,7 +397,7 @@ class PluginInstaller(object):
 
 class Plugins(BasePlugin):
 
-    VERSION = "4.0.0-beta"
+    VERSION = "5.0.0-beta"
 
     DESCRIPTION = __doc__
 
