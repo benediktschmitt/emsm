@@ -190,7 +190,7 @@ class BasePlugin(object):
                 self.__name, conf.path()
             )
 
-            conf.add_section(self.__name)
+            conf.add_section(section_name)
 
             log.info(
                 "created configuration section for '%s' in '%s'.",
