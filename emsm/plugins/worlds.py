@@ -548,7 +548,7 @@ class MyWorld(object):
 
 class Worlds(BasePlugin):
 
-    VERSION = "4.0.0-beta"
+    VERSION = "5.0.0-beta"
 
     DESCRIPTION = __doc__
 
@@ -565,7 +565,7 @@ class Worlds(BasePlugin):
         """
         Loads the configuration values and makes sure they have a valid value.
         """
-        conf = self.conf()
+        conf = self.global_conf()
 
         # Load the values.
         self._default_log_start = conf.getint(
