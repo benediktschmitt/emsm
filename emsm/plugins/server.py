@@ -99,7 +99,7 @@ log = logging.getLogger(__file__)
 
 class Server(BasePlugin):
 
-    VERSION = "4.0.0-beta"
+    VERSION = "5.0.0-beta"
 
     DESCRIPTION = __doc__
 
@@ -116,7 +116,7 @@ class Server(BasePlugin):
         """
         Reads all configuration options.
         """
-        conf = self.conf()
+        conf = self.global_conf()
 
         self._update_message = conf.get(
             "update_message",
