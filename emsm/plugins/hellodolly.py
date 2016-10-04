@@ -163,7 +163,7 @@ class HelloDolly(BasePlugin):
     DOWNLOAD_URL = None
 
     # The last compatible version of the EMSM.
-    VERSION = "4.0.0-beta"
+    VERSION = "5.0.0-beta"
 
     # The EMSM automatically uses the DESCRIPTION variable to set up the
     # *--long-help* argument parser argument.
@@ -179,7 +179,7 @@ class HelloDolly(BasePlugin):
         # We need to init the BasePlugin. This is necessairy, so that we can
         # safely access:
         #
-        #   * self.conf()
+        #   * self.global_conf()
         #   * self.argparser()
         #   * ...
         BasePlugin.__init__(self, application, name)
@@ -192,10 +192,11 @@ class HelloDolly(BasePlugin):
 
     def _setup_conf(self):
         """
-        Sets the configuration up.
+        Sets the global configuration up. (The ``hellodolly`` section in
+        :file:`emsm.conf`)
         """
         # Get the configuration dictionary for this plugin.
-        conf = self.conf()
+        conf = self.global_conf()
 
         # This is an example of the hellodolly configuration section in the
         # main.conf configuration file:
