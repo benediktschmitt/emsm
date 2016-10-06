@@ -37,6 +37,9 @@ You can find the latest version of this plugin in the EMSM
 Configuration
 -------------
 
+emsm.conf
+^^^^^^^^^
+
 .. code-block:: ini
 
     [backups]
@@ -69,6 +72,21 @@ Configuration
 **backup_logs**
 
     If ``yes``, the log files are included into the backup, otherwise not.
+
+\*.world.conf
+^^^^^^^^^^^^^
+
+Some global configuration options can be overridden for each world:
+
+*   *archive_format*
+*   *max_storage_size*
+*   *backup_logs*
+
+.. code-block:: ini
+
+    # In a *.world.conf configuration file
+    [plugin:backups]
+    max_storage_size = 10
 
 Arguments
 ---------
@@ -130,7 +148,15 @@ Changelog
 EMSM v3
 ^^^^^^^
 
-    * changed package structure and dropped support for EMSM v2 backups.
+* changed package structure and dropped support for EMSM v2 backups.
+
+EMSM v5
+^^^^^^^
+
+* the world's dedicated configuration *file* is now saved, instead of
+  the world's configuration *section*. This also means, that we can not restore
+  the configuration of backups created with EMSM v3. The worlds can still be
+  restored.
 """
 
 
@@ -195,7 +221,10 @@ class BackupManager(object):
     Manages the backups of one world.
     """
 
-    def __init__(self, app, world, max_storage_size, backup_dir, backup_logs):
+    def __init__(
+        self, app, world, max_storage_size, backup_dir, backup_logs,
+        default_archive_format
+        ):
         """
         """
         self._app = app
@@ -203,6 +232,7 @@ class BackupManager(object):
         self._backup_dir = backup_dir
         self._max_storage_size = max_storage_size
         self._backup_logs = backup_logs
+        self._default_archive_format = default_archive_format
 
         os.makedirs(self._backup_dir, exist_ok=True)
         return None
@@ -237,6 +267,12 @@ class BackupManager(object):
         Returns the option to include the logs in the backup.
         """
         return self._backup_logs
+
+    def default_archive_format(self):
+        """
+        Returns the default archive format for new backups.
+        """
+        return self._default_archive_format
 
     # We use the *filenames* to store the *timestamp* of a backup.
 
@@ -418,12 +454,13 @@ class BackupManager(object):
 
     def _save_world_conf(self, backup_dir):
         """
-        Saves the configuration of the world in *backup_dir/conf/world.json*.
+        Saves the configuration of the world in *backup_dir/world.conf*.
         """
-        world_conf_backup_path = os.path.join(backup_dir, "world_conf.json")
-        with open(world_conf_backup_path, "w") as file:
-            conf = dict(self._world.conf())
-            json.dump([self._world.name(), conf], file)
+        world_conf = self._app.conf().world(self._world.name())
+        shutil.copy2(
+            src=world_conf.path(),
+            dst=os.path.join(backup_dir, "world.conf")
+        )
         return None
 
     def _restore_world_conf(self, backup_dir):
@@ -431,22 +468,17 @@ class BackupManager(object):
         If the backup at *backup_dir* includes the world configuration, it
         will be restored. If not, nothing happens.
         """
-        world_conf_backup_path = os.path.join(backup_dir, "world_conf.json")
+        conf_backup_path = os.path.join(backup_dir, "world.conf")
+        if os.path.exists(conf_backup_path):
+            # Restore the configuration by replacing the configuration file.
+            world_conf = self._app.conf().world(self._world.name())
+            shutil.copy2(src=conf_backup_path, dst=world_conf.path())
 
-        # Load the configuration backup.
-        with open(world_conf_backup_path) as file:
-            _, backup_conf = json.load(file)
-
-        # Restore the configuration.
-        #
-        # Todo:
-        #   * restore the *port* option?
-        conf = self._world.conf()
-        conf.clear()
-        conf.update(backup_conf)
+            # Reload the configuration.
+            world_conf.read()
         return None
 
-    def create(self, archive_format):
+    def create(self, archive_format=None):
         """
         Creates a backup of the world and returns the name of the created
         backup archive.
@@ -459,6 +491,9 @@ class BackupManager(object):
         Exceptions:
             * ...
         """
+        if archive_format is None:
+            archive_format = self._default_archive_format
+
         with tempfile.TemporaryDirectory() as tmp_data_dir:
 
             # Copy all stuff that should be included into the backup in the
@@ -548,7 +583,7 @@ class UiBackupManager(BackupManager):
                 print("\t", "*", date.ctime())
         return None
 
-    def create(self, archive_format):
+    def create(self, archive_format=None):
         """
         Creates a new backup.
         """
@@ -684,7 +719,7 @@ class UiBackupManager(BackupManager):
 
 class Backups(BasePlugin):
 
-    VERSION = "4.0.0-beta"
+    VERSION = "5.0.0-beta"
 
     DESCRIPTION = __doc__
 
@@ -693,15 +728,15 @@ class Backups(BasePlugin):
         """
         BasePlugin.__init__(self, app, name)
 
-        self._setup_conf()
+        self._setup_global_conf()
         self._setup_argparser()
         return None
 
-    def _setup_conf(self):
+    def _setup_global_conf(self):
         """
-        Sets the configuration up.
+        Sets the *global* configuration up.
         """
-        conf = self.conf()
+        conf = self.global_conf()
 
         # Read
         # ^^^^
@@ -739,6 +774,36 @@ class Backups(BasePlugin):
         conf["restore_delay"] = str(self._restore_delay)
         conf["max_storage_size"] = str(self._max_storage_size)
         conf["backup_logs"] = "yes" if self._backup_logs else "no"
+        return None
+
+    def _setup_world_conf(self, world):
+        """
+        Checks the configuration *plugin:backups* of the world.
+
+        :arg world:
+            A world wrapper.
+        """
+        conf = self.world_conf(world)
+
+        # If no archive format has been defined or the format is invalid,
+        # we fall back to the global configuration.
+        archive_format = conf.get("archive_format")
+        if archive_format and archive_format not in AVLB_ARCHIVE_FORMATS:
+            raise ValueError(
+                "{} - conf:plugin:{} The archive format '{}' is not available. "\
+                .format(world.name(), self.name(), archive_format)
+            )
+
+        # max_storage_size
+        max_storage_size = conf.getint("max_storage_size")
+        if max_storage_size is not None and max_storage_size < 0:
+            max_storage_size = 0
+            conf["max_storage_size"] = str(max_storage_size)
+
+        # backups_logs
+        backup_logs = conf.getboolean("backup_logs")
+        if backup_logs is not None:
+            conf["backup_logs"] = "yes" if backup_logs else "no"
         return None
 
     def _setup_argparser(self):
@@ -786,6 +851,37 @@ class Backups(BasePlugin):
             )
         return None
 
+    def _init_backup_manager(self, world):
+        """
+        Creates a new :class:`UiBackupManager` for the world *world* and
+        returns it.
+        """
+        # Set the configuration for the world up.
+        self._setup_world_conf(world)
+
+        # Get the configuration options.
+        world_conf = self.world_conf(world)
+
+        max_storage_size = world_conf.getint(
+            "max_storage_size", self._max_storage_size
+        )
+        backup_logs = world_conf.getboolean(
+            "backup_logs", self._backup_logs
+        )
+        archive_format = world_conf.get(
+            "archive_format", self._archive_format
+        )
+
+        bm = UiBackupManager(
+            app = self.app(),
+            world = world,
+            max_storage_size = max_storage_size,
+            backup_dir = os.path.join(self.data_dir(), world.name()),
+            backup_logs = backup_logs,
+            default_archive_format = archive_format
+        )
+        return bm
+
     def run(self, args):
         """
         """
@@ -795,18 +891,12 @@ class Backups(BasePlugin):
         worlds.sort(key = lambda w: w.name())
 
         for world in worlds:
-            bm = UiBackupManager(
-                app = self.app(),
-                world = world,
-                max_storage_size = self._max_storage_size,
-                backup_dir = os.path.join(self.data_dir(), world.name()),
-                backup_logs = self._backup_logs
-                )
+            bm = self._init_backup_manager(world)
 
             if args.backups_list:
                 bm.list()
             elif args.backups_create:
-                bm.create(self._archive_format)
+                bm.create()
             elif args.backups_restore:
                 bm.restore(args.backups_restore, self._restore_message,
                            self._restore_delay
