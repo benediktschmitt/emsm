@@ -247,7 +247,7 @@ class WorldConfiguration(ConfigParser):
             "    **{world_name}**",
             "",
             "This file can be used to override global configuration values in ",
-            "the *server.conf* and *emsm.conf* configuration files.",
+            "the *server.conf* and *main.conf* configuration files.",
             "",
             "[world]",
             "stop_timeout = int",

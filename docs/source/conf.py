@@ -343,6 +343,5 @@ epub_copyright = '2014-2016, Benedikt Schmitt'
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'http://docs.python.org/3/': None,
-    'http://docs.python.org/': None,
     'http://pythonhosted.org/blinker/': None
     }

@@ -193,7 +193,7 @@ class HelloDolly(BasePlugin):
     def _setup_conf(self):
         """
         Sets the global configuration up. (The ``hellodolly`` section in
-        :file:`emsm.conf`)
+        :file:`main.conf`)
         """
         # Get the configuration dictionary for this plugin.
         conf = self.global_conf()

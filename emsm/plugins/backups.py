@@ -37,7 +37,7 @@ You can find the latest version of this plugin in the EMSM
 Configuration
 -------------
 
-emsm.conf
+main.conf
 ^^^^^^^^^
 
 .. code-block:: ini
@@ -48,6 +48,7 @@ emsm.conf
     restore_delay = 5
     max_storage_size = 30
     backup_logs = yes
+    exclude_paths =
 
 **archive_format**
 
@@ -73,6 +74,17 @@ emsm.conf
 
     If ``yes``, the log files are included into the backup, otherwise not.
 
+**exclude_paths**
+
+    If given, these :func:`~glob.glob` like paths in a world folder are not
+    included into the backup.
+
+    Use one line for a path.
+
+    .. seealso::
+
+        :func:`shutil.ignore_patterns`
+
 \*.world.conf
 ^^^^^^^^^^^^^
 
@@ -81,12 +93,16 @@ Some global configuration options can be overridden for each world:
 *   *archive_format*
 *   *max_storage_size*
 *   *backup_logs*
+*   *exclude_paths*
 
 .. code-block:: ini
 
     # In a *.world.conf configuration file
     [plugin:backups]
     max_storage_size = 10
+    exclude_paths = logs
+        banned-ips.json
+        crash-reports
 
 Arguments
 ---------
@@ -223,7 +239,7 @@ class BackupManager(object):
 
     def __init__(
         self, app, world, max_storage_size, backup_dir, backup_logs,
-        default_archive_format
+        default_archive_format, exclude_paths
         ):
         """
         """
@@ -233,6 +249,7 @@ class BackupManager(object):
         self._max_storage_size = max_storage_size
         self._backup_logs = backup_logs
         self._default_archive_format = default_archive_format
+        self._exclude_paths = exclude_paths
 
         os.makedirs(self._backup_dir, exist_ok=True)
         return None
@@ -402,7 +419,13 @@ class BackupManager(object):
                     pass
 
             # Copy the world data to *backup_dir*.
-            if self._backup_logs:
+            ignore_patterns = list()
+            if not self._backup_logs:
+                ignore_patterns.append("logs")
+            if self._exclude_paths:
+                ignore_patterns.extend(self._exclude_paths)
+
+            if not ignore_patterns:
                 shutil.copytree(
                     self._world.directory(),
                     os.path.join(backup_dir, "world")
@@ -411,7 +434,7 @@ class BackupManager(object):
                 shutil.copytree(
                     self._world.directory(),
                     os.path.join(backup_dir, "world"),
-                    ignore=shutil.ignore_patterns("logs")
+                    ignore=shutil.ignore_patterns(*ignore_patterns)
                 )
         finally:
             if self._world.is_online():
@@ -765,6 +788,12 @@ class Backups(BasePlugin):
         # backup_logs
         self._backup_logs = conf.getboolean("backup_logs", True)
 
+        # exclude_paths
+        self._exclude_paths = conf.get("exclude_paths", "").split("\n")
+        self._exclude_paths = [
+            path.strip() for path in self._exclude_paths if path.strip()
+        ]
+
         # Write
         # ^^^^^
 
@@ -774,6 +803,7 @@ class Backups(BasePlugin):
         conf["restore_delay"] = str(self._restore_delay)
         conf["max_storage_size"] = str(self._max_storage_size)
         conf["backup_logs"] = "yes" if self._backup_logs else "no"
+        conf["exclude_paths"] = "\n".join(self._exclude_paths)
         return None
 
     def _setup_world_conf(self, world):
@@ -804,6 +834,14 @@ class Backups(BasePlugin):
         backup_logs = conf.getboolean("backup_logs")
         if backup_logs is not None:
             conf["backup_logs"] = "yes" if backup_logs else "no"
+
+        # exclude_paths
+        if "exclude_paths" in conf:
+            exclude_paths = conf.get("exclude_paths").split("\n")
+            exclude_paths = [
+                path.strip() for path in exclude_paths if path.strip()
+            ]
+            conf["exclude_paths"] = "\n".join(exclude_paths)
         return None
 
     def _setup_argparser(self):
@@ -859,7 +897,7 @@ class Backups(BasePlugin):
         # Set the configuration for the world up.
         self._setup_world_conf(world)
 
-        # Get the configuration options.
+        # Collect all world specific configuration options.
         world_conf = self.world_conf(world)
 
         max_storage_size = world_conf.getint(
@@ -872,13 +910,22 @@ class Backups(BasePlugin):
             "archive_format", self._archive_format
         )
 
+        if "exclude_paths" in world_conf:
+            exclude_paths = world_conf.get("exclude_paths").split("\n")
+            exclude_paths = [
+                path.strip() for path in exclude_paths if path.strip()
+            ]
+        else:
+            exclude_paths = self._exclude_paths
+
         bm = UiBackupManager(
             app = self.app(),
             world = world,
             max_storage_size = max_storage_size,
             backup_dir = os.path.join(self.data_dir(), world.name()),
             backup_logs = backup_logs,
-            default_archive_format = archive_format
+            default_archive_format = archive_format,
+            exclude_paths = exclude_paths
         )
         return bm
 
