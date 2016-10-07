@@ -5,6 +5,58 @@ Changelog
 
 This log contains only the changes beginning with version *3.1.1-beta*.
 
+*   5.0.0-beta
+
+    *   The :file:`worlds.conf` configuration file has been replaced with a
+        configuration file for each world.
+
+        Upgrading is easy: For each world in :file:`worlds.conf`, create a
+        configuration file :file:`name.world.conf` in the configuration
+        directory:
+
+        The *morpheus* section in :file:`worlds.conf`:
+
+        .. code-block:: ini
+
+            [morpheus]
+            server = vanilla 1.10
+            enable_initd = yes
+            stop_timeout = 10
+
+        becomes the :file:`morpheus.world.conf` configuration file, with the
+        content:
+
+        .. code-block:: ini
+
+            [world]
+            server = vanilla 1.10
+            stop_timeout = 10
+
+            [plugin:initd]
+            enable = yes
+
+    *   Custom plugins still work, if you update the ``VERSION``
+        attribute.
+
+    *   **changed** The *enable_initd* option has been replaced with a new
+        option *enable* in the ``plugin:initd`` configuration section
+        (checkout the documentation of the :mod:`~emsm.plugins.initd` plugin
+        for more information).
+
+    *   **added** You can now overridde the server *start_command* for each
+        world.
+
+    *   **added** The :mod:`~emsm.plugins.backups` plugin has now an *exclude*
+        options, which allows you to exclude world directories from the backup.
+        (`issue #58 <https://github.com/benediktschmitt/emsm/issues/58>`_)
+
+    *   **added** Some *backups* options can be overridden for each world.
+
+    *   **added** :meth:`emsm.core.base_plugin.BasePlugin.world_conf`
+    *   **added** :meth:`emsm.core.base_plugin.BasePlugin.global_conf`
+    *   **deprecated** :meth:`emsm.core.base_plugin.BasePlugin.conf`,
+        use :meth:`global_conf` instead.
+
 *   4.0.13-beta
 
     *   **fixed** The start command option ``nogui`` of the forge server
