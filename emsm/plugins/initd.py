@@ -37,6 +37,11 @@ You can find the latest version of this plugin in the EMSM
 Installation
 ------------
 
+You can use this plugin with *initd* or *systemd*.
+
+initd (:file:`/etc/init.d/`)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 You only have to create the ``init.d`` script :file:`/etc/init.d/minecraft`:
 
 ..  literalinclude:: ../../../emsm/core/initd_script.sh
@@ -48,6 +53,20 @@ You only have to create the ``init.d`` script :file:`/etc/init.d/minecraft`:
     $ sudo chmod +x /etc/init.d/minecraft
     $ sudo update-rc.d minecraft defaults
     $ sudo update-rc.d minecraft enable
+
+systemd (:file:`/etc/systemd/system/minecraft.service`)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You only have to create the :file:`/etc/systemd/system/minecraft.service` file:
+
+..  literalinclude:: ../../../emsm/core/systemd.service
+    :language: bash
+    :linenos:
+
+.. code-block:: bash
+
+    $ sudo systemctl daemon-reload
+    $ sudo systemctl enable minecraft.service
 
 Configuration
 -------------
@@ -81,6 +100,10 @@ Arguments
 .. option:: --restart
 
     Forces the restart of all worlds, for which initd has been enabled.
+
+.. option:: --status
+
+    Prints the status (online/offline) for each *initd* enabled world.
 
 Exit code
 ---------
