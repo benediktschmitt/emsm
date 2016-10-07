@@ -293,17 +293,18 @@ class Configuration(object):
         # Load all *.world.conf configuration files
         # We ignore files, that start with an underscore.
         self._worlds = dict()
-        for name in os.listdir(self._dir):
-            path = os.path.join(self._dir, name)
-            if not os.path.isfile(path):
-                continue
-            if not name.endswith(".world.conf"):
-                continue
-            if name.startswith("_"):
-                continue
+        if os.path.exists(self._dir):
+            for name in os.listdir(self._dir):
+                path = os.path.join(self._dir, name)
+                if not os.path.isfile(path):
+                    continue
+                if not name.endswith(".world.conf"):
+                    continue
+                if name.startswith("_"):
+                    continue
 
-            world_name = name[:-len(".world.conf")]
-            self._worlds[world_name] = WorldConfiguration(path)
+                world_name = name[:-len(".world.conf")]
+                self._worlds[world_name] = WorldConfiguration(path)
 
         WorldWrapper.world_uninstalled.connect(self.__remove_world)
         return None

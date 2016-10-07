@@ -39,17 +39,18 @@ Each plugin has its own section. E.g.:
     restore_message = This world is about to be resetted to an earlier state.
     restore_delay = 5
     max_storage_size = 30
-    include_server = yes
+    exclude_paths = logs
+        mods
 
-Please take a look at the documentation of the :ref:`plugins` for further
-information.
+Some plugins allow you to override global options for each world. Please take
+a look at the documentation of the :ref:`plugins` for further information.
 
 server.conf
 -----------
 
 The :file:`server.conf` allows you to adjust some properties of the internal
 EMSM server wrapper classes. Usually, it should not be necessairy to edit this
-configuraiton file, but some times you have to.
+configuration file, but some times you have to.
 
 Examples
 ''''''''
@@ -78,23 +79,43 @@ Examples
 
         $ minecraft -s "vanilla 1.8" server --update
 
-worlds.conf
------------
+You can override some options for each world, like the *start_command*.
+This can be used to grant different worlds different amounts of memory.
+You will learn how to do this in the next section.
 
-The worlds managed by the EMSM have to be declared in the :file:`worlds.conf`
-configuration file. Each section represents another world.
+\*.world.conf
+-------------
 
-The :file:`worlds.conf` configuration file contains only the EMSM configuration
-for the worlds. You still have to edit the :file:`server.properties` file in
-the world's directory.
+.. note::
+
+    This is only the EMSM configuration for the world. You still have to
+    edit the :file:`server.properties` file in the world's directory.
+
+Each world managed by the EMSM has its own configuration :file:`.world.conf`
+file in :file:`conf/`. We will now add the world *morpheus*:
+
+.. code-block:: bash
+
+    $ # In the conf/ directory:
+    $ touch morpheus.world.conf
+
+This file is empty at the moment. On the next run of the EMSM, it will detect
+the configuration file and fill it with default values:
+
+.. code-block:: bash
+
+    $ minecraft -W worlds --status
+
+When you look into :file:`morpheus.world.conf`, you can find the *world*
+section:
 
 .. code-block:: ini
 
-    [the world's name]
+    [world]
     stop_timeout = 10
     stop_message = The world is going to be stopped.
     stop_delay = 10
-    server = vanilla 1.8
+    server = vanilla 1.10
 
 *   **stop_timeout**
 
@@ -119,37 +140,78 @@ the world's directory.
     server. If your server is not listed, you can create a new plugin, which
     provides a :class:`server wrapper <emsm.core.server.BaseServerWrapper>`.
 
+You can overridde some global plugin and server options for each world:
+
+.. code-block:: ini
+
+    [server:vanilla 1.10]
+    start_command = java -Xmx1G -jar {server_exe} nogui
+
+    [plugin:backups]
+    max_storage_size = 10
+    exclude_paths = logs
+        mods
+
+The configuration section for a server is the server name, prefixed with
+``server:`` and the section for a plugin is the plugin's name, prefixed with
+``plugin:``.
+
+Please note, that you only overridde the configuration for a *specific* server,
+not the current server of the world:
+
+.. code-block:: ini
+
+    # Has no effect, because the world is configured to use "vanilla 1.10",
+    # and not "bungeecord".
+    [server:bungeecord]
+    start_command = echo "Hallo"
+
+Check out the :ref:`plugins` documentation, if you want to know more about their
+configuration.
+
 Example
 '''''''
 
 .. code-block:: ini
 
-    # This section contains the default values for all worlds.
-    # It is not a real world.
-    [DEFAULT]
-    stop_delay = 5
+    # This configuration file contains the configuration for the world
+    #
+    #     **morpheus**
+    #
+    # This file can be used to override global configuration values in
+    # the *server.conf* and *emsm.conf* configuration files.
+    #
+    # [world]
+    # stop_timeout = int
+    # stop_message = string
+    # stop_delay = int
+    # server = a server in server.conf
+    #
+    # Custom options for the backups plugin:
+    #
+    # [plugin:backups]
+    # archive_format = bztar
+    # max_storage_size = 30
+    #
+    # Custom options for the vanilla 1.8 server:
+    #
+    # [server:vanilla 1.8]
+    # start_command = java -Xms512m -Xmx1G -jar {server_exe} nogui
+    #
+
+    [world]
     stop_timeout = 10
+    stop_delay = 5
     stop_message = The server is going down.
-        Hope to see you soon.
-    server = vanilla 1.8
+    	Hope to see you soon.
+    server = vanilla 1.10
 
-    [foo]
-    # This ok, when all default values are set and valid.
+    [plugin:backups]
+    max_storage_size = 10
+    archive_format = zip
+    exclude_paths = logs
+    	mods
+    	crash-reports
 
-    [bar]
-    stop_delay = 0
-    stop_timeout = 20
-    stop_message = See you later aligator.
-    server = vanilla 1.5
-
-    [lobby]
-    server = bungeecord
-
-Some plugins like :mod:`~emsm.plugins.initd` provide additional configuration
-options:
-
-.. code-block:: ini
-
-    [foo]
-    # InitD has to be enabled for each world or once in the DEFAULT section.
-    enable_initd = yes
+    [plugin:initd]
+    enable = yes

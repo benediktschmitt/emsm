@@ -219,7 +219,12 @@ class Application(object):
         """
         username = self._conf.main()["emsm"]["user"]
 
-        user = pwd.getpwnam(username)
+        try:
+            user = pwd.getpwnam(username)
+        except KeyError as err:
+            log.critical(err, exc_info=True)
+            raise WrongUserError(username)
+            
         group = grp.getgrgid(user.pw_gid)
 
         try:

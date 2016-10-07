@@ -62,6 +62,11 @@ Common tasks
         $ minecraft -W worlds --start
         $ minecraft --all-worlds worlds --start
 
+    .. note::
+
+        Please note, that the *first start* of a world may fail, if the *eula*
+        has not been accepted.
+
 *   Restart one world:
 
     .. code-block:: bash
