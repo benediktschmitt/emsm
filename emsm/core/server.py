@@ -650,6 +650,24 @@ class Vanilla_1_10(VanillaBase):
     def log_error_re(self):
         return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
 
+class Vanilla_1_11(VanillaBase):
+
+    @classmethod
+    def name(self):
+        return "vanilla 1.11"
+
+    def default_url(self):
+        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.11/minecraft_server.1.11.jar"
+
+    def log_path(self):
+        return "./logs/latest.log"
+
+    def log_start_re(self):
+        return re.compile("^.*Starting minecraft server version 1\.11.*")
+
+    def log_error_re(self):
+        return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
+
 
 # MinecraftForge
 # ''''''''''''''
@@ -752,7 +770,7 @@ class MinecraftForge_1_7(MinecraftForgeBase, Vanilla_1_7):
         return "minecraft forge 1.7"
 
     def default_url(self):
-        return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.7.10-10.13.2.1291/forge-1.7.10-10.13.2.1291-installer.jar"
+        return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.7.10-10.13.4.1614-1.7.10/forge-1.7.10-10.13.4.1614-1.7.10-installer.jar"
 
     def exe_path(self):
         filenames = [filename \
@@ -1071,6 +1089,7 @@ class ServerManager(object):
             Vanilla_1_8,
             Vanilla_1_9,
             Vanilla_1_10,
+            Vanilla_1_11,
             MinecraftForge_1_6,
             MinecraftForge_1_7,
             MinecraftForge_1_8,

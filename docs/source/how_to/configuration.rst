@@ -115,7 +115,7 @@ section:
     stop_timeout = 10
     stop_message = The world is going to be stopped.
     stop_delay = 10
-    server = vanilla 1.10
+    server = vanilla 1.11
 
 *   **stop_timeout**
 
@@ -144,7 +144,7 @@ You can overridde some global plugin and server options for each world:
 
 .. code-block:: ini
 
-    [server:vanilla 1.10]
+    [server:vanilla 1.11]
     start_command = java -Xmx1G -jar {server_exe} nogui
 
     [plugin:backups]
@@ -161,7 +161,7 @@ not the current server of the world:
 
 .. code-block:: ini
 
-    # Has no effect, because the world is configured to use "vanilla 1.10",
+    # Has no effect, because the world is configured to use "vanilla 1.11",
     # and not "bungeecord".
     [server:bungeecord]
     start_command = echo "Hallo"
@@ -204,7 +204,7 @@ Example
     stop_delay = 5
     stop_message = The server is going down.
     	Hope to see you soon.
-    server = vanilla 1.10
+    server = vanilla 1.11
 
     [plugin:backups]
     max_storage_size = 10

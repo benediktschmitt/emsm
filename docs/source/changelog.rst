@@ -19,7 +19,7 @@ This log contains only the changes beginning with version *3.1.1-beta*.
         .. code-block:: ini
 
             [morpheus]
-            server = vanilla 1.10
+            server = vanilla 1.11
             enable_initd = yes
             stop_timeout = 10
 
@@ -29,7 +29,7 @@ This log contains only the changes beginning with version *3.1.1-beta*.
         .. code-block:: ini
 
             [world]
-            server = vanilla 1.10
+            server = vanilla 1.11
             stop_timeout = 10
 
             [plugin:initd]
