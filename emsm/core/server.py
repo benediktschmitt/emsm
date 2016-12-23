@@ -657,7 +657,7 @@ class Vanilla_1_11(VanillaBase):
         return "vanilla 1.11"
 
     def default_url(self):
-        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.11/minecraft_server.1.11.jar"
+        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.11.2/minecraft_server.1.11.2.jar"
 
     def log_path(self):
         return "./logs/latest.log"
