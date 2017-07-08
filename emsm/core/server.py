@@ -850,6 +850,22 @@ class MinecraftForge_1_11(MinecraftForgeBase, Vanilla_1_11):
         filename = filenames[0]
         return os.path.join(self.directory(), filename)
 
+class MinecraftForge_1_12(MinecraftForgeBase, Vanilla_1_12):
+
+    @classmethod
+    def name(self):
+        return "minecraft forge 1.12"
+
+    def default_url(self):
+        return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.12-14.21.1.2404/forge-1.12-14.21.1.2404-installer.jar"
+
+    def exe_path(self):
+        filenames = [filename \
+                     for filename in os.listdir(self.directory()) \
+                     if re.match("^forge-1\.12.*.jar$", filename)]
+        filename = filenames[0]
+        return os.path.join(self.directory(), filename)
+
 
 # Bungeecord
 # ''''''''''
@@ -1133,6 +1149,7 @@ class ServerManager(object):
             MinecraftForge_1_8,
             MinecraftForge_1_10,
             MinecraftForge_1_11,
+            MinecraftForge_1_12,
             BungeeCordServerWrapper,
             Spigot,
             ]
