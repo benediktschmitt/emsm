@@ -632,6 +632,7 @@ class Vanilla_1_9(VanillaBase):
     def log_error_re(self):
         return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
 
+
 class Vanilla_1_10(VanillaBase):
 
     @classmethod
@@ -650,6 +651,7 @@ class Vanilla_1_10(VanillaBase):
     def log_error_re(self):
         return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
 
+
 class Vanilla_1_11(VanillaBase):
 
     @classmethod
@@ -667,6 +669,7 @@ class Vanilla_1_11(VanillaBase):
 
     def log_error_re(self):
         return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
+
 
 class Vanilla_1_12(VanillaBase):
 
