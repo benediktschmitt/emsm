@@ -716,7 +716,7 @@ class MinecraftForgeBase(BaseServerWrapper):
             try:
                 tmp_path, http_resp = urllib.request.urlretrieve(self.url())
             except Exception as err:
-                raise ServerInstallationFailure(self, err)
+                raise ServerInstallationFailure(self, err) from err
             else:
                 # Now, we have to run the installer.
 
@@ -745,6 +745,7 @@ class MinecraftForgeBase(BaseServerWrapper):
                     out = out.decode()
                     err = err.decode()
                     log.info(out)
+                    log.warning(err)
 
                     # Check, if the installer exited with return code 0 and
                     # throw an exception if not.
@@ -753,7 +754,7 @@ class MinecraftForgeBase(BaseServerWrapper):
                               .format(p.returncode)
                         raise ServerInstallationFailure(self, msg)
                 except Exception as err:
-                    raise ServerInstallationFailure(self, err)
+                    raise ServerInstallationFailure(self, err) from err
         except:
             # Try to undo the installation.
             if os.path.exists(self.directory()):
@@ -900,7 +901,7 @@ class BungeeCordServerWrapper(BaseServerWrapper):
         try:
             tmp_path, http_resp = urllib.request.urlretrieve(self.url())
         except Exception as err:
-            raise ServerInstallationFailure(err)
+            raise ServerInstallationFailure(err) from err
         else:
             shutil.move(tmp_path, self.exe_path())
         return None
@@ -1007,7 +1008,7 @@ class Spigot(BaseServerWrapper):
                     self.url(), os.path.join(build_dir, "BuildTools.jar")
                     )
             except Exception as err:
-                raise ServerInstallationFailure(self, err)
+                raise ServerInstallationFailure(self, err) from err
 
             log.info("- BuildTools: '{}' ...".format(buildtools))
 
