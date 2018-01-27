@@ -5,6 +5,11 @@ Changelog
 
 This log contains only the changes beginning with version *3.1.1-beta*.
 
+*   5.0.8-beta
+
+    *   Update minecraft forge 1.6 url
+    *   Minor bug fix
+
 *   5.0.0-beta
 
     *   The :file:`worlds.conf` configuration file has been replaced with a
