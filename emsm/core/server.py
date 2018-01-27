@@ -716,7 +716,7 @@ class MinecraftForgeBase(BaseServerWrapper):
             try:
                 tmp_path, http_resp = urllib.request.urlretrieve(self.url())
             except Exception as err:
-                raise ServerInstallationFailure(err)
+                raise ServerInstallationFailure(self, err)
             else:
                 # Now, we have to run the installer.
 
