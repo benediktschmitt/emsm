@@ -774,7 +774,7 @@ class MinecraftForge_1_6(MinecraftForgeBase, Vanilla_1_6):
         return "minecraft forge 1.6"
 
     def default_url(self):
-        return "http://files.minecraftforge.net/minecraftforge/minecraftforge-installer-1.6.4-9.11.1.916.jar"
+        return "http://files.minecraftforge.net/maven/net/minecraftforge/forge/1.6.4-9.11.1.1345/forge-1.6.4-9.11.1.1345-universal.jar"
 
     def exe_path(self):
         filenames = [filename \
