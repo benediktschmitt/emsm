@@ -89,3 +89,5 @@ Common tasks
         $ minecraft -S server --update
         $ minecraft -s "vanilla 1.8" server --update
         $ minecraft --server "vanilla 1.8" server --update
+
+    Make sure to read the next section for more information about server updates.

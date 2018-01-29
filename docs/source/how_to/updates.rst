@@ -7,13 +7,27 @@ database and the server download urls. So how can you update the EMSM?
 Server updates
 --------------
 
+.. note::
+
+    Some servers need to be built or don't work out the box, which may cause problems with the
+    privilege downgrade of EMSM. In those cases you can either replace the server jars in the
+    :file:`server` directory manually or you may try to execute the update command directly as
+    *minecraft* user:
+
+    .. code-block:: bash
+
+        $ su -i --shell=/bin/bash minecraft
+        $ minecraft -s "spigot latest" server --update
+
+    :seealso: `issue 68 <https://github.com/benediktschmitt/emsm/issues/68>`_
+
 The server software is usually updated faster than the EMSM database.
 But don't worry, you can often use the latest server software with the EMSM.
 
 Let's assume, the *minecraft server 1.8* received a patch from mojang and you
 want to use it:
 
-#.  Edit the :file:`server.conf` configuration file:
+1.  Edit the :file:`server.conf` configuration file:
 
    .. code-block:: ini
 
@@ -21,7 +35,7 @@ want to use it:
         # Setting the url here, will overwrite the value in the EMSM database.
         url = https://s3.amazonaws.com/Minecraft.Download/versions/1.8.1/minecraft_server.1.8.1.jar
 
-#.  Update the server with the :mod:`~emsm.plugins.server` plugin:
+2.  Update the server with the :mod:`~emsm.plugins.server` plugin:
 
     .. code-block:: bash
 

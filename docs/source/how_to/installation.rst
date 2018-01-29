@@ -28,8 +28,8 @@ Installation
 
     .. code-block:: bash
 
-        $ sudo addgroup --system --no-create-home --disabled-login --group minecraft
-        $ sudo adduser --system --no-create-home --disabled-login --ingroup minecraft minecraft
+        $ sudo addgroup --system --no-create-home --group minecraft
+        $ sudo adduser  --system --no-create-home --ingroup minecraft minecraft
 
 #.  Create the instance folder. This folder will later contain all worlds and
     server executables:
