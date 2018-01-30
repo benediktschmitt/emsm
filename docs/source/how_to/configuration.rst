@@ -62,7 +62,6 @@ Examples
         [vanilla 1.8]
         # You can use these placeholders in the start_command:
         # * {server_exe}
-        # * {server_dir}
         start_command = java -Xmx3G -jar {server_exe}
 
 *   You want to use the latest server version, but the EMSM contains an old

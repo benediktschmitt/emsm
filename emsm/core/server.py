@@ -165,7 +165,7 @@ class BaseServerWrapper(object):
     """
 
     @classmethod
-    def name(self):
+    def name(cls):
         """
         **ABSTRACT**
 
@@ -350,10 +350,7 @@ class BaseServerWrapper(object):
         if not cmd:
             cmd = self.default_start_cmd()
 
-        cmd = cmd.format(
-            server_exe = shlex.quote(self.exe_path()),
-            server_dir = shlex.quote(self.directory())
-        )
+        cmd = cmd.format(server_exe = shlex.quote(self.exe_path()))
         return cmd
 
     def translate_command(self, cmd):

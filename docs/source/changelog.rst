@@ -5,6 +5,10 @@ Changelog
 
 This log contains only the changes beginning with version *3.1.1-beta*.
 
+*   6.0.0-beta
+
+    *   Removed the ``{server_dir}`` placeholder introduced in version 4.0.5-beta
+
 *   5.0.8-beta
 
     *   Update minecraft forge 1.6 url
