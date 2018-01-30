@@ -2,7 +2,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) 2014-2016 Benedikt Schmitt <benedikt@benediktschmitt.de>
+# Copyright (c) 2014-2018 <see AUTHORS.txt>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -37,4 +37,4 @@ __all__ = [
 #: The version of the EMSM.
 #:
 #: Take a look at http://semver.org for more information.
-VERSION = "5.0.9b0"
+VERSION = "5.0.10b0"

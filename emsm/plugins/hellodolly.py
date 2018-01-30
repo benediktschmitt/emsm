@@ -2,7 +2,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) 2014-2016 Benedikt Schmitt <benedikt@benediktschmitt.de>
+# Copyright (c) 2014-2018 <see AUTHORS.txt>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -220,7 +220,6 @@ class HelloDolly(BasePlugin):
             "Demonstrates the implementation of a plugin. Inspired by the "
             "wordpress plugin \"Hello, Dolly\"."
             )
-        parser.epilog = "https://github.com/benediktschmitt/emsm"
 
         # Note, that we prefix the *dest* value, since all arguments share
         # the same namespace.

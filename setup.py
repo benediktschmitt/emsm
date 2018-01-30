@@ -2,7 +2,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) 2014-2016 Benedikt Schmitt <benedikt@benediktschmitt.de>
+# Copyright (c) 2014-2018 <see AUTHORS.txt>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -54,8 +54,7 @@ setup(
     version = version,
     url = "https://github.com/benediktschmitt/emsm",
     license = "MIT License",
-    author = "Benedikt Schmitt",
-    author_email = "benedikt@benediktschmitt.de",
+    author = "The EMSM authors (see AUTHORS.txt)",
     description = "A lightweight, easy to extend mineraft server manager",
     long_description = long_description,
     packages = ["emsm", "emsm.core", "emsm.core.lib", "emsm.plugins"],

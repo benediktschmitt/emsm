@@ -2,7 +2,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) 2014-2016 Benedikt Schmitt <benedikt@benediktschmitt.de>
+# Copyright (c) 2014-2018 <see AUTHORS.txt>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -131,7 +131,7 @@ class ArgumentParser(object):
 
         self._argparser = argparse.ArgumentParser(
             description = "Extendable Minecraft Server Manager (EMSM)",
-            epilog = "Visit https://github.com/benediktschmitt/emsm for "\
+            epilog = "Visit https://emsm.readthedocs.io for "\
                      "further information.",
             add_help=True
             )

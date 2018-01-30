@@ -1,5 +1,6 @@
 include README.rst
 include LICENSE.rst
+include AUTHORS.txt
 
 recursive-include emsm *.txt
 recursive-include emsm *.sh

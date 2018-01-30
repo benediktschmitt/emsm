@@ -63,7 +63,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Extendable Minecraft Server Manager'
-copyright = '2013-2016, Benedikt Schmitt'
+copyright = '2013-2018, The EMSM authors (see AUTHORS.txt)'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -218,7 +218,7 @@ latex_elements = {
 #  author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'ExtendableMinecraftServerManager.tex', 'Extendable Minecraft Server Manager Documentation',
-   'Benedikt Schmitt', 'manual'),
+   'The EMSM authors (see AUTHORS.txt)', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -248,7 +248,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'extendableminecraftservermanager', 'Extendable Minecraft Server Manager Documentation',
-     ['Benedikt Schmitt'], 1)
+     ['The EMSM authors (see AUTHORS.txt)'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -262,7 +262,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'ExtendableMinecraftServerManager', 'Extendable Minecraft Server Manager Documentation',
-   'Benedikt Schmitt', 'ExtendableMinecraftServerManager', 'One line description of project.',
+   'The EMSM authors (see AUTHORS.txt)', 'ExtendableMinecraftServerManager', 'One line description of project.',
    'Miscellaneous'),
 ]
 
@@ -283,9 +283,9 @@ texinfo_documents = [
 
 # Bibliographic Dublin Core info.
 epub_title = 'Extendable Minecraft Server Manager'
-epub_author = 'Benedikt Schmitt'
-epub_publisher = 'Benedikt Schmitt'
-epub_copyright = '2014-2016, Benedikt Schmitt'
+epub_author = 'The EMSM authors (see AUTHORS.txt)'
+epub_publisher = 'The EMSM authors (see AUTHORS.txt)'
+epub_copyright = '2014-2016, The EMSM authors (see AUTHORS.txt)'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
