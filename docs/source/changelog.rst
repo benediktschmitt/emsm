@@ -8,6 +8,9 @@ This log contains only the changes beginning with version *3.1.1-beta*.
 *   6.0.0-beta
 
     *   Removed the ``{server_dir}`` placeholder introduced in version 4.0.5-beta
+        because there was no consistent or simple way of handling the quoting.
+        Specify the absolute path if you wish to use the *start_command* configuration
+        option.        
 
 *   5.0.8-beta
 
