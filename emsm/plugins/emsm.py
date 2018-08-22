@@ -88,7 +88,7 @@ log = logging.getLogger(__file__)
 
 class EMSM(BasePlugin):
 
-    VERSION = "5.0.0-beta"
+    VERSION = "6.0.0-beta"
 
     DESCRIPTION = __doc__
 
