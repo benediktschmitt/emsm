@@ -20,7 +20,7 @@ plugins.
 
     # Maximum time that is waited until another EMSM instance releases
     # the file lock.
-    # A negative values means no timeout and wait endless if necessairy.
+    # A negative values means no timeout and wait endless if necessary.
     timeout = -1
 
     # You can provide a *screenrc* file. Please note, that it must be an
@@ -49,7 +49,7 @@ server.conf
 -----------
 
 The :file:`server.conf` allows you to adjust some properties of the internal
-EMSM server wrapper classes. Usually, it should not be necessairy to edit this
+EMSM server wrapper classes. Usually, it should not be necessary to edit this
 configuration file, but some times you have to.
 
 Examples

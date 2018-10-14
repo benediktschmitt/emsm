@@ -603,7 +603,7 @@ class WorldWrapper(object):
         """
         self.kill_processes()
 
-        # Try 5 times to remove the directory. This is necessairy, if the
+        # Try 5 times to remove the directory. This is necessary, if the
         # world was online and fixes a problem with *server.log.lck*.
         for i in range(5):
             try:
@@ -792,7 +792,7 @@ class WorldWrapper(object):
         while self.is_online() and time.time() - start_time < timeout:
             time.sleep(0.25)
 
-        # Force the stop if necessairy.
+        # Force the stop if necessary.
         if force_stop:
             self.kill_processes()
 
@@ -810,7 +810,7 @@ class WorldWrapper(object):
 
         :param bool force_restart:
             Forces the stop of the server by calling :meth:`kill_processes`` if
-            necessairy.
+            necessary.
         :param dict stop_args:
             If provided, these values are passed to :meth:`stop`.
 

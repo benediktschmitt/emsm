@@ -154,7 +154,7 @@ Arguments
 
 .. option:: --force-restart
 
-    Like --restart, but forces the stop of the world if necessairy.
+    Like --restart, but forces the stop of the world if necessary.
 
 .. option:: --uninstall
 
@@ -506,7 +506,7 @@ class MyWorld(object):
         Parameters:
             * force_restart
                 If true, the stop of the world is force by *kill processes*
-                if necessairy.
+                if necessary.
 
         See also:
             * WorldWrapper.restart()

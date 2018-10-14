@@ -557,7 +557,7 @@ class BackupManager(object):
         """
         Restores the backup of the world from the given *backup_file*. If
         the backup archive contains the server executable it will be restored
-        too if necessairy.
+        too if necessary.
 
         Exceptions:
             * WorldStartFailed

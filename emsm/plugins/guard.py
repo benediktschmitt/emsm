@@ -427,7 +427,7 @@ class Guard(BasePlugin):
 
     def _guard(self, world, args):
         """
-        Tests if the world is in trouble. Reacts if necessairy on issues and
+        Tests if the world is in trouble. Reacts if necessary on issues and
         saves information about the world's status in the guard database.
         """
         try:
