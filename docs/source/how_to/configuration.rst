@@ -36,7 +36,7 @@ Each plugin has its own section. E.g.:
 
     [backups]
     archive_format = bztar
-    restore_message = This world is about to be resetted to an earlier state.
+    restore_message = This world is about to be restored to an earlier state.
     restore_delay = 5
     max_storage_size = 30
     exclude_paths = logs

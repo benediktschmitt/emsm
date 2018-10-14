@@ -772,7 +772,7 @@ class Backups(BasePlugin):
         # restore_message
         self._restore_message = conf.get(
             "restore_message",
-            "This world is about to be resetted to an earlier state."
+            "This world is about to be restored to an earlier state."
             )
 
         # restore_delay
