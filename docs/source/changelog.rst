@@ -5,6 +5,11 @@ Changelog
 
 This log contains only the changes beginning with version *3.1.1-beta*.
 
+*   6.0.2-beta
+
+    *   Added Spigot versions 1.8, 1.9, 1.10, 1.11, 1.12, 1.13 and *latest*.
+        (`issue #80 <https://github.com/benediktschmitt/emsm/issues/80>`_)
+
 *   6.0.1-beta
 
     *   Added Vanilla 1.13

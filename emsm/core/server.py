@@ -851,6 +851,7 @@ class MinecraftForge_1_10(MinecraftForgeBase, Vanilla_1_10):
         filename = filenames[0]
         return os.path.join(self.directory(), filename)
 
+
 class MinecraftForge_1_11(MinecraftForgeBase, Vanilla_1_11):
 
     @classmethod
@@ -866,6 +867,7 @@ class MinecraftForge_1_11(MinecraftForgeBase, Vanilla_1_11):
                      if re.match("^forge-1\.11.*.jar$", filename)]
         filename = filenames[0]
         return os.path.join(self.directory(), filename)
+
 
 class MinecraftForge_1_12(MinecraftForgeBase, Vanilla_1_12):
 
@@ -979,14 +981,21 @@ class BungeeCordServerWrapper(BaseServerWrapper):
 # Spigot (1.8+)
 # '''''''''''''
 
-class Spigot(BaseServerWrapper):
+class SpigotBase(BaseServerWrapper):
     """
-    Wraps the **latest** Spigot version.
+    Wrapper for the Spigot build tool.
     """
 
     @classmethod
-    def name(self):
-        return "spigot latest"
+    def revision(cls):
+        """The revision number, e.g. ``latest`` or ``1.13.1``. This value
+        is passed as **--rev** parameter to the build tool.
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def name(cls):
+        return "spigot {}".format(cls.revision())
 
     def default_url(self):
         return "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"
@@ -1030,7 +1039,7 @@ class Spigot(BaseServerWrapper):
 
             # Run the BuildTools.jar file.
             with subprocess.Popen(
-                ["java", "-jar", buildtools],
+                ["java", "-jar", buildtools, "--rev", self.revision()],
                 cwd = build_dir,
                 stdout = subprocess.PIPE,
                 stderr = subprocess.PIPE
@@ -1114,6 +1123,55 @@ class Spigot(BaseServerWrapper):
         return (ip, port)
 
 
+class Spigot(SpigotBase):
+
+    @classmethod
+    def revision(cls):
+        return "latest"
+
+
+class Spigot_1_8(SpigotBase):
+
+    @classmethod
+    def revision(cls):
+        return "1.8"
+
+
+class Spigot_1_9(SpigotBase):
+
+    @classmethod
+    def revision(cls):
+        return "1.9"
+
+
+class Spigot_1_10(SpigotBase):
+
+    @classmethod
+    def revision(cls):
+        return "1.10"
+
+
+class Spigot_1_11(SpigotBase):
+
+    @classmethod
+    def revision(cls):
+        return "1.11"
+
+
+class Spigot_1_12(SpigotBase):
+
+    @classmethod
+    def revision(cls):
+        return "1.12"
+
+
+class Spigot_1_13(SpigotBase):
+
+    @classmethod
+    def revision(cls):
+        return "1.13"
+
+
 # MC-Server
 # '''''''''
 
@@ -1170,6 +1228,12 @@ class ServerManager(object):
             MinecraftForge_1_12,
             BungeeCordServerWrapper,
             Spigot,
+            Spigot_1_8,
+            Spigot_1_9,
+            Spigot_1_10,
+            Spigot_1_11,
+            Spigot_1_12,
+            Spigot_1_13
             ]
 
         for wrapper in wrappers:
