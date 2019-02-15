@@ -29,7 +29,7 @@ The **EMSM** itself provides only a simple but sufficient **API** to manage the
 worlds. The rest of the work is done by the plugins. This makes the application
 easy to extend and maintain.
 
-And the best thing: We support **many server**:
+And the best thing: We support **many types of servers**:
 
     * **vanilla** (mojang server) starting with version 1.2
     * **bungeecord**
@@ -51,9 +51,9 @@ Why should you use the **EMSM**?
 
     Needs only Python, screen and java to run and should work on all Linux systems.
 
-*   **Cron-Save**
+*   **Cron-Safe**
 
-    The EMSM makes sure, that only one instance of the application runs
+    The EMSM makes sure that only one instance of the application runs
     to the same time.
 
 *   **InitD**
@@ -63,17 +63,17 @@ Why should you use the **EMSM**?
 
 *   **Simple Configuration**
 
-    Only three simple configuration files with the simple *.ini* syntax.
+    Only three simple configuration files, using the simple *.ini* syntax.
 
 *   **Backup ready**
 
     Create and manage multiple versions of your worlds with the
     :mod:`backup manager <emsm.plugins.backups>`.
 
-*   **Multiple worlds and server**
+*   **Multiple worlds and servers**
 
     This application has been written to administrate and run multiple
-    worlds and server versions to the same time.
+    worlds and server versions at the same time.
 
 *   **Beautiful output**
 
@@ -83,7 +83,7 @@ Why should you use the **EMSM**?
 *   **Guarded worlds**
 
     The :mod:`~emsm.plugins.guard` helps you to monitor the worlds and to react
-    on server issues automatically.
+    to server issues automatically.
 
 *   **Fast learning curve**
 
@@ -97,7 +97,7 @@ Why should you use the **EMSM**?
 
 *   **Easy to extend**
 
-    Extend the EMSM with a simple plugin and benefit from Pythons great
+    Extend the EMSM with a simple plugin and benefit from Python's great
     standard library.
 
 Collaboration
