@@ -557,7 +557,7 @@ class BackupManager(object):
         """
         Restores the backup of the world from the given *backup_file*. If
         the backup archive contains the server executable it will be restored
-        too if necessairy.
+        too if necessary.
 
         Exceptions:
             * WorldStartFailed
@@ -772,7 +772,7 @@ class Backups(BasePlugin):
         # restore_message
         self._restore_message = conf.get(
             "restore_message",
-            "This world is about to be resetted to an earlier state."
+            "This world is about to be restored to an earlier state."
             )
 
         # restore_delay

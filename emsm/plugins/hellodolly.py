@@ -176,7 +176,7 @@ class HelloDolly(BasePlugin):
     def __init__(self, application, name):
         """
         """
-        # We need to init the BasePlugin. This is necessairy, so that we can
+        # We need to init the BasePlugin. This is necessary, so that we can
         # safely access:
         #
         #   * self.global_conf()

@@ -40,7 +40,7 @@ To simplify the usage by other users, you could prepare your plugin:
     If you don't know how to do this, you can take a look at the source code
     of some other plugins. It's quite easy.
 
-    The documentation should contain at least those sections:
+    The documentation should contain at least these sections:
 
     * About (What does your plugin?)
     * Download URL
