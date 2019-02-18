@@ -243,7 +243,7 @@ class PluginInstaller(object):
 
         # Copy the plugin.py file to the EMSM *plugins* directory.
         emsm_module_path = os.path.join(
-            self._app.paths().plugins_dir(), self._name + ".py"
+            self._app.paths().plugins(), self._name + ".py"
             )
         shutil.move(package_module_path, emsm_module_path)
 
@@ -257,7 +257,7 @@ class PluginInstaller(object):
         ``_install_plugin_module()``.
         """
         emsm_module_path = os.path.join(
-            self._app.paths().plugins_dir(), self._name + ".py"
+            self._app.paths().plugins(), self._name + ".py"
             )
         try:
             os.remove(emsm_module_path)
@@ -275,7 +275,7 @@ class PluginInstaller(object):
             * name()
         """
         package_data_dir = os.path.join(package_path, "data")
-        emsm_data_dir = self._app.paths().plugin_data_dir(self._name)
+        emsm_data_dir = self._app.paths().plugin_data(self._name)
 
         # Check if the package contains a data directory.
         if not os.path.exists(package_data_dir):
@@ -305,10 +305,10 @@ class PluginInstaller(object):
     def _undo_plugin_data(self):
         """
         Removes the plugin data directory previously installed with
-        ``_install_plugin_data_dir()``.
+        ``_install_plugin_data()``.
         """
         try:
-            shutil.rmtree(self._app.paths().plugin_data_dir(self._name))
+            shutil.rmtree(self._app.paths().plugin_data(self._name))
         except OSError:
             # We can't do anything ...
             pass
