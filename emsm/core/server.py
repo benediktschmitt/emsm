@@ -732,7 +732,7 @@ class Vanilla_1_15(VanillaBase):
         return "vanilla 1.15"
 
     def default_url(self):
-        return "https://launcher.mojang.com/v1/objects/e9f105b3c5c7e85c7b445249a93362a22f62442d/server.jar"
+        return "https://launcher.mojang.com/v1/objects/4d1826eebac84847c71a77f9349cc22afd0cf0a1/server.jar"
 
     def log_path(self):
         return "./logs/latest.log"
