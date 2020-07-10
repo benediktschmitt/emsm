@@ -1279,6 +1279,7 @@ class ServerManager(object):
             Vanilla_1_13,
             Vanilla_1_14,
             Vanilla_1_15,
+            Vanilla_1_16,
             MinecraftForge_1_6,
             MinecraftForge_1_7,
             MinecraftForge_1_8,
