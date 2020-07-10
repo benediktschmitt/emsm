@@ -751,13 +751,13 @@ class Vanilla_1_16(VanillaBase):
         return "vanilla 1.16"
 
     def default_url(self):
-        return "https://launcher.mojang.com/v1/objects/7361a24df069a06748844cc7483c35d4abd2d80c/server.jar";
+        return "https://launcher.mojang.com/v1/objects/a412fd69db1f81db3f511c1463fd304675244077/server.jar";
 
     def log_path(self):
         return "./logs/latest.log"
 
     def log_start_re(self):
-        return re.compile("^.*Starting minecraft server version 1\.16.*")
+        return re.compile("^.*Starting minecraft server version 1\.16\.1.*")
 
     def log_error_re(self):
         return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
