@@ -1,9 +1,57 @@
-*.py[cod]
+# Translations
+*.mo
+
+
+
+# Autodoc
+# =======
+docs/build
+
+# The *.rst files for the api are created automatically by autodoc. So we
+# ignore them.
+docs/source/api/*.rst
+!docs/source/api/index.rst
+
+# autodoc (see comment above for api)
+docs/source/plugins/*.rst
+!docs/source/plugins/index.rst
+
+
+
+# Development & Testing
+# =====================
 
 # C extensions
 *.so
 
-# Packages
+# Python's temp files
+*.py[cod]
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+
+
+
+# Development environments
+# ========================
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# Phing
+build.xml
+
+# virtualenv
+venv
+
+
+
+# Packaging & Installation
+# ========================
 *.egg
 *.egg-info
 dist
@@ -22,35 +70,3 @@ MANIFEST
 
 # Installer logs
 pip-log.txt
-
-# Unit test / coverage reports
-.coverage
-.tox
-nosetests.xml
-
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
-
-# virtualenv
-venv
-
-# EMSM
-# ====
-
-# EMSM docs
-# ---------
-docs/build
-
-# The *.rst files for the api are created automatically by autodoc. So we
-# ignore them.
-docs/source/api/*.rst
-!docs/source/api/index.rst
-
-# autodoc (see comment above for api)
-docs/source/plugins/*.rst
-!docs/source/plugins/index.rst
