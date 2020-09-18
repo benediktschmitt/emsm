@@ -4,23 +4,6 @@
 # Installer logs
 pip-log.txt
 
-# Packages
-*.egg
-*.egg-info
-dist
-build
-eggs
-parts
-bin
-var
-sdist
-develop-eggs
-.installed.cfg
-lib
-lib64
-__pycache__
-MANIFEST
-
 # Python's temp files
 *.py[cod]
 
@@ -58,3 +41,23 @@ docs/source/plugins/*.rst
 
 # virtualenv
 venv
+
+
+
+# Packaging
+# =========
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+__pycache__
+MANIFEST
