@@ -4,11 +4,6 @@
 # Installer logs
 pip-log.txt
 
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
-
 # Packages
 *.egg
 *.egg-info
@@ -37,9 +32,6 @@ MANIFEST
 .tox
 nosetests.xml
 
-# virtualenv
-venv
-
 
 # Autodoc
 # =======
@@ -53,3 +45,16 @@ docs/source/api/*.rst
 # autodoc (see comment above for api)
 docs/source/plugins/*.rst
 !docs/source/plugins/index.rst
+
+
+
+# Development environments
+# ========================
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# virtualenv
+venv
