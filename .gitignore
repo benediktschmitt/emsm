@@ -1,16 +1,6 @@
-# C extensions
-*.so
-
-# Python's temp files
-*.py[cod]
-
 # Translations
 *.mo
 
-# Unit test / coverage reports
-.coverage
-.tox
-nosetests.xml
 
 
 # Autodoc
@@ -25,6 +15,22 @@ docs/source/api/*.rst
 # autodoc (see comment above for api)
 docs/source/plugins/*.rst
 !docs/source/plugins/index.rst
+
+
+
+# Development & Testing
+# =====================
+
+# C extensions
+*.so
+
+# Python's temp files
+*.py[cod]
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
 
 
 
