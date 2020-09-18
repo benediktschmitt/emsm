@@ -234,7 +234,7 @@ class WorldConfiguration(ConfigParser):
         self["world"]["stop_delay"] = "5"
         self["world"]["stop_message"] = "The server is going down.\n"\
                                         "Hope to see you soon."
-        self["world"]["server"] = "vanilla 1.14"
+        self["world"]["server"] = "vanilla 1.15"
         return None
 
     def epilog(self):
