@@ -1,9 +1,6 @@
 # C extensions
 *.so
 
-# Installer logs
-pip-log.txt
-
 # Python's temp files
 *.py[cod]
 
@@ -44,8 +41,8 @@ venv
 
 
 
-# Packaging
-# =========
+# Packaging & Installation
+# ========================
 *.egg
 *.egg-info
 dist
@@ -61,3 +58,6 @@ lib
 lib64
 __pycache__
 MANIFEST
+
+# Installer logs
+pip-log.txt
