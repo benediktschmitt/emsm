@@ -724,6 +724,7 @@ class Vanilla_1_14(VanillaBase):
     def log_error_re(self):
         return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
 
+
 # MinecraftForge
 # ''''''''''''''
 
