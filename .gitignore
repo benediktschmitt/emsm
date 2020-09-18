@@ -40,11 +40,9 @@ nosetests.xml
 # virtualenv
 venv
 
-# EMSM
-# ====
 
-# EMSM docs
-# ---------
+# Autodoc
+# =======
 docs/build
 
 # The *.rst files for the api are created automatically by autodoc. So we
