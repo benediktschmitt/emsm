@@ -50,7 +50,6 @@ requirements = [
     if line.strip()
     ]
 
-version = emsm.core.VERSION if emsm else "- n/a -"
 
 setup(
     name = "emsm",
