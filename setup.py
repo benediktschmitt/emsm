@@ -36,6 +36,8 @@ try:
 except ImportError:
     emsm = None
 
+exec(open('emsm/core/version.py').read())
+
 
 # Setup
 # -----------------------------------------------
