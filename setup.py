@@ -54,7 +54,7 @@ version = emsm.core.VERSION if emsm else "- n/a -"
 
 setup(
     name = "emsm",
-    version = version,
+    version = VERSION,
     url = "https://github.com/benediktschmitt/emsm",
     license = "MIT License",
     author = "The EMSM authors (see AUTHORS.txt)",
