@@ -44,6 +44,7 @@ nosetests.xml
 
 # Phing
 build.xml
+silk.json
 
 # virtualenv
 venv
