@@ -31,11 +31,6 @@ from setuptools import setup
 
 # local
 VERSION='error'
-try:
-    import emsm
-except ImportError:
-    emsm = None
-
 exec(open('emsm/core/version.py').read())
 
 
