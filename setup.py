@@ -30,6 +30,7 @@
 from setuptools import setup
 
 # local
+VERSION='error'
 try:
     import emsm
 except ImportError:
