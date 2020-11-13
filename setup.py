@@ -30,10 +30,8 @@
 from setuptools import setup
 
 # local
-try:
-    import emsm
-except ImportError:
-    emsm = None
+VERSION='error'
+exec(open('emsm/core/version.py').read())
 
 
 # Setup
@@ -47,15 +45,14 @@ requirements = [
     if line.strip()
     ]
 
-version = emsm.core.VERSION if emsm else "- n/a -"
 
 setup(
     name = "emsm",
-    version = version,
+    version = VERSION,
     url = "https://github.com/benediktschmitt/emsm",
     license = "MIT License",
     author = "The EMSM authors (see AUTHORS.txt)",
-    description = "A lightweight, easy to extend mineraft server manager",
+    description = "A lightweight, easy-to-extend Minecraft server manager",
     long_description = long_description,
     packages = ["emsm", "emsm.core", "emsm.core.lib", "emsm.plugins"],
     include_package_data = True,
