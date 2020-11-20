@@ -681,7 +681,7 @@ class Vanilla_1_12(VanillaBase):
         return "./logs/latest.log"
 
     def log_start_re(self):
-        return re.compile("^.*Starting minecraft server version 1\.12.*")
+        return re.compile("^.*Starting minecraft server version 1\.12\.2.*")
 
     def log_error_re(self):
         return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
