@@ -675,13 +675,13 @@ class Vanilla_1_12(VanillaBase):
         return "vanilla 1.12"
 
     def default_url(self):
-        return "https://s3.amazonaws.com/Minecraft.Download/versions/1.12.1/minecraft_server.1.12.1.jar"
+        return "https://launcher.mojang.com/v1/objects/886945bfb2b978778c3a0288fd7fab09d315b25f/server.jar"
 
     def log_path(self):
         return "./logs/latest.log"
 
     def log_start_re(self):
-        return re.compile("^.*Starting minecraft server version 1\.12.*")
+        return re.compile("^.*Starting minecraft server version 1\.12\.2.*")
 
     def log_error_re(self):
         return re.compile(".* \[SEVERE\] .*", re.MULTILINE)
